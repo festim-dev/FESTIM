@@ -36,20 +36,31 @@ from .enclosure.openings import (
     Pump,
     Reservoir,
 )
-from .exports.average_surface import AverageSurface
-from .exports.average_volume import AverageVolume
 from .exports.custom_quantity import CustomQuantity
 from .exports.derived_quantity import DerivedQuantity
 from .exports.gas_pressure import GasPressure
-from .exports.maximum_surface import MaximumSurface
-from .exports.maximum_volume import MaximumVolume
-from .exports.minimum_surface import MinimumSurface
-from .exports.minimum_volume import MinimumVolume
+from .exports.legacy_quantities import (
+    AverageSurface,
+    AverageVolume,
+    MaximumSurface,
+    MaximumVolume,
+    MinimumSurface,
+    MinimumVolume,
+    TotalSurface,
+    TotalVolume,
+)
 from .exports.profile_1d import Profile1DExport
+from .exports.quantity import (
+    Average,
+    ExtremumQuantity,
+    FieldQuantity,
+    IntegralQuantity,
+    Maximum,
+    Minimum,
+    Total,
+)
 from .exports.surface_flux import SurfaceFlux
 from .exports.surface_quantity import SurfaceQuantity
-from .exports.total_surface import TotalSurface
-from .exports.total_volume import TotalVolume
 from .exports.volume_quantity import VolumeQuantity
 from .exports.vtx import (
     CustomFieldExport,

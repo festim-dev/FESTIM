@@ -606,7 +606,7 @@ def test_volume_quantities_on_manifold(half, length):
     model.initialise()
 
     # the integral is assembled on the manifold's own submesh, not the parent mesh
-    measure = model.unrestricted_subdomain_measure(gamma)
+    measure = model.measure_for(gamma)
     assert measure.ufl_domain() is gamma.submesh.ufl_domain()
 
     model.run()
@@ -623,7 +623,7 @@ def test_volume_quantities_on_bulk_still_use_the_parent_measure():
     omega = next(v for v in model.volume_subdomains if v is not gamma)
     model.initialise()
 
-    assert model.unrestricted_subdomain_measure(omega) is model.dx
+    assert model.measure_for(omega) is model.dx
 
 
 @pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
@@ -648,14 +648,69 @@ def test_custom_quantity_on_manifold_raises():
 
 
 @pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
-@pytest.mark.parametrize("cls", [F.MaximumVolume, F.MinimumVolume])
-def test_extremum_volume_quantities_raise(cls):
-    """These read ``volume_meshtags`` and the single ``post_processing_solution`` of
-    the parent mesh, neither of which a subdomain-wise problem sets."""
+def test_new_quantity_api_on_manifold_and_bulk():
+    """``Total``/``Average``/``Minimum``/``Maximum`` take a domain and do not care
+    whether it is a volume, a surface or a manifold.
 
-    def build(gamma, H_gam):
-        return [cls(field=H_gam, volume=gamma)]
+    With a uniform source and no coupling the manifold field is ``c = 3 t``, exact
+    under backward Euler, so every quantity has a closed form: the total is
+    ``3 t * length(Gamma)`` and the extrema are both ``3 t``.
+    """
+    model, gamma, H_gam = uncoupled(F.Stepsize(0.25), 1.0, 3.0)
+    omega = next(v for v in model.volume_subdomains if v is not gamma)
+    H_om = next(s for s in model.species if s is not H_gam)
+    model.exports = [
+        F.Total(field=H_gam, domain=gamma),
+        F.Average(field=H_gam, domain=gamma),
+        F.Minimum(field=H_gam, domain=gamma),
+        F.Maximum(field=H_gam, domain=gamma),
+        # the extrema of the inert bulk field: a codim-0 subdomain of a problem whose
+        # fields live on submeshes, which the old MaximumVolume could not do at all
+        F.Maximum(field=H_om, domain=omega),
+    ]
+    model.initialise()
+    model.run()
 
-    model, _, _ = uncoupled_with_exports(build)
-    with pytest.raises(NotImplementedError, match="not supported"):
-        model.initialise()
+    expected = 3.0 * float(model.t)
+    total, average, minimum, maximum, bulk_max = model.exports
+    assert np.isclose(total.data[-1], expected, rtol=1e-9)
+    assert np.isclose(average.data[-1], expected, rtol=1e-9)
+    assert np.isclose(minimum.data[-1], expected, rtol=1e-9)
+    assert np.isclose(maximum.data[-1], expected, rtol=1e-9)
+    # Omega is inert with a homogeneous Dirichlet BC, so it stays at zero
+    assert np.isclose(bulk_max.data[-1], 0.0, atol=1e-12)
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+def test_extrema_on_a_surface_of_a_discontinuous_problem():
+    """A surface resolves to the facet tags transferred onto the submesh of the volume
+    it bounds, not to the parent-mesh facet tags: the field lives on the submesh, so
+    parent entities would locate dofs of the wrong mesh."""
+    model, _gamma, H_gam = uncoupled(F.Stepsize(0.5), 1.0, 3.0)
+    right = next(s for s in model.surface_subdomains)
+    H_om = next(s for s in model.species if s is not H_gam)
+    model.exports = [F.Maximum(field=H_om, domain=right)]
+    model.initialise()
+    model.run()
+
+    # H_om is pinned to 0 on `right` by the Dirichlet BC
+    assert np.isclose(model.exports[0].data[-1], 0.0, atol=1e-12)
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+def test_legacy_names_still_work_and_warn():
+    """The old geometry-specific names keep working, with a DeprecationWarning, and
+    are instances of the new classes so the problem needs no knowledge of them."""
+    model, gamma, H_gam = uncoupled(F.Stepsize(0.25), 1.0, 3.0)
+    with pytest.warns(DeprecationWarning, match="F.Total"):
+        legacy = F.TotalVolume(field=H_gam, volume=gamma)
+
+    assert isinstance(legacy, F.Total)
+    assert legacy.volume is legacy.domain is gamma
+    assert legacy.title == "Total H_gam volume 2"
+
+    model.exports = [legacy, F.Total(field=H_gam, domain=gamma)]
+    model.initialise()
+    model.run()
+
+    assert np.isclose(legacy.data[-1], model.exports[1].data[-1], rtol=1e-12)

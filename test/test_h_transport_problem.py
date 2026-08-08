@@ -523,7 +523,10 @@ def test_post_processing_update_D_global_2():
 
     # RUN
     my_model.post_processing()
-    my_value = my_export.D.x.array[-1]
+    # a maximum does not use D -- assert on the value it computes, as the volume
+    # counterpart below does. D is now attached only to the export that needs it
+    # (SurfaceFlux), rather than to every quantity that happens to sit on a surface.
+    my_value = my_export.data[-1]
     assert isinstance(my_value, float)
 
 
