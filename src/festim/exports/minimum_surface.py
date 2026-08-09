@@ -28,30 +28,24 @@ class MinimumSurface(SurfaceQuantity):
 
     def compute(
         self,
+        facet_meshtags: dolfinx.mesh.MeshTags,
         u: dolfinx.fem.Function | None = None,
-        facet_meshtags: dolfinx.mesh.MeshTags | None = None,
     ):
         """Computes the minimum value of the field on the defined surface subdomain, and
         appends it to the data list.
 
         Args:
-            u: the field the minimum is computed from. Defaults to
-                ``self.field.post_processing_solution``
             facet_meshtags: the facet meshtags used to locate the facets of the
                 surface subdomain. Defaults to ``self.facet_meshtags``. For the
                 discontinuous problem these are the facet meshtags of the submesh
                 the field lives on (``VolumeSubdomain.ft``)
+            u: the field the minimum is computed from. Defaults to
+                ``self.field.post_processing_solution``
 
         Raises:
             ValueError: if no facet meshtags are available
         """
         solution = self.field.post_processing_solution if u is None else u
-        meshtags = self.facet_meshtags if facet_meshtags is None else facet_meshtags
-
-        if meshtags is None:
-            raise ValueError(
-                f"facet meshtags are required to compute {self.__class__.__name__}"
-            )
 
         if isinstance(solution, dolfinx.fem.Function):
             V = solution.function_space
@@ -60,7 +54,7 @@ class MinimumSurface(SurfaceQuantity):
         mesh = V.mesh
         fdim = mesh.topology.dim - 1
 
-        entities = meshtags.find(self.surface.id)
+        entities = facet_meshtags.find(self.surface.id)
         mesh.topology.create_connectivity(fdim, mesh.topology.dim)
         dofs = dolfinx.fem.locate_dofs_topological(
             V=V, entity_dim=fdim, entities=entities

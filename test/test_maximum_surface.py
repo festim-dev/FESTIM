@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from dolfinx import fem
 
 import festim as F
@@ -33,24 +32,12 @@ def test_maximum_surface_compute_1D():
 
     my_export = F.MaximumSurface(field=my_species, surface=dummy_surface)
     my_export.D = D
-    my_export.facet_meshtags = ft
 
     # RUN
-    my_export.compute()
+    my_export.compute(ft)
 
     # TEST
     expected_value = 1.0
     computed_value = my_export.value
 
     assert np.isclose(computed_value, expected_value, rtol=1e-2)
-
-
-def test_maximum_surface_raises_error_when_no_facet_meshtags():
-    """A ValueError is raised when no facet meshtags are available."""
-
-    my_export = F.MaximumSurface(
-        field=F.Species("H"), surface=F.SurfaceSubdomain1D(id=1, x=0)
-    )
-
-    with pytest.raises(ValueError, match="facet meshtags are required"):
-        my_export.compute()

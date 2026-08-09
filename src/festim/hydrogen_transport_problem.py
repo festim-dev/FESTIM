@@ -534,8 +534,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 export.D_expr = self._species_to_D_global_expr.get(export.field)
             if isinstance(export, exports.MaximumVolume | exports.MinimumVolume):
                 export.volume_meshtags = self.volume_meshtags
-            if isinstance(export, exports.MaximumSurface | exports.MinimumSurface):
-                export.facet_meshtags = self.facet_meshtags
+            # NOTE Min/MaxSurface initialization is no longer needed here since
+            # the meshtags are now a required argument of its compute method
 
             # reset the data and time for SurfaceQuantity and VolumeQuantity
             if isinstance(export, exports.DerivedQuantity):
@@ -1102,7 +1102,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         )
                     export.compute(export.field.solution, self.ds)
                 else:
-                    export.compute()
+                    export.compute(self.facet_meshtags)
                 # update export data
                 export.t.append(float(self.t))
 
