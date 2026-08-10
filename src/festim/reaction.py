@@ -793,7 +793,6 @@ class DecayReaction(GenericReaction):
     # only the setter differs from the base class, the getter is inherited
     @GenericReaction.reactant.setter
     def reactant(self, value):
-        # a decay is first order: a single species decays at rate lambda * c
         if isinstance(value, list) and len(value) > 1:
             raise ValueError(
                 "reactant must be a single species for a DecayReaction, not "
