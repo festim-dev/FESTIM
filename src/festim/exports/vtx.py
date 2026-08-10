@@ -8,7 +8,7 @@ import ufl
 from dolfinx import fem, io
 
 from festim import k_B as _k_B
-from festim.reaction import Reaction
+from festim.reaction import ArrheniusReaction
 from festim.species import ImplicitSpecies, Species
 from festim.subdomain.volume_subdomain import VolumeSubdomain
 
@@ -362,7 +362,7 @@ class ReactionRateExport(CustomFieldExport):
 
     def __init__(
         self,
-        reaction: Reaction,
+        reaction: ArrheniusReaction,
         filename: str | Path,
         direction: str = "both",
         times: list[float] | None = None,

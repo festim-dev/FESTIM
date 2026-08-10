@@ -138,7 +138,7 @@ def test_MMS_coupled_problem():
         ],
         species=[test_mobile, test_trapped],
         reactions=[
-            F.Reaction(
+            F.ArrheniusReaction(
                 reactant=[test_mobile, test_traps],
                 product=test_trapped,
                 k_0=k_0,
