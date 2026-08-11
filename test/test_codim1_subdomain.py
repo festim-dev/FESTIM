@@ -6,6 +6,7 @@ import dolfinx
 import numpy as np
 import pytest
 import ufl
+from scifem import assemble_scalar
 
 import festim as F
 from festim.helpers import solution_on
@@ -492,3 +493,62 @@ def test_ordered_interior_facet_data_rejects_facets_elsewhere():
             F.VolumeSubdomain(id=1, material=material),
             F.VolumeSubdomain(id=2, material=material),
         )
+
+
+def test_surface_quantity_accepts_a_manifold_subdomain():
+    """A manifold is passed directly wherever a surface is expected, exports included.
+
+    Which subdomain object it is cannot tell whether it is really codim 1 -- that needs
+    the mesh -- so the setter accepts any volume subdomain and the problem checks at
+    initialisation.
+    """
+    gamma = F.VolumeSubdomain(id=2, material=F.Material(D_0=1, E_D=0), dim=1)
+    export = F.SurfaceFlux(field=F.Species("H"), surface=gamma)
+    assert export.surface is gamma
+
+
+@pytest.mark.parametrize("bad", [True, "top", 1.0, None])
+def test_surface_quantity_rejects_other_types(bad):
+    with pytest.raises(TypeError, match="surface should be"):
+        F.SurfaceFlux(field=F.Species("H"), surface=bad)
+
+
+def test_export_volume_measure_is_on_the_submesh_for_a_manifold():
+    """A manifold's fields live on its submesh, so a volume quantity over it integrates
+    there. The measure carries a tag over the whole submesh, so indexing it by the
+    subdomain id -- which is what the export does -- selects all of it."""
+    model, omega, gamma, _ = build_manifold_model([])
+    model.initialise()
+
+    dx_gamma = model.export_volume_measure(gamma)
+    assert dx_gamma.ufl_domain() is gamma.submesh.ufl_domain()
+    # the manifold is the full top edge of the unit square
+    assert np.isclose(assemble_scalar(1 * dx_gamma(gamma.id)), 1.0)
+
+    # an ordinary subdomain is untouched
+    assert model.export_volume_measure(omega) is model.dx
+
+
+def test_unindexed_coupling_measure_agrees_with_the_indexed_one():
+    """Derived quantities need the measure itself, since they index it by the id of the
+    subdomain they export, exactly as they do with the parent ds."""
+    model, _, gamma, _ = build_manifold_model([])
+    model.initialise()
+
+    unindexed = model.unindexed_coupling_measure(gamma)
+    assert unindexed(gamma.id) == model.coupling_measure(gamma)
+
+
+def test_manifold_boundary_measure_is_memoised():
+    """DOLFINx requires every integral of a compiled form to share the *same*
+    subdomain_data object, not merely an equal one."""
+    end = F.SurfaceSubdomain(id=7, dim=0, locator=lambda x: np.isclose(x[0], 0.0))
+    model, _, gamma, H_gam = build_manifold_model([end])
+    model.exports = [F.TotalSurface(field=H_gam, surface=end)]
+    model.initialise()
+
+    first = model._manifold_boundary_measure(end, gamma)
+    assert model._manifold_boundary_measure(end, gamma) is first
+    assert first.ufl_domain() is gamma.submesh.ufl_domain()
+    # a single endpoint of a 1D submesh, of unit measure
+    assert np.isclose(assemble_scalar(1 * first(end.id)), 1.0)
