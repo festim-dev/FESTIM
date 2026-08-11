@@ -46,6 +46,9 @@ from festim.helpers import (
     is_it_time_to_export,
     nmm_interpolate,
 )
+from festim.helpers import (
+    restrict as _restrict,
+)
 from festim.mixed_dimensional_assembly import (
     custom_assemble_jacobian,
     custom_assemble_residual,
@@ -511,6 +514,21 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     raise NotImplementedError(
                         f"Derived quantity exports are not implemented for "
                         f"{self.mesh.coordinate_system!s} meshes"
+                    )
+
+                # a volume subdomain is accepted as a surface only to let a codim-1
+                # one (a manifold) through, and manifolds exist only in
+                # HydrogenTransportProblemDiscontinuous. Here the id would be looked
+                # up in the facet tags, silently reporting some other surface's value
+                if isinstance(export, exports.SurfaceQuantity) and isinstance(
+                    export.surface, _subdomain.VolumeSubdomain
+                ):
+                    raise TypeError(
+                        f"volume subdomain {export.surface.id} was given as the "
+                        f"surface of a {type(export).__name__}. Only a codim-1 volume "
+                        "subdomain can be, and only in "
+                        "HydrogenTransportProblemDiscontinuous, the sole problem class "
+                        "supporting manifolds."
                     )
 
             # clean data for profile1D export
@@ -1320,6 +1338,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         )
         self._coupling_measures = {}
         self._manifold_is_interior = {}
+        self._manifold_export_measures = {}
         self.manifold_to_volumes = _subdomain.map_manifold_to_volume_subdomains(
             ft=self.facet_meshtags,
             ct=self.volume_meshtags,
@@ -1787,8 +1806,17 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         :meth:`restriction_of`); when the same subdomain lies on both sides there is
         nothing to order, because the bulk field is single-valued across the facet.
         """
+        return self.unindexed_coupling_measure(manifold)(manifold.id)
+
+    def unindexed_coupling_measure(self, manifold: _subdomain.VolumeSubdomain):
+        """As :meth:`coupling_measure`, but not yet restricted to the manifold's id.
+
+        Derived quantities index the measure they are handed by the id of the subdomain
+        they export, exactly as they do with the parent ``ds``, so they need the measure
+        itself rather than an integral over it.
+        """
         if not self.manifold_is_interior(manifold):
-            return self.ds(manifold.id)
+            return self.ds
 
         # memoised: DOLFINx requires every integral of a compiled form to share the
         # *same* subdomain_data object, not merely an equal one
@@ -1816,7 +1844,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             self._coupling_measures[manifold] = ufl.Measure(
                 "dS", domain=self.mesh.mesh, subdomain_data=[integral_data]
             )
-        return self._coupling_measures[manifold](manifold.id)
+        return self._coupling_measures[manifold]
 
     def restriction_of(
         self, manifold: _subdomain.VolumeSubdomain, volume: _subdomain.VolumeSubdomain
@@ -1838,9 +1866,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
     def restrict(self, expression, restriction: str | None):
         """Apply ``restriction`` to a whole expression, or return it unchanged when the
         coupling is on exterior facets."""
-        if restriction is None:
-            return expression
-        return expression(restriction)
+        return _restrict(expression, restriction)
 
     def coupling_side(
         self, manifold: _subdomain.VolumeSubdomain, species: _species.Species
@@ -2624,6 +2650,142 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     t=self.t,
                 )
 
+    def export_volume_measure(self, volume: _subdomain.VolumeSubdomain):
+        """The measure a volume quantity over ``volume`` is integrated with.
+
+        A manifold's fields live on its own submesh, so its integrals are taken there --
+        the parent ``dx`` carries no cell tagged with a manifold's id, and assembling a
+        submesh field against a parent measure fails inside FFCx anyway. The measure is
+        given a meshtag covering the whole submesh so that the export can index it by
+        the subdomain id, exactly as it does with the parent ``dx``.
+        """
+        if volume.codim(self.mesh.vdim) != 1:
+            return self.dx
+
+        if volume not in self._manifold_export_measures:
+            submesh = volume.submesh
+            tdim = submesh.topology.dim
+            # owned cells only: a ghost would be counted twice in parallel
+            cells = np.arange(
+                submesh.topology.index_map(tdim).size_local, dtype=np.int32
+            )
+            tags = dolfinx.mesh.meshtags(
+                submesh, tdim, cells, np.full(len(cells), volume.id, dtype=np.int32)
+            )
+            self._manifold_export_measures[volume] = ufl.Measure(
+                "dx", domain=submesh, subdomain_data=tags
+            )
+        return self._manifold_export_measures[volume]
+
+    def _manifold_boundary_measure(
+        self,
+        surface: _subdomain.SurfaceSubdomain,
+        manifold: _subdomain.VolumeSubdomain,
+    ):
+        """The ``ds`` measure on ``manifold``'s submesh selecting ``surface``.
+
+        The boundary of a manifold is codim-1 *relative to the manifold*, so this is an
+        ordinary exterior facet integral on its submesh rather than a codim-2 integral
+        of the parent mesh -- the endpoints of a line in 2D are the facets of a 1D mesh.
+        The same reasoning already locates the dofs of a Dirichlet BC there.
+
+        Raises:
+            ValueError: if the locator matches no boundary entity of the manifold
+        """
+        key = (surface, manifold)
+        if key not in self._manifold_export_measures:
+            submesh = manifold.submesh
+            fdim = submesh.topology.dim - 1
+            submesh.topology.create_connectivity(fdim, submesh.topology.dim)
+            entities = surface.locate_boundary_facet_indices(submesh)
+            # a locator matching nothing, or only points interior to the manifold, would
+            # otherwise leave the export quietly reporting zero
+            if self.mesh.mesh.comm.allreduce(len(entities), op=MPI.SUM) == 0:
+                raise ValueError(
+                    f"the locator of surface subdomain {surface.id} matched no "
+                    f"boundary entity of codim-1 volume subdomain {manifold.id}. It "
+                    "must select a point on the boundary of that subdomain, not one "
+                    "inside it."
+                )
+            entities = np.sort(entities).astype(np.int32)
+            tags = dolfinx.mesh.meshtags(
+                submesh,
+                fdim,
+                entities,
+                np.full(len(entities), surface.id, dtype=np.int32),
+            )
+            self._manifold_export_measures[key] = ufl.Measure(
+                "ds", domain=submesh, subdomain_data=tags
+            )
+        return self._manifold_export_measures[key]
+
+    def export_surface_context(self, export: exports.SurfaceQuantity):
+        """Everything a surface quantity needs to know about where it is computed.
+
+        Three cases, and the ordinary one is unchanged:
+
+        - an ordinary ``SurfaceSubdomain``: the parent ``ds``, and the volume subdomain
+          it bounds;
+        - a **manifold** (codim-1 ``VolumeSubdomain``): the facets it occupies, read
+          from the bulk side that ``export.field`` lives on. Interior manifolds use the
+          ``dS`` coupling measure with that side's restriction -- the parent ``ds``
+          integrates to exactly zero over interior facets, which would be a silent zero
+          rather than an error;
+        - a **codim-2 ``SurfaceSubdomain``**: the boundary of the manifold that
+          ``export.field`` lives on, integrated on that manifold's submesh.
+
+        Returns:
+            ``(volume, mesh, measure, restriction, entity_maps)`` where ``volume`` is
+            the subdomain whose solution and material the quantity reads, and ``mesh``
+            the one the integral is taken on -- the parent mesh except on the boundary
+            of a manifold.
+
+        Raises:
+            ValueError: if the volume subdomain given as a surface is not a manifold, or
+                if a manifold's own species is asked for on that manifold's facets,
+                which is not a flux across anything
+        """
+        surface = export.surface
+        entity_maps = [sd.cell_map for sd in self.volume_subdomains]
+        parent = self.mesh.mesh
+
+        if isinstance(surface, _subdomain.VolumeSubdomain):
+            if surface.codim(self.mesh.vdim) != 1:
+                raise ValueError(
+                    f"volume subdomain {surface.id} is not a manifold, so it cannot be "
+                    "used as the surface of a derived quantity. Only a codim-1 volume "
+                    "subdomain occupies facets; give a surface subdomain, or a volume "
+                    "quantity over this subdomain."
+                )
+            if surface in export.field.subdomains:
+                raise ValueError(
+                    f"species {export.field.name} lives on codim-1 volume subdomain "
+                    f"{surface.id} itself, so it has no flux across it. Export it with "
+                    "a volume quantity over that subdomain instead, or name a bulk "
+                    "species to get the exchange with one side of it."
+                )
+            volume = self.coupling_side(surface, export.field)
+            return (
+                volume,
+                parent,
+                self.unindexed_coupling_measure(surface),
+                self.restriction_of(surface, volume),
+                entity_maps,
+            )
+
+        if surface.codim(self.mesh.vdim) == 2:
+            manifold = self.manifold_of(surface, export.field)
+            # everything lives on the submesh, so no entity map is involved
+            return (
+                manifold,
+                manifold.submesh,
+                self._manifold_boundary_measure(surface, manifold),
+                None,
+                None,
+            )
+
+        return self.surface_to_volume[surface], parent, self.ds, None, entity_maps
+
     def _export_context(
         self, export
     ) -> tuple[list[fem.Function], list[str], dolfinx.mesh.Mesh]:
@@ -2698,9 +2860,17 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         # HydrogenTransportProblem
         for export in self.exports:
             if isinstance(export, exports.SurfaceQuantity):
-                volume = self.surface_to_volume[export.surface]
+                volume, mesh, *_ = self.export_surface_context(export)
+                # on the boundary of a manifold the integral is taken on that manifold's
+                # submesh, and like every other coefficient of a submesh integral D has
+                # to be built there rather than on the parent mesh
+                temperature = (
+                    self.subdomain_temperature(volume)
+                    if mesh is not self.mesh.mesh
+                    else self.temperature_fenics
+                )
                 D = volume.material.get_diffusion_coefficient(
-                    self.mesh.mesh, self.temperature_fenics, export.field
+                    mesh, temperature, export.field
                 )
                 # NOTE: maybe we need to make sure there are no functionspace clashes?
 
@@ -2783,15 +2953,18 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                             "Advection terms are not currently accounted for in the "
                             "evaluation of surface flux values"
                         )
-                    export_surf = export.surface
-                    export_vol = self.surface_to_volume[export_surf]
+                    export_vol, _, measure, restriction, entity_maps = (
+                        self.export_surface_context(export)
+                    )
                     submesh_function = (
                         export.field.subdomain_to_post_processing_solution[export_vol]
                     )
-                    entity_maps = [sd.cell_map for sd in self.volume_subdomains]
 
                     export.compute(
-                        u=submesh_function, ds=self.ds, entity_maps=entity_maps
+                        u=submesh_function,
+                        ds=measure,
+                        entity_maps=entity_maps,
+                        restriction=restriction,
                     )
                 else:
                     export.compute()
@@ -2804,7 +2977,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         u=export.field.subdomain_to_post_processing_solution[
                             export.volume
                         ],
-                        dx=self.dx,
+                        dx=self.export_volume_measure(export.volume),
                         entity_maps=entity_maps,
                     )
                 else:

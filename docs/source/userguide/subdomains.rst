@@ -255,6 +255,55 @@ a float or as a callable of ``x`` and ``t`` rather than as a ready-made
 subdomain rather than sharing one between a reaction on a manifold and a reaction
 elsewhere. Both are raised rather than silently mis-assembled.
 
+Exports on a manifold
+---------------------
+
+Derived quantities can be asked for in three places once a manifold is in the mesh.
+
+**Over the manifold**, for its own species — a volume quantity, with ``volume`` set to
+the manifold. It is integrated over the manifold itself, so a
+:class:`festim.TotalVolume` on a line in a 2D mesh is a line integral:
+
+.. code-block:: python
+
+    F.TotalVolume(field=c_gamma, volume=gamma)
+    F.AverageVolume(field=c_gamma, volume=gamma)
+
+**On the facets the manifold occupies**, for a *bulk* species — a surface quantity, with
+the manifold passed where a surface subdomain normally goes. This is the exchange
+between the bulk and the manifold:
+
+.. code-block:: python
+
+    F.SurfaceFlux(field=c_bulk, surface=gamma)
+    F.TotalSurface(field=c_bulk, surface=gamma)
+
+On an interior manifold, which side the quantity is read on follows from ``field``,
+exactly as it does for the flux boundary conditions above — declare one export per side,
+each naming that side's species. The sign convention is the ordinary one: a positive
+flux leaves the subdomain the species lives on, so an exchange from the left bulk to the
+right one through the manifold reads positive on the left and negative on the right.
+
+Asking for a manifold's *own* species on its own facets raises: it has no flux across
+the manifold, and the quantity meant is the volume one above.
+
+**On the boundary of the manifold** — a surface quantity whose ``surface`` is the
+codim-2 :class:`festim.SurfaceSubdomain` described in the previous section. This is what
+gives the outlet flux of the pipe example:
+
+.. code-block:: python
+
+    outlet = F.SurfaceSubdomain(id=4, dim=0,
+                                locator=lambda x: np.isclose(x[0], L))
+    ...
+    exports=[F.SurfaceFlux(field=c_fluid, surface=outlet)]
+
+.. note::
+
+    :class:`festim.SurfaceFlux` computes the **diffusive** flux only. On a manifold
+    carrying an :class:`festim.AdvectionTerm` the advective part is not included, and
+    FESTIM warns.
+
 Limitations
 -----------
 
@@ -265,8 +314,12 @@ Limitations
   so the exchange with it would not be well posed.
 * Boundary conditions on the boundary of a manifold are limited to
   :class:`festim.FixedConcentrationBC`.
-* Dedicated exports on a manifold or on its boundary are not available;
-  :class:`festim.VTXSpeciesExport` on a manifold works.
+* Exports on and around a manifold are limited to the integral-based derived quantities
+  (:class:`festim.SurfaceFlux`, :class:`festim.TotalSurface`,
+  :class:`festim.AverageSurface`, :class:`festim.TotalVolume`,
+  :class:`festim.AverageVolume`) and :class:`festim.VTXSpeciesExport`. The minimum and
+  maximum quantities are not available in
+  :class:`festim.HydrogenTransportProblemDiscontinuous` at all, manifold or not.
 * Cartesian coordinates only.
 
 ----------

@@ -125,6 +125,29 @@ def solution_on(species: "Species", subdomain: "VolumeSubdomain"):
     )
 
 
+def restrict(expression, restriction: str | None):
+    """Apply ``restriction`` to a whole expression.
+
+    Interior facet integrals need every discontinuous terminal restricted to one side
+    of the facet. Restricting the expression as a whole rather than each terminal keeps
+    a compound cross-mesh expression -- ``k * (c_bulk - c_manifold)``, or a flux
+    ``-D * grad(c) . n`` -- on a single side, which also picks the outward normal of
+    that side.
+
+    Args:
+        expression: the ufl expression to restrict
+        restriction: ``"+"``, ``"-"``, or ``None`` for an exterior facet integral, where
+            nothing needs restricting
+
+    Returns:
+        The restricted expression, or ``expression`` unchanged when ``restriction`` is
+        ``None``
+    """
+    if restriction is None:
+        return expression
+    return ufl.as_ufl(expression)(restriction)
+
+
 def as_fenics_interp_expr_and_function(
     value: Callable,
     function_space: dolfinx.fem.function.FunctionSpace,
