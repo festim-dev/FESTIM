@@ -1689,6 +1689,13 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 else:
                     t = self.t
                     temperature = self.temperature_fenics
+                    if source.volume in self.manifold_to_volumes:
+                        # a coupling source is integrated on the parent mesh, so its
+                        # spatial coordinate has to be the parent mesh's as well --
+                        # ufl.SpatialCoordinate of the manifold's submesh is silently
+                        # wrong under the "+"/"-" restriction of an interior manifold.
+                        # only function_space.mesh is read on the up_to_ufl_expr path
+                        V = dolfinx.fem.functionspace(self.mesh.mesh, ("CG", 1))
 
                 source.value.convert_input_value(
                     function_space=V,
@@ -2626,9 +2633,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         """For each particle flux create the ``value_fenics`` attribute."""
         for bc in self._unpacked_bcs:
             if isinstance(bc, boundary_conditions.ParticleFluxBC):
-                volume_subdomain = self.flux_bc_target(bc)[0]
                 bc.create_value_fenics(
-                    mesh=volume_subdomain.submesh,
+                    mesh=self.mesh.mesh,
                     temperature=self.temperature_fenics,
                     t=self.t,
                 )
