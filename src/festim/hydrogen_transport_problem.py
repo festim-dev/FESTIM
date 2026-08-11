@@ -1657,32 +1657,35 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             name = f"{species.name}_{subdomain.id}"
             species.subdomain_to_post_processing_solution[subdomain].name = name
 
+    def source_integration_mesh(self, source) -> dolfinx.mesh.Mesh:
+        """The mesh the integral carrying ``source`` is assembled over.
+
+        A source involving only fields of a manifold subdomain is integrated over that
+        manifold's submesh (:meth:`subdomain_measure`); one coupling the manifold to
+        the bulk is a facet integral of the parent mesh (:meth:`coupling_measure`).
+        """
+        if self.is_manifold_self_source(source):
+            return source.volume.submesh
+        if source.volume in self.manifold_to_volumes:
+            return self.mesh.mesh
+        return source.species.subdomain_to_function_space[source.volume].mesh
+
     def convert_source_input_values_to_fenics_objects(self):
         """For each source create the value_fenics."""
         for source in self._unpacked_sources:
-            # create value_fenics for all F.ParticleSource objects
             if isinstance(source, _source.ParticleSource):
-                V = source.species.subdomain_to_function_space[source.volume]
-
-                # a self source on a manifold is integrated over its submesh, so its
-                # time and temperature must live there; a coupling source is integrated
-                # on the parent mesh and keeps the parent-mesh ones
                 if self.is_manifold_self_source(source):
                     t = self.subdomain_time(source.volume)
                     temperature = self.subdomain_temperature(source.volume)
                 else:
                     t = self.t
                     temperature = self.temperature_fenics
-                    if source.volume in self.manifold_to_volumes:
-                        # a coupling source is integrated on the parent mesh, so its
-                        # spatial coordinate has to be the parent mesh's as well --
-                        # ufl.SpatialCoordinate of the manifold's submesh is silently
-                        # wrong under the "+"/"-" restriction of an interior manifold.
-                        # only function_space.mesh is read on the up_to_ufl_expr path
-                        V = dolfinx.fem.functionspace(self.mesh.mesh, ("CG", 1))
 
                 source.value.convert_input_value(
-                    function_space=V,
+                    function_space=source.species.subdomain_to_function_space[
+                        source.volume
+                    ],
+                    mesh=self.source_integration_mesh(source),
                     t=t,
                     temperature=temperature,
                     up_to_ufl_expr=True,

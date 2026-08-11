@@ -190,6 +190,90 @@ def test_codim1_coupling_2d():
 
 
 @pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+def test_coupling_source_internal_subdomain():
+    """Emulate the repository MWE to verify codim-1 coupling terms."""
+    D_BULK, D_GAMMA = 1.5, 0.7
+    PLANE = 0.5
+
+    mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 20, 20)
+
+    left = F.VolumeSubdomain(
+        id=1,
+        material=F.Material(D_0=D_BULK, E_D=0.0),
+        locator=lambda x: x[0] <= PLANE + 1e-14,
+    )
+    right = F.VolumeSubdomain(
+        id=2,
+        material=F.Material(D_0=D_BULK, E_D=0.0),
+        locator=lambda x: x[0] >= PLANE - 1e-14,
+    )
+    gamma = F.VolumeSubdomain(
+        id=3,
+        material=F.Material(D_0=D_GAMMA, E_D=0.0),
+        dim=1,
+        locator=lambda x: np.isclose(x[0], PLANE),
+    )
+    outer_l = F.SurfaceSubdomain(id=4, locator=lambda x: np.isclose(x[0], 0.0))
+    outer_r = F.SurfaceSubdomain(id=5, locator=lambda x: np.isclose(x[0], 1.0))
+
+    H_l = F.Species("H_l", subdomains=[left])
+    H_r = F.Species("H_r", subdomains=[right])
+    H_g = F.Species("H_g", subdomains=[gamma])
+
+    sources = [
+        F.ParticleSource(
+            value=lambda x, c_g, c_b: 4.0 * x[0] * (c_b - c_g),
+            species=H_g,
+            volume=gamma,
+            species_dependent_value={"c_b": H_l, "c_g": H_g},
+        ),
+        F.ParticleSource(
+            value=lambda x, c_g, c_b: 6.0 * x[0] * (c_b - c_g),
+            species=H_g,
+            volume=gamma,
+            species_dependent_value={"c_b": H_r, "c_g": H_g},
+        ),
+    ]
+    bcs = [
+        F.ParticleFluxBC(
+            subdomain=gamma,
+            species=H_l,
+            value=lambda x, c_g, c_b: 4.0 * x[0] * (c_g - c_b),
+            species_dependent_value={"c_b": H_l, "c_g": H_g},
+        ),
+        F.ParticleFluxBC(
+            subdomain=gamma,
+            species=H_r,
+            value=lambda x, c_g, c_b: 6.0 * x[0] * (c_g - c_b),
+            species_dependent_value={"c_b": H_r, "c_g": H_g},
+        ),
+        F.FixedConcentrationBC(subdomain=outer_l, value=2.0, species=H_l),
+        F.FixedConcentrationBC(subdomain=outer_r, value=0.0, species=H_r),
+    ]
+
+    model = F.HydrogenTransportProblemDiscontinuous(
+        mesh=F.Mesh(mesh),
+        species=[H_l, H_r, H_g],
+        subdomains=[left, right, gamma, outer_l, outer_r],
+        sources=sources,
+        boundary_conditions=bcs,
+        temperature=500,
+        exports=[],
+    )
+    model.settings = F.Settings(atol=1e-12, rtol=1e-12, transient=False)
+    model.initialise()
+    model.run()
+
+    c_l = H_l.subdomain_to_post_processing_solution[left].x.array
+    c_r = H_r.subdomain_to_post_processing_solution[right].x.array
+    c_g = H_g.subdomain_to_post_processing_solution[gamma].x.array
+
+    assert np.allclose(c_l.min(), 14.0 / 9.0, rtol=1e-6, atol=1e-8)
+    assert np.allclose(c_r.max(), 4.0 / 9.0, rtol=1e-6, atol=1e-8)
+    assert np.allclose(c_g.mean(), 8.0 / 9.0, rtol=1e-6, atol=1e-8)
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
 def test_codim1_coupling_3d_tilted():
     """A 2D manifold in a 3D mesh, tilted with respect to every coordinate axis.
 
