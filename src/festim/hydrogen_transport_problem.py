@@ -1958,6 +1958,24 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             return subdomain.sub_T
         return self.temperature_fenics
 
+    def convert_reaction_rates_to_fenics_objects(self):
+        """As the base class, but with the temperature of the reaction's own mesh.
+
+        A reaction on a manifold becomes a source integrated over that manifold's
+        submesh, so its rate cannot be built from the parent-mesh temperature: FFCx
+        cannot tabulate a parent-mesh coefficient on submesh cells.
+        """
+        for reaction in self.reactions:
+            for rate in reaction.rate_coefficients:
+                if rate.input_value is not None:
+                    rate.convert_input_value(
+                        function_space=getattr(self, "function_space", None),
+                        t=self.t,
+                        temperature=self.subdomain_temperature(reaction.volume),
+                        subdomain=reaction.volume,
+                        up_to_ufl_expr=True,
+                    )
+
     def create_implicit_species_value_fenics(self):
         """For each implicit species, create the value_fenics.
 
@@ -2055,7 +2073,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         # the self terms are integrated over subdomain's own mesh, so their coefficients
         # must live there too -- for a manifold that is its submesh, not the parent mesh
         dt = self.subdomain_dt(subdomain) if self.settings.transient else None
-        temperature = self.subdomain_temperature(subdomain)
 
         form = 0
         form_grad = 0
@@ -2095,30 +2112,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         # reactions are expanded into particle sources (_unpacked_sources, see
         # create_sources_from_reactions), so they are handled by the source loop
-        for reaction in self.reactions:
-            if reaction.volume != subdomain:
-                continue
-
-            # reactant
-            for reactant in reaction.reactant:
-                if isinstance(reactant, _species.Species):
-                    form += (
-                        reaction.reaction_term(temperature)
-                        * reactant.subdomain_to_test_function[subdomain]
-                        * dx
-                    )
-
-            # product
-            if isinstance(reaction.product, list):
-                products = reaction.product
-            else:
-                products = [reaction.product]
-            for product in products:
-                form += (
-                    -reaction.reaction_term(temperature)
-                    * product.subdomain_to_test_function[subdomain]
-                    * dx
-                )
 
         # add fluxes. These are always parent-mesh integrals: a flux on a manifold
         # subdomain mixes the bulk and manifold fields, so it goes into form_coupling
@@ -2164,7 +2157,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     * self.coupling_measure(subdomain)
                 )
             else:
-                form -= source.value.fenics_object * v * self.dx(subdomain.id)
+                form -= source.value.fenics_object * v * dx
 
         # add advection
         for adv_term in self.advection_terms:
