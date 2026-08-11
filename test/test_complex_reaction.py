@@ -89,7 +89,7 @@ def model_test_reaction(stepsize=1, k=350e-4, p=120e-4, c_A_0=1):
     ]
 
     my_model.reactions = [
-        F.Reaction(
+        F.ArrheniusReaction(
             k_0=k,
             E_k=0,
             p_0=p,

@@ -136,7 +136,7 @@ def test_create_species_and_reaction():
 
     # TEST
     assert isinstance(my_trap.trapped_concentration, F.Species)
-    assert isinstance(my_trap.reaction, F.Reaction)
+    assert isinstance(my_trap.reaction, F.ArrheniusReaction)
 
 
 def test_implicit_species_wrong_type():

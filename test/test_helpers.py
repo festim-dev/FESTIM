@@ -122,7 +122,7 @@ def test_error_raised_wehn_input_value_is_not_accepted():
     with pytest.raises(
         TypeError,
         match=(
-            r"Value must be a float, int, fem.Constant, np.ndarray, fem.Expression, "
+            r"Value must be a float, int, fem.Constant, fem.Expression, "
             r"ufl.core.expr.Expr, fem.Function, or callable not coucou"
         ),
     ):
@@ -246,7 +246,6 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
     [
         1,
         1.0,
-        np.array([1.0, 2.0, 3.0]),
         lambda t: t,
         lambda T: 1.0 + T,
         lambda x: 1.0 + x[0],
@@ -404,6 +403,28 @@ def test_as_mapped_function_uses_subdomain_solution_when_concentration_is_none()
     result = fem.Function(V)
     result.interpolate(fem.Expression(mapped, V.element.interpolation_points))
     assert np.allclose(result.x.array, 8.0)
+
+
+def test_as_mapped_function_ignores_species_the_callable_does_not_declare():
+    """Test that a species_dependent_value entry whose name is not an argument of
+    the callable is ignored (as done for t/x/T), rather than passed and raising."""
+
+    V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
+    used = F.Species("c1")
+    used.solution = fem.Function(V)
+    used.solution.x.array[:] = 3.0
+    unused = F.Species("c2")  # not an argument of the callable below
+
+    # the callable only declares c1; c2 must be silently dropped
+    mapped = F.as_mapped_function(
+        value=lambda c1: 2 * c1,
+        function_space=V,
+        species_dependent_value={"c1": used, "c2": unused},
+    )
+
+    result = fem.Function(V)
+    result.interpolate(fem.Expression(mapped, V.element.interpolation_points))
+    assert np.allclose(result.x.array, 6.0)
 
 
 def test_convert_input_value_species_dependent_up_to_ufl_expr():
