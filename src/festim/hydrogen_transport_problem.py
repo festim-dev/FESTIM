@@ -1177,9 +1177,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
 class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
     interfaces: list[_subdomain.Interface]
     surface_to_volume: dict
-    _method_interface: _subdomain.interface.InterfaceMethod = (
-        _subdomain.interface.InterfaceMethod.penalty
-    )
+    # None means the user never set the deprecated problem-level attribute, in which
+    # case the method of each interface is left untouched
+    _method_interface: _subdomain.interface.InterfaceMethod | None = None
     subdomain_to_species: dict
 
     def __init__(
@@ -1284,15 +1284,17 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
     def initialise(self):
         # if method_interface is given as an attribute of Problem class, then pass it to
-        # each interface and raise a deprecation warning
-        if hasattr(self, "method_interface"):
+        # each interface and raise a deprecation warning.
+        # NOTE: method_interface is a property, so hasattr() is always True and cannot
+        # be used to detect whether the user actually set it
+        if self._method_interface is not None:
             warnings.warn(
                 "The method_interface attribute of the Problem class is deprecated, "
                 "please set the method_interface attribute of each interface instead",
                 DeprecationWarning,
             )
             for interface in self.interfaces:
-                interface.method = self.method_interface
+                interface.method = self._method_interface
 
         # check that all species have a list of F.VolumeSubdomain as this is
         # different from F.HydrogenTransportProblem
