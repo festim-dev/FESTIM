@@ -443,6 +443,12 @@ class HydrogenTransportProblem(problem.ProblemBase):
                             self.settings.stepsize.milestones.append(time)
                     self.settings.stepsize.milestones.sort()
 
+                if isinstance(export, exports.VTXInterfaceResidualExport):
+                    raise NotImplementedError(
+                        f"{type(export).__name__} requires interfaces between "
+                        "subdomains, use festim.HydrogenTransportProblemDiscontinuous"
+                    )
+
                 if isinstance(export, exports.VTXTemperatureExport):
                     self._temperature_as_function = (
                         self._get_temperature_field_as_function()
@@ -2216,12 +2222,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 elif isinstance(export, exports.VTXTemperatureExport):
                     export.writer.write(float(self.t))
                 elif isinstance(export, exports.VTXInterfaceResidualExport):
-                    # FIXME: don't need to remake the whole expression everytime just
-                    # need to update "sub" functions
-                    export.set_dolfinx_expression()
-                    export.function.interpolate(export.residual_expr)
-                    export._f_0_interface.interpolate(export.f_0_expr)
-                    export._f_1_interface.interpolate(export.f_1_expr)
+                    export.update()
                     export.writer.write(float(self.t))
                 else:
                     raise NotImplementedError(
