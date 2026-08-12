@@ -521,7 +521,7 @@ def test_extrema_export_on_a_volume_without_the_species(make_export, location):
     post_processing."""
 
     my_model = F.HydrogenTransportProblemDiscontinuous()
-    my_model.mesh = F.Mesh1D(np.linspace(0, 1, 10))
+    my_model.mesh = F.Mesh1D(np.linspace(0, 1, 11))
 
     mat = F.Material(D_0=1, E_D=0, K_S_0=1, E_K_S=0)
     vol1 = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=mat)
@@ -530,7 +530,6 @@ def test_extrema_export_on_a_volume_without_the_species(make_export, location):
     surf2 = F.SurfaceSubdomain1D(id=2, x=1)
 
     my_model.subdomains = [vol1, vol2, surf1, surf2]
-    my_model.interfaces = [F.Interface(id=3, subdomains=[vol1, vol2])]
 
     # H spans both volumes so vol2 is not left without a species;
     # D lives only in vol1, but the export below asks for it in vol2
