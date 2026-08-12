@@ -120,3 +120,6 @@ docs/source/_build/
 
 # Visual Studio Code settings
 .vscode/
+
+.claude
+CLAUDE.md
