@@ -658,3 +658,96 @@ def test_mixed_law_methods_agree_at_adequate_penalty():
     assert np.allclose(nitsche, penalty, rtol=1e-2), (
         f"nitsche {nitsche} and penalty {penalty} do not agree"
     )
+
+
+@pytest.mark.parametrize("method", ["penalty", "nitsche"])
+def test_mixed_law_transient_relaxes_to_the_steady_solution(method):
+    """A transient mixed-law interface relaxes to the known steady solution.
+
+    Time stepping is the axis the other mixed-law tests do not touch: they are all
+    steady, so the interface condition is only ever enforced on a solution that is
+    already at equilibrium. Here the initial condition is deliberately wrong and the
+    interface has to hold the two sides consistent while the solution relaxes.
+
+    Deliberately coarse and short: this checks that the transient path reaches the
+    right answer, not the order of accuracy, which the steady tests already pin.
+    """
+    K_S_top, K_S_bot, D_top, D_bot = 3.0, 6.0, 2.0, 5.0
+
+    def c_top(mod):
+        return lambda x: (
+            3 + mod.sin(mod.pi * (2 * x[1] + 0.5)) + 0.1 * mod.cos(2 * mod.pi * x[0])
+        )
+
+    def c_bot(mod):
+        return lambda x: K_S_bot / K_S_top**2 * c_top(mod)(x) ** 2
+
+    mesh, mt, ct = generate_mesh(20)
+
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+    my_model.mesh = F.Mesh(mesh)
+    my_model.volume_meshtags = ct
+    my_model.facet_meshtags = mt
+
+    material_top = F.Material(
+        D_0=D_top, E_D=0, K_S_0=K_S_top, E_K_S=0, solubility_law="sievert"
+    )
+    material_bottom = F.Material(
+        D_0=D_bot, E_D=0, K_S_0=K_S_bot, E_K_S=0, solubility_law="henry"
+    )
+
+    top_domain = F.VolumeSubdomain(4, material=material_top)
+    bottom_domain = F.VolumeSubdomain(3, material=material_bottom)
+    top_surface = F.SurfaceSubdomain(id=1)
+    bottom_surface = F.SurfaceSubdomain(id=2)
+    my_model.subdomains = [bottom_domain, top_domain, top_surface, bottom_surface]
+
+    my_model.interfaces = [
+        F.Interface(5, (bottom_domain, top_domain), penalty_term=1e4, method=method)
+    ]
+
+    H = F.Species("H", mobile=True)
+    my_model.species = [H]
+    H.subdomains = [bottom_domain, top_domain]
+
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(top_surface, value=c_top(ufl), species=H),
+        F.FixedConcentrationBC(bottom_surface, value=c_bot(ufl), species=H),
+    ]
+
+    # start away from the steady solution so the transient term does some work
+    my_model.initial_conditions = [
+        F.InitialConcentration(value=1.0, volume=top_domain, species=H),
+        F.InitialConcentration(value=1.0, volume=bottom_domain, species=H),
+    ]
+
+    x = ufl.SpatialCoordinate(mesh)
+    my_model.sources = [
+        F.ParticleSource(
+            volume=top_domain,
+            species=H,
+            value=-ufl.div(D_top * ufl.grad(c_top(ufl)(x))),
+        ),
+        F.ParticleSource(
+            volume=bottom_domain,
+            species=H,
+            value=-ufl.div(D_bot * ufl.grad(c_bot(ufl)(x))),
+        ),
+    ]
+    my_model.temperature = 500
+    my_model.settings = F.Settings(
+        atol=1e-12, rtol=1e-12, transient=True, final_time=2.0
+    )
+    my_model.settings.stepsize = 0.2
+
+    my_model.initialise()
+    my_model.run()
+
+    error_top = error_L2(H.subdomain_to_post_processing_solution[top_domain], c_top(np))
+    error_bot = error_L2(
+        H.subdomain_to_post_processing_solution[bottom_domain], c_bot(np)
+    )
+
+    assert max(error_top, error_bot) < 2e-2, (
+        f"transient did not relax to the steady solution: {error_top=}, {error_bot=}"
+    )
