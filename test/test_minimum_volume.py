@@ -57,11 +57,12 @@ def test_minimum_volume_no_meshtags():
     c.interpolate(lambda x: (x[0] - 1) ** 2 + 2)
 
     my_species = F.Species("H")
+    my_species.subdomain_to_post_processing_solution[dummy_volume] = c
 
     my_export = F.MinimumVolume(field=my_species, volume=dummy_volume)
 
-    # RUN: no volume_meshtags attribute set, the function is passed explicitly
-    my_export.compute(u=c)
+    # RUN
+    my_export.compute()
 
     # TEST: (x - 1)**2 + 2 is minimum at x = 1
     expected_value = 2.0
