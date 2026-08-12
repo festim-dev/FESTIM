@@ -58,7 +58,7 @@ class MinimumVolume(VolumeQuantity):
             values = solution.x.array
         else:
             assert self.volume_meshtags is not None, (
-                "volume_meshtags must be defined before computing the minimum volume"
+                "volume meshtags must be set before computing the min volume value"
             )
             entities = self.volume_meshtags.find(self.volume.id)
             mesh.topology.create_connectivity(mesh.topology.dim, mesh.topology.dim)

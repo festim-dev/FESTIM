@@ -55,8 +55,7 @@ class MaximumSurface(SurfaceQuantity):
         appends it to the data list.
         """
         assert self.meshtags is not None, (
-            "facet meshtags must be set before compute(); the problem does this in "
-            "initialise_exports()"
+            "facet meshtags must be set before computing the max surface value"
         )
         solution = self.solution
         V = (

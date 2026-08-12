@@ -55,7 +55,7 @@ class MinimumSurface(SurfaceQuantity):
         appends it to the data list.
         """
         assert self.meshtags is not None, (
-            "facet meshtags must be set before compute() is called"
+            "facet meshtags must be set before computing the min surface value"
         )
         solution = self.solution
         V = (
