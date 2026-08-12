@@ -191,7 +191,9 @@ def test_codim1_coupling_2d():
 
 @pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
 def test_coupling_source_internal_subdomain():
-    """Emulate the repository MWE to verify codim-1 coupling terms."""
+    """Create a simple 2D codim-1 problem to verify codim-1 coupling terms are
+    being applied correctly. Compares against a known solution.
+    """
     D_BULK, D_GAMMA = 1.5, 0.7
     PLANE = 0.5
 
