@@ -28,37 +28,39 @@ class MaximumVolume(VolumeQuantity):
     def title(self):
         return f"Maximum {self.field.name} volume {self.volume.id}"
 
-    def compute(
-        self,
-        u: dolfinx.fem.Function | None = None,
-        volume_meshtags: dolfinx.mesh.MeshTags | None = None,
-    ):
-        """Computes the maximum value of solution function within the defined volume
-        subdomain, and appends it to the data list.
+    @property
+    def is_submesh(self) -> bool:
+        """Whether the field's solution lives on a submesh of ``volume`` itself, as in
+        ``festim.HydrogenTransportProblemDiscontinuous``. See issue #1191."""
+        return self.volume in self.field.subdomain_to_post_processing_solution
 
-        Args:
-            u: the field the maximum is computed from. Defaults to
-                ``self.field.post_processing_solution``
-            volume_meshtags: the cell meshtags used to locate the cells of the volume
-                subdomain. Defaults to ``self.volume_meshtags``. If neither is
-                available, the maximum is computed over the whole mesh ``u`` is
-                defined on. This is the expected behaviour for the discontinuous
-                problem, where each volume subdomain owns its own submesh.
+    @property
+    def solution(self):
+        if self.is_submesh:
+            return self.field.subdomain_to_post_processing_solution[self.volume]
+        return self.field.post_processing_solution
+
+    def compute(self):
         """
-        solution = self.field.post_processing_solution if u is None else u
-        meshtags = self.volume_meshtags if volume_meshtags is None else volume_meshtags
-
-        if isinstance(solution, dolfinx.fem.Function):
-            V = solution.function_space
-        else:
-            V = self.field.sub_function_space
+        Computes the maximum value of solution function within the defined volume
+        subdomain, and appends it to the data list.
+        """
+        solution = self.solution
+        V = (
+            solution.function_space
+            if isinstance(solution, dolfinx.fem.Function)
+            else self.field.sub_function_space
+        )
         mesh = V.mesh
 
-        if meshtags is None:
+        if self.is_submesh:
             # the mesh of the field is the volume subdomain itself (submesh case)
             values = solution.x.array
         else:
-            entities = meshtags.find(self.volume.id)
+            assert self.volume_meshtags is not None, (
+                "volume_meshtags must be defined before computing the maximum volume"
+            )
+            entities = self.volume_meshtags.find(self.volume.id)
             mesh.topology.create_connectivity(mesh.topology.dim, mesh.topology.dim)
             dofs = dolfinx.fem.locate_dofs_topological(
                 V=V, entity_dim=mesh.topology.dim, entities=entities
