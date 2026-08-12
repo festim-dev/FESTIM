@@ -515,10 +515,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 ):
                     raise TypeError(
                         f"volume subdomain {export.surface.id} was given as the "
-                        f"surface of a {type(export).__name__}. Only a codim-1 volume "
-                        "subdomain can be, and only in "
-                        "HydrogenTransportProblemDiscontinuous, the sole problem class "
-                        "supporting manifolds."
+                        f"surface of a {type(export).__name__}. Co-dim volume subomains"
+                        "are only supported by HydrogenTransportProblemDiscontinuous"
                     )
 
             # if name of species is given then replace with species object
