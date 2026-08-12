@@ -364,6 +364,11 @@ class VTXInterfaceResidualExport(ExportBaseClass):
     - **Sievert (side 0) - Henry (side 1)**:
       ``residual = |c_1/K_S_1 - (c_0/K_S_0)^2|``
 
+    The residual is written to the file alongside the two side terms ``f_0`` and
+    ``f_1``, so that the mismatch can be compared to the magnitude of the terms
+    themselves: a residual of 1e-3 is small if ``f_0`` is of order 1, but large if
+    ``f_0`` is of order 1e-3.
+
     Args:
         field: The species whose interface residual is exported.
         filename: The name of the output file.
@@ -378,10 +383,28 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         function: Residual function on the interface submesh. Set by
             ``initialise``.
         writer: VTXWriter used to write the output file. Set by ``initialise``.
+
+    Examples:
+
+        .. testsetup:: VTXInterfaceResidualExport
+
+            import festim as F
+
+        .. testcode:: VTXInterfaceResidualExport
+
+            mat_0 = F.Material(D_0=1, E_D=0, K_S_0=1, E_K_S=0, solubility_law="henry")
+            mat_1 = F.Material(D_0=2, E_D=0, K_S_0=5, E_K_S=0, solubility_law="sievert")
+            subdomain_0 = F.VolumeSubdomain(id=1, material=mat_0)
+            subdomain_1 = F.VolumeSubdomain(id=2, material=mat_1)
+            H = F.Species("H")
+
+            my_export = F.VTXInterfaceResidualExport(
+                field=H,
+                filename="interface_residual.bp",
+                interface=F.Interface(id=5, subdomains=(subdomain_0, subdomain_1)),
+            )
     """
 
-    field: Species
-    interface: Interface
     times: list[float] | list[int] | None
 
     function: fem.Function
@@ -398,13 +421,38 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         self.field = field
         self.interface = interface
 
+    @property
+    def field(self) -> Species:
+        return self._field
+
+    @field.setter
+    def field(self, value: Species) -> None:
+        if not isinstance(value, Species):
+            raise TypeError(
+                f"field must be a festim.Species, not {type(value).__name__}"
+            )
+        self._field = value
+
+    @property
+    def interface(self) -> Interface:
+        return self._interface
+
+    @interface.setter
+    def interface(self, value: Interface) -> None:
+        if not isinstance(value, Interface):
+            raise TypeError(
+                f"interface must be a festim.Interface, not {type(value).__name__}"
+            )
+        self._interface = value
+
     def initialise(self, temperature_fenics: fem.Constant | fem.Function) -> None:
         """Create the interface submesh, interpolation data, and VTX writer.
 
         Called by the problem during ``initialise_exports``. Builds a CG1
         function space on the interface submesh, pre-computes
         ``create_interpolation_data`` for both subdomain concentrations and
-        (if space-dependent) temperature, and opens the VTXWriter.
+        (if space-dependent) temperature, builds the residual expressions and
+        opens the VTXWriter.
 
         Args:
             temperature_fenics: Temperature field on the parent mesh. Either a
@@ -459,6 +507,7 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         self._temperature_fenics = temperature_fenics
         if isinstance(temperature_fenics, fem.Constant):
             self._T_func = None
+            self._T = temperature_fenics
         else:
             self._T_func = fem.Function(V_interface)
             self._T_interp_data = fem.create_interpolation_data(
@@ -467,6 +516,9 @@ class VTXInterfaceResidualExport(ExportBaseClass):
                 self._interface_cells,
                 padding=1e-11,
             )
+            self._T = self._T_func
+
+        self.set_dolfinx_expression()
 
         self.writer = io.VTXWriter(
             comm=interface_submesh.comm,
@@ -476,17 +528,55 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         )
 
     def set_dolfinx_expression(self) -> None:
-        """Compute the interface condition residual.
+        """Build the expressions of the two side terms and of the residual.
 
-        Interpolates the concentration from each subdomain onto the interface
-        submesh, evaluates ``K_S = K_S_0 * exp(-E_K_S / (k_B * T))`` at the
-        current temperature, then computes ``|right - left|`` via
-        :func:`interface_condition_term`:
+        Evaluates ``K_S = K_S_0 * exp(-E_K_S / (k_B * T))`` on each side and
+        forms the side terms with :func:`interface_condition_term`:
 
-        - **Same law or Henry (side 0)**: ``left = c_0 / K_S_0``
-        - **Sievert (side 0, mixed only)**: ``left = (c_0 / K_S_0)^2``
+        - **Same law or Henry (side 0)**: ``f_0 = c_0 / K_S_0``
+        - **Sievert (side 0, mixed only)**: ``f_0 = (c_0 / K_S_0)^2``
 
-        and symmetrically for ``right``.
+        and symmetrically for ``f_1``. The residual is ``|f_1 - f_0|``.
+
+        The expressions reference the interface functions and the temperature,
+        which are all updated in place by :meth:`update`, so they only need to
+        be built once (during :meth:`initialise`).
+        """
+        subdomain_0, subdomain_1 = self.interface.subdomains
+
+        # Compute f_i = (c_i / K_S_i) ^ {1, 2} on the interface submesh
+        K_S_0 = subdomain_0.material.get_K_S_0(self.field) * ufl.exp(
+            -subdomain_0.material.get_E_K_S(self.field) / (k_B * self._T)
+        )
+        f0 = interface_condition_term(
+            self._c_0_interface,
+            K_S_0,
+            subdomain_0.material.solubility_law,
+            subdomain_1.material.solubility_law,
+        )
+
+        K_S_1 = subdomain_1.material.get_K_S_0(self.field) * ufl.exp(
+            -subdomain_1.material.get_E_K_S(self.field) / (k_B * self._T)
+        )
+        f1 = interface_condition_term(
+            self._c_1_interface,
+            K_S_1,
+            subdomain_1.material.solubility_law,
+            subdomain_0.material.solubility_law,
+        )
+
+        interpolation_points = self.function.function_space.element.interpolation_points
+
+        self.f_0_expr = fem.Expression(f0, interpolation_points)
+        self.f_1_expr = fem.Expression(f1, interpolation_points)
+        self.residual_expr = fem.Expression(abs(f1 - f0), interpolation_points)
+
+    def update(self) -> None:
+        """Recompute the residual from the current solutions.
+
+        Interpolates the concentration of each subdomain (and the temperature if
+        it is space-dependent) onto the interface submesh, then evaluates the
+        side terms and the residual. Called by the problem before each write.
         """
         subdomain_0, subdomain_1 = self.interface.subdomains
 
@@ -496,8 +586,6 @@ class VTXInterfaceResidualExport(ExportBaseClass):
 
         # FIXME: once we support dolfinx 0.11 we should be able to mix parent and
         # sub-meshes in the same expression
-
-        # NOTE: we need to do this multiple times to update the residual
         self._c_0_interface.interpolate_nonmatching(
             c_0, self._interface_cells, interpolation_data=self._interp_data_0
         )
@@ -512,41 +600,10 @@ class VTXInterfaceResidualExport(ExportBaseClass):
                 self._interface_cells,
                 interpolation_data=self._T_interp_data,
             )
-            T = self._T_func
-        else:
-            T = self._temperature_fenics
 
-        # Compute f_i = (c_i / K_S_i) ^ {1, 2} on the interface submesh
-        K_S_0 = subdomain_0.material.get_K_S_0(self.field) * ufl.exp(
-            -subdomain_0.material.get_E_K_S(self.field) / (k_B * T)
-        )
-        f0 = interface_condition_term(
-            self._c_0_interface,
-            K_S_0,
-            subdomain_0.material.solubility_law,
-            subdomain_1.material.solubility_law,
-        )
-
-        K_S_1 = subdomain_1.material.get_K_S_0(self.field) * ufl.exp(
-            -subdomain_1.material.get_E_K_S(self.field) / (k_B * T)
-        )
-        f1 = interface_condition_term(
-            self._c_1_interface,
-            K_S_1,
-            subdomain_1.material.solubility_law,
-            subdomain_0.material.solubility_law,
-        )
-
-        self.f_0_expr = fem.Expression(
-            f0, self.function.function_space.element.interpolation_points
-        )
-        self.f_1_expr = fem.Expression(
-            f1, self.function.function_space.element.interpolation_points
-        )
-
-        self.residual_expr = fem.Expression(
-            abs(f1 - f0), self.function.function_space.element.interpolation_points
-        )
+        self.function.interpolate(self.residual_expr)
+        self._f_0_interface.interpolate(self.f_0_expr)
+        self._f_1_interface.interpolate(self.f_1_expr)
 
 
 class ReactionRateExport(CustomFieldExport):
