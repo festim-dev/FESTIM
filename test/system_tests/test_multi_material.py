@@ -425,3 +425,102 @@ def test_all_cells_are_not_tagged():
         AssertionError, match="All cells must be tagged with a non-zero value"
     ):
         my_model.initialise()
+
+
+def solve_mixed_solubility_law_mms(n, method):
+    """Solve a 2D MMS case across a Henry (bottom) / Sievert (top) interface.
+
+    The exact solution satisfies the mixed-law interface condition
+    ``c_bot / K_S_bot = (c_top / K_S_top)**2`` exactly, so an interface
+    formulation that enforces the right condition converges to it.
+
+    Args:
+        n: the number of cells in each direction
+        method: the interface method, 'penalty' or 'nitsche'
+
+    Returns:
+        the L2 errors on the top and bottom subdomains
+    """
+    K_S_top, K_S_bot, D_top, D_bot = 3.0, 6.0, 2.0, 5.0
+
+    def c_top(mod):
+        return lambda x: (
+            3 + mod.sin(mod.pi * (2 * x[1] + 0.5)) + 0.1 * mod.cos(2 * mod.pi * x[0])
+        )
+
+    def c_bot(mod):
+        return lambda x: K_S_bot / K_S_top**2 * c_top(mod)(x) ** 2
+
+    mesh, mt, ct = generate_mesh(n)
+
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+    my_model.mesh = F.Mesh(mesh)
+    my_model.volume_meshtags = ct
+    my_model.facet_meshtags = mt
+
+    material_top = F.Material(
+        D_0=D_top, E_D=0, K_S_0=K_S_top, E_K_S=0, solubility_law="sievert"
+    )
+    material_bottom = F.Material(
+        D_0=D_bot, E_D=0, K_S_0=K_S_bot, E_K_S=0, solubility_law="henry"
+    )
+
+    top_domain = F.VolumeSubdomain(4, material=material_top)
+    bottom_domain = F.VolumeSubdomain(3, material=material_bottom)
+    top_surface = F.SurfaceSubdomain(id=1)
+    bottom_surface = F.SurfaceSubdomain(id=2)
+    my_model.subdomains = [bottom_domain, top_domain, top_surface, bottom_surface]
+
+    my_model.interfaces = [
+        F.Interface(5, (bottom_domain, top_domain), penalty_term=100, method=method),
+    ]
+
+    H = F.Species("H", mobile=True)
+    my_model.species = [H]
+    H.subdomains = [bottom_domain, top_domain]
+
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(top_surface, value=c_top(ufl), species=H),
+        F.FixedConcentrationBC(bottom_surface, value=c_bot(ufl), species=H),
+    ]
+
+    x = ufl.SpatialCoordinate(mesh)
+    my_model.sources = [
+        F.ParticleSource(
+            volume=top_domain,
+            species=H,
+            value=-ufl.div(D_top * ufl.grad(c_top(ufl)(x))),
+        ),
+        F.ParticleSource(
+            volume=bottom_domain,
+            species=H,
+            value=-ufl.div(D_bot * ufl.grad(c_bot(ufl)(x))),
+        ),
+    ]
+    my_model.temperature = 500
+    my_model.settings = F.Settings(atol=1e-12, rtol=1e-12, transient=False)
+
+    my_model.initialise()
+    my_model.run()
+
+    return (
+        error_L2(H.subdomain_to_post_processing_solution[top_domain], c_top(np)),
+        error_L2(H.subdomain_to_post_processing_solution[bottom_domain], c_bot(np)),
+    )
+
+
+@pytest.mark.parametrize("method", ["penalty", "nitsche"])
+def test_mixed_solubility_law_convergence_rate(method):
+    """Both interface methods converge at order 2 across a Henry/Sievert interface.
+
+    Before the solubility laws were applied to the Nitsche jump, this case did not
+    converge at all with 'nitsche': the error stalled around 0.2 under refinement
+    because the formulation enforced c_0/K_0 = c_1/K_1 instead of the mixed-law
+    condition.
+    """
+    mesh_sizes = [20, 40, 80]
+
+    errors = np.array([solve_mixed_solubility_law_mms(n, method) for n in mesh_sizes])
+    rates = np.log(errors[:-1] / errors[1:]) / np.log(2)
+
+    assert np.all(rates > 1.8), f"convergence rates {rates} are not close to 2"

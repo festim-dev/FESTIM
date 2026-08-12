@@ -382,6 +382,9 @@ class Interface(InterfaceBase):
 
         This method is more stable for certain problems compared to pure penalty.
 
+        Like the penalty method, it handles different solubility laws (Henry vs
+        Sievert) on each side through :func:`interface_condition_term`.
+
         Args:
             dS: Integration measure for the interface.
             species: The species for which to compute the interface form.
@@ -390,9 +393,18 @@ class Interface(InterfaceBase):
         Returns:
             Variational forms for subdomains 0 and 1.
         """
+        subdomain_0, subdomain_1 = self.subdomains
         u_0, u_1 = self.us(species)
         K_0, K_1 = self.Ks(species, temperature)
         v_0, v_1 = self.vs(species)
+
+        law_0, law_1 = (
+            subdomain_0.material.solubility_law,
+            subdomain_1.material.solubility_law,
+        )
+        jump = interface_condition_term(
+            u_0, K_0, law_0, law_1
+        ) - interface_condition_term(u_1, K_1, law_1, law_0)
 
         def mixed_term(u, v, n):
             return ufl.dot(ufl.grad(u), n) * v
@@ -405,13 +417,13 @@ class Interface(InterfaceBase):
         h_1 = 2 * cr(res[1])
         gamma = self.penalty_term
         F_0 = -0.5 * mixed_term((u_0 + u_1), v_0, n_0) * dS(self.id) - 0.5 * mixed_term(
-            v_0, (u_0 / K_0 - u_1 / K_1), n_0
+            v_0, jump, n_0
         ) * dS(self.id)
 
         F_1 = +0.5 * mixed_term((u_0 + u_1), v_1, n_0) * dS(self.id) - 0.5 * mixed_term(
-            v_1, (u_0 / K_0 - u_1 / K_1), n_0
+            v_1, jump, n_0
         ) * dS(self.id)
-        F_0 += 2 * gamma / (h_0 + h_1) * (u_0 / K_0 - u_1 / K_1) * v_0 * dS(self.id)
-        F_1 += -2 * gamma / (h_0 + h_1) * (u_0 / K_0 - u_1 / K_1) * v_1 * dS(self.id)
+        F_0 += 2 * gamma / (h_0 + h_1) * jump * v_0 * dS(self.id)
+        F_1 += -2 * gamma / (h_0 + h_1) * jump * v_1 * dS(self.id)
 
         return F_0, F_1
