@@ -32,9 +32,10 @@ def test_minimum_surface_export_compute_1D():
 
     my_export = F.MinimumSurface(field=my_species, surface=dummy_surface)
     my_export.D = D
+    my_export.facet_meshtags = ft
 
     # RUN
-    my_export.compute(ft)
+    my_export.compute()
 
     # TEST
     expected_value = 4.0

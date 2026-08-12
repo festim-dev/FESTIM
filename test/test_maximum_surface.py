@@ -32,9 +32,10 @@ def test_maximum_surface_compute_1D():
 
     my_export = F.MaximumSurface(field=my_species, surface=dummy_surface)
     my_export.D = D
+    my_export.facet_meshtags = ft
 
     # RUN
-    my_export.compute(ft)
+    my_export.compute()
 
     # TEST
     expected_value = 1.0
