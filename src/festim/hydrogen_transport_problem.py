@@ -2127,10 +2127,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 export.D = D
 
             # the extrema exports read the solution on the submesh of the volume
-            # subdomain, so check that the species is actually defined there.
-            # a field that is not a Species with a list of subdomains (a bare name,
-            # or a species generated from a trap) is skipped: it fails earlier, for
-            # unrelated reasons
+            # subdomain their location belongs to, so give them that volume and the
+            # meshtags of the parent mesh, then check the species is defined there
             is_extremum = isinstance(
                 export,
                 exports.MaximumVolume
@@ -2138,19 +2136,22 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 | exports.MaximumSurface
                 | exports.MinimumSurface,
             )
-            if is_extremum and isinstance(export.field, _species.Species):
+            if is_extremum:
                 if isinstance(export, exports.SurfaceQuantity):
-                    volume = self.surface_to_volume[export.surface]
+                    export.facet_meshtags = self.facet_meshtags
+                    export.volume = self.surface_to_volume[export.surface]
                     location = f"surface {export.surface.id}"
                 else:
-                    volume = export.volume
-                    location = f"volume {volume.id}"
-                subdomains = export.field.subdomains
-                if isinstance(subdomains, list) and volume not in subdomains:
+                    export.volume_meshtags = self.volume_meshtags
+                    location = f"volume {export.volume.id}"
+
+                # a field that is not a Species (a bare name) is skipped: it fails
+                # earlier, for unrelated reasons
+                if isinstance(export.field, _species.Species) and not export.is_submesh:
                     raise ValueError(
                         f"Cannot compute {export.title}: species "
                         f"{export.field.name} is not defined in the volume subdomain "
-                        f"{volume.id} that {location} belongs to"
+                        f"{export.volume.id} that {location} belongs to"
                     )
 
             # reset the data and time for SurfaceQuantity and VolumeQuantity
