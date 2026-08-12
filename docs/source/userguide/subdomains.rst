@@ -318,7 +318,7 @@ Limitations
   (:class:`festim.SurfaceFlux`, :class:`festim.TotalSurface`,
   :class:`festim.AverageSurface`, :class:`festim.TotalVolume`,
   :class:`festim.AverageVolume`) and :class:`festim.VTXSpeciesExport`. The minimum and
-  maximum quantities are not available in
+  maximum quantities and :class:`festim.CustomQuantity` are not available in
   :class:`festim.HydrogenTransportProblemDiscontinuous` at all, manifold or not.
 * Cartesian coordinates only.
 

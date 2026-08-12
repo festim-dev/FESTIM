@@ -189,14 +189,16 @@ def test_flux_on_an_interior_manifold_is_not_silently_zero():
     sides, so a swapped ``"+"``/``"-"`` would give the wrong number rather than the
     same one twice.
     """
-    from .test_codim1_interface import build
+    from .test_codim1_interface import D_BULK, build
 
-    model, (_left, _right, gamma), (H_l, H_r, H_g) = build(n=20)
+    model, (left, right, gamma), (H_l, H_r, H_g) = build(n=20)
     model.exports = [
         F.SurfaceFlux(field=H_l, surface=gamma),
         F.SurfaceFlux(field=H_r, surface=gamma),
         F.TotalSurface(field=H_l, surface=gamma),
         F.TotalSurface(field=H_r, surface=gamma),
+        F.AverageSurface(field=H_l, surface=gamma),
+        F.AverageSurface(field=H_r, surface=gamma),
         F.TotalVolume(field=H_g, volume=gamma),
     ]
     model.initialise()
@@ -209,6 +211,34 @@ def test_flux_on_an_interior_manifold_is_not_silently_zero():
     assert np.isclose(got["Total H_l surface 3"], 14 / 9, atol=1e-10)
     assert np.isclose(got["Total H_r surface 3"], 4 / 9, atol=1e-10)
     assert np.isclose(got["Total H_g volume 3"], 8 / 9, atol=1e-10)
+    # the solution is uniform along Gamma and Gamma has unit measure, so the averages
+    # are the totals -- which also pins the measure the average divides by
+    assert np.isclose(got["Average H_l surface 3"], 14 / 9, atol=1e-10)
+    assert np.isclose(got["Average H_r surface 3"], 4 / 9, atol=1e-10)
+
+    # the same two fluxes assembled by hand from the solutions, on the coupling measure
+    # and restriction the *formulation* uses, so they go nowhere near the export layer:
+    # a wrong integrand, measure or side in the exports shows up as a disagreement here
+    # even if the closed form above were ever relaxed
+    parent = model.mesh.mesh
+    n = ufl.FacetNormal(parent)
+    dS_gamma = model.coupling_measure(gamma)
+    for species, volume, title in (
+        (H_l, left, "H_l flux surface 3"),
+        (H_r, right, "H_r flux surface 3"),
+    ):
+        c = species.subdomain_to_post_processing_solution[volume]
+        by_hand = dolfinx.fem.assemble_scalar(
+            dolfinx.fem.form(
+                model.restrict(
+                    -D_BULK * ufl.dot(ufl.grad(c), n),
+                    model.restriction_of(gamma, volume),
+                )
+                * dS_gamma,
+                entity_maps=[sd.cell_map for sd in model.volume_subdomains],
+            )
+        )
+        assert np.isclose(by_hand, got[title], atol=1e-10)
 
 
 @pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
@@ -226,7 +256,8 @@ def test_interior_manifold_flux_balance():
     model.initialise()
     model.run()
 
-    into_gamma, out_of_gamma = (e.data[-1] for e in model.exports)
+    got = by_title(model)
+    into_gamma, out_of_gamma = got["H_l flux surface 3"], got["H_r flux surface 3"]
     assert np.isclose(into_gamma + out_of_gamma, 0.0, atol=1e-10)
 
 
@@ -388,5 +419,5 @@ def test_volume_as_a_surface_raises_in_a_problem_without_manifolds():
         temperature=500,
         settings=F.Settings(atol=1e-10, rtol=1e-10, transient=False),
     )
-    with pytest.raises(TypeError, match="Only a codim-1 volume subdomain"):
+    with pytest.raises(TypeError, match="only supported by .*Discontinuous"):
         model.initialise()
