@@ -616,3 +616,45 @@ def test_mixed_law_nitsche_insensitive_to_penalty():
     assert max(errors) / min(errors) < 2, (
         f"errors {errors} depend too strongly on the penalty parameter"
     )
+
+
+@pytest.mark.parametrize("method", ["penalty", "nitsche"])
+def test_mixed_law_convergence_at_adequate_penalty(method):
+    """Both methods are second order on a mixed interface at an adequate penalty.
+
+    Adds a fourth, finer mesh so the rate is measured in the asymptotic regime, and
+    uses a penalty large enough that the constraint error of the pure penalty method
+    has saturated below the discretisation error. That matters because the penalty
+    method is only accurate as the penalty grows: on this same case at a penalty of
+    100 its error does not decrease under refinement at all, so a comparison of the
+    two methods is only meaningful above that threshold.
+    """
+    mesh_sizes = [20, 40, 80, 160]
+
+    errors = np.array(
+        [
+            solve_mixed_solubility_law_mms(n, method, penalty_term=1e4, K_S_bot=60.0)
+            for n in mesh_sizes
+        ]
+    )
+    rates = np.log(errors[:-1] / errors[1:]) / np.log(2)
+
+    assert np.all(rates > 1.9), f"convergence rates {rates} are not close to 2"
+
+
+def test_mixed_law_methods_agree_at_adequate_penalty():
+    """The two interface methods reach the same solution on a mixed interface.
+
+    This is the tightest statement that the Nitsche jump enforces the same condition
+    as the penalty one: with the penalty large enough for both, the two formulations
+    agree on the L2 error to within 1%, rather than merely sharing a convergence
+    order.
+    """
+    kwargs = {"penalty_term": 1e4, "K_S_bot": 60.0}
+
+    nitsche = solve_mixed_solubility_law_mms(160, "nitsche", **kwargs)
+    penalty = solve_mixed_solubility_law_mms(160, "penalty", **kwargs)
+
+    assert np.allclose(nitsche, penalty, rtol=1e-2), (
+        f"nitsche {nitsche} and penalty {penalty} do not agree"
+    )
