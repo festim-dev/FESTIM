@@ -285,9 +285,21 @@ def test_penalty_multispecies():
     my_model.run()
 
 
-@pytest.mark.parametrize("T_value", [500, lambda x: 300 + 10 * x[1] + 100 * x[0]])
-def test_interface_residual_export_below_tolerance(tmpdir, T_value):
-    """A high penalty term drives the exported interface residual below 1e-3."""
+def run_mms_case_with_residual_export(tmpdir, penalty_term=10000, T_value=500, n=20):
+    """Run the 2-material MMS case and return the maximum interface residual.
+
+    The exact solution satisfies the interface condition, so any residual comes
+    from the weak (penalty) enforcement of that condition.
+
+    Args:
+        tmpdir: directory the export writes to
+        penalty_term: the penalty term of the interface
+        T_value: the temperature of the model
+        n: the number of cells in each direction
+
+    Returns:
+        the maximum residual over all ranks
+    """
     K_S_top, K_S_bot, D_top, D_bot = 3.0, 6.0, 2.0, 5.0
 
     def c_exact_top_ufl(x):
@@ -296,7 +308,7 @@ def test_interface_residual_export_below_tolerance(tmpdir, T_value):
     def c_exact_bot_ufl(x):
         return K_S_bot / K_S_top**2 * c_exact_top_ufl(x) ** 2
 
-    mesh, mt, ct = generate_mesh(20)
+    mesh, mt, ct = generate_mesh(n)
 
     my_model = F.HydrogenTransportProblemDiscontinuous()
     my_model.mesh = F.Mesh(mesh)
@@ -314,7 +326,7 @@ def test_interface_residual_export_below_tolerance(tmpdir, T_value):
     bottom_surface = F.SurfaceSubdomain(id=2)
     my_model.subdomains = [bottom_domain, top_domain, top_surface, bottom_surface]
 
-    interface = F.Interface(5, (bottom_domain, top_domain), penalty_term=10000)
+    interface = F.Interface(5, (bottom_domain, top_domain), penalty_term=penalty_term)
     my_model.interfaces = [interface]
 
     H = F.Species("H", mobile=True)
@@ -352,4 +364,34 @@ def test_interface_residual_export_below_tolerance(tmpdir, T_value):
     my_model.initialise()
     my_model.run()
 
-    assert np.max(np.abs(residual_export.function.x.array)) < 1e-3
+    local_max = np.max(np.abs(residual_export.function.x.array), initial=0.0)
+    return mesh.comm.allreduce(local_max, op=MPI.MAX)
+
+
+@pytest.mark.parametrize("T_value", [500, lambda x: 300 + 10 * x[1] + 100 * x[0]])
+def test_interface_residual_export_below_tolerance(tmpdir, T_value):
+    """A high penalty term drives the exported interface residual below 1e-3."""
+    residual = run_mms_case_with_residual_export(
+        tmpdir, penalty_term=10000, T_value=T_value
+    )
+
+    assert residual < 1e-3
+
+
+def test_interface_residual_decreases_with_penalty_term(tmpdir):
+    """The residual diagnostic decreases as the penalty term is increased.
+
+    This is the behaviour the diagnostic is meant to reveal: with the penalty
+    method the interface condition is only enforced weakly, and the mismatch
+    left over is what the user tunes the penalty term against.
+    """
+    penalty_terms = [1e2, 1e3, 1e4, 1e5]
+
+    residuals = [
+        run_mms_case_with_residual_export(tmpdir, penalty_term=penalty)
+        for penalty in penalty_terms
+    ]
+
+    assert np.all(np.diff(residuals) < 0), (
+        f"residuals {residuals} are not decreasing with penalty {penalty_terms}"
+    )
