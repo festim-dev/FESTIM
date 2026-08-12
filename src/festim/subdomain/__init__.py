@@ -1,4 +1,4 @@
-from .interface import Interface
+from .interface import Interface, interface_condition_term
 from .surface_subdomain import SurfaceSubdomain, SurfaceSubdomain1D
 from .volume_subdomain import (
     VolumeSubdomain,
@@ -13,5 +13,6 @@ __all__ = [
     "SurfaceSubdomain1D",
     "VolumeSubdomain",
     "VolumeSubdomain1D",
+    "interface_condition_term",
     "map_surface_to_volume_subdomains",
 ]
