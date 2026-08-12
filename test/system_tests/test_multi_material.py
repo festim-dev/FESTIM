@@ -189,7 +189,7 @@ def test_1_material_discontinuous_version(tmpdir):
         species.subdomains = my_model.volume_subdomains
 
     my_model.reactions = [
-        F.Reaction(
+        F.ArrheniusReaction(
             reactant=[H, empty_trap],
             product=[trapped_H],
             k_0=2,
@@ -281,7 +281,7 @@ def test_3_materials_transient(tmpdir):
         species.subdomains = my_model.volume_subdomains
 
     my_model.reactions = [
-        F.Reaction(
+        F.ArrheniusReaction(
             reactant=[H, empty_trap],
             product=[trapped_H],
             k_0=2,

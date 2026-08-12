@@ -1,4 +1,3 @@
-import numpy as np
 import ufl
 from dolfinx import fem
 
@@ -20,13 +19,7 @@ class SourceBase:
     """
 
     value: (
-        float
-        | int
-        | fem.Constant
-        | np.ndarray
-        | fem.Expression
-        | ufl.core.expr.Expr
-        | fem.Function
+        float | int | fem.Constant | fem.Expression | ufl.core.expr.Expr | fem.Function
     )
     volume: VolumeSubdomain
 
@@ -36,7 +29,6 @@ class SourceBase:
             float
             | int
             | fem.Constant
-            | np.ndarray
             | fem.Expression
             | ufl.core.expr.Expr
             | fem.Function

@@ -265,10 +265,12 @@ def test_custom_field(tmp_path, expression):
     )
 
     my_model.reactions = [
-        F.Reaction(
+        F.ArrheniusReaction(
             reactant=[A, B], product=[C], k_0=1, E_k=0, p_0=0, E_p=0, volume=vol
         ),
-        F.Reaction(reactant=[C], product=[D], k_0=0.1, E_k=0, p_0=0, E_p=0, volume=vol),
+        F.ArrheniusReaction(
+            reactant=[C], product=[D], k_0=0.1, E_k=0, p_0=0, E_p=0, volume=vol
+        ),
     ]
 
     my_model.temperature = 300
@@ -470,7 +472,7 @@ def test_reaction_rate_export(tmp_path, direction, product_type, p_0, E_p):
         F.FixedConcentrationBC(species=C, subdomain=bottom, value=0),
     ]
 
-    reaction = F.Reaction(
+    reaction = F.ArrheniusReaction(
         reactant=[A, B],
         product=[C] if product_type == "list" else C,
         k_0=1,
@@ -506,7 +508,7 @@ def test_reaction_rate_override_signature():
     vol = F.VolumeSubdomain(id=1, material=mat)
     A = F.Species("A")
     B = F.Species("B")
-    reaction = F.Reaction(
+    reaction = F.ArrheniusReaction(
         reactant=[A], product=[B], k_0=1, E_k=0, p_0=0, E_p=0, volume=vol
     )
 

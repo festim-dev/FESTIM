@@ -76,6 +76,10 @@ def as_mapped_function(
         kwargs["T"] = temperature
 
     for name, species in (species_dependent_value or {}).items():
+        # only pass the species the callable actually declares, as done above for
+        # t/x/T, so a value may be given more species than it uses
+        if name not in arguments:
+            continue
         if species.concentration is not None:
             kwargs[name] = species.concentration
         else:  # discontinuous case: the species has one solution per subdomain
@@ -159,13 +163,7 @@ class Value:
     """
 
     input_value: (
-        float
-        | int
-        | fem.Constant
-        | np.ndarray
-        | fem.Expression
-        | ufl.core.expr.Expr
-        | fem.Function
+        float | int | fem.Constant | fem.Expression | ufl.core.expr.Expr | fem.Function
     )
     species_dependent_value: dict[str, "Species"] | None
 
@@ -202,7 +200,6 @@ class Value:
             float
             | int
             | fem.Constant
-            | np.ndarray
             | fem.Expression
             | ufl.core.expr.Expr
             | fem.Function,
@@ -212,7 +209,7 @@ class Value:
             self._input_value = value
         else:
             raise TypeError(
-                "Value must be a float, int, fem.Constant, np.ndarray, fem.Expression,"
+                "Value must be a float, int, fem.Constant, fem.Expression,"
                 f" ufl.core.expr.Expr, fem.Function, or callable not {value}"
             )
 
