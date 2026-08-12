@@ -58,11 +58,10 @@ class SurfaceQuantity(DerivedQuantity):
     @surface.setter
     def surface(self, value):
         # a manifold is a codim-1 VolumeSubdomain and is passed directly wherever a
-        # surface is expected. Whether it really is codim 1 needs the mesh, so it is
-        # checked at initialisation instead: HydrogenTransportProblemDiscontinuous in
-        # export_surface_context, and every other problem class in
-        # HydrogenTransportProblem.initialise_exports, which rejects volume subdomains
-        # outright since only that one class supports manifolds
+        # surface is expected. Checking whether it really is codim 1 needs the mesh, 
+        # so it's checked at initialisation: via export_surface_context in
+        # HydrogenTransportProblemDiscontinuous, and rejected outright in 
+        # HydrogenTransportProblem and its children since they don't support codim
         accepted = int | SurfaceSubdomain | VolumeSubdomain
         if not isinstance(value, accepted) or isinstance(value, bool):
             raise TypeError(
