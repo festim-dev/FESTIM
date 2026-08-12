@@ -427,7 +427,16 @@ def test_all_cells_are_not_tagged():
         my_model.initialise()
 
 
-def solve_mixed_solubility_law_mms(n, method, sievert_on_top=True):
+def solve_mixed_solubility_law_mms(
+    n,
+    method,
+    sievert_on_top=True,
+    penalty_term=100,
+    K_S_top=3.0,
+    K_S_bot=6.0,
+    D_top=2.0,
+    D_bot=5.0,
+):
     """Solve a 2D MMS case across a mixed Henry / Sievert interface.
 
     The exact solution satisfies the mixed-law interface condition exactly, so an
@@ -440,11 +449,15 @@ def solve_mixed_solubility_law_mms(n, method, sievert_on_top=True):
         method: the interface method, 'penalty' or 'nitsche'
         sievert_on_top: if True the top subdomain (side 1 of the interface) is the
             Sievert one, otherwise the bottom subdomain (side 0) is
+        penalty_term: the penalty parameter of the interface
+        K_S_top: the solubility of the top subdomain
+        K_S_bot: the solubility of the bottom subdomain
+        D_top: the diffusivity of the top subdomain
+        D_bot: the diffusivity of the bottom subdomain
 
     Returns:
         the L2 errors on the top and bottom subdomains
     """
-    K_S_top, K_S_bot, D_top, D_bot = 3.0, 6.0, 2.0, 5.0
 
     def c_sievert(mod):
         return lambda x: (
@@ -493,7 +506,9 @@ def solve_mixed_solubility_law_mms(n, method, sievert_on_top=True):
     my_model.subdomains = [bottom_domain, top_domain, top_surface, bottom_surface]
 
     my_model.interfaces = [
-        F.Interface(5, (bottom_domain, top_domain), penalty_term=100, method=method),
+        F.Interface(
+            5, (bottom_domain, top_domain), penalty_term=penalty_term, method=method
+        ),
     ]
 
     H = F.Species("H", mobile=True)
@@ -554,3 +569,50 @@ def test_mixed_solubility_law_convergence_rate(method, sievert_on_top):
     rates = np.log(errors[:-1] / errors[1:]) / np.log(2)
 
     assert np.all(rates > 1.8), f"convergence rates {rates} are not close to 2"
+
+
+@pytest.mark.parametrize(
+    "contrast",
+    [
+        {"K_S_bot": 60.0},
+        {"K_S_bot": 600.0},
+        {"D_bot": 500.0, "D_top": 2.0},
+    ],
+    ids=["K_S x10", "K_S x100", "D x250"],
+)
+def test_mixed_law_nitsche_convergence_across_material_contrast(contrast):
+    """Nitsche keeps order 2 on a mixed interface as the material contrast grows.
+
+    The mixed-law condition couples c/K_S on one side to (c/K_S)**2 on the other,
+    so the two sides are scaled very differently once K_S or D differ by decades.
+    A consistent formulation is insensitive to that; the convergence order is what
+    detects it, since an inconsistent one converges to a fixed wrong solution and
+    its error stops decreasing under refinement.
+    """
+    mesh_sizes = [20, 40, 80]
+
+    errors = np.array(
+        [solve_mixed_solubility_law_mms(n, "nitsche", **contrast) for n in mesh_sizes]
+    )
+    rates = np.log(errors[:-1] / errors[1:]) / np.log(2)
+
+    assert np.all(rates > 1.8), f"convergence rates {rates} are not close to 2"
+
+
+def test_mixed_law_nitsche_insensitive_to_penalty():
+    """Nitsche reaches the same accuracy on a mixed interface at any penalty.
+
+    This is what consistency buys and what makes the penalty a material-independent
+    knob rather than something to be tuned per problem: the penalty only has to be
+    large enough for stability, not large enough for accuracy. The pure penalty
+    method has no such property, and on this same case its error spans more than two
+    orders of magnitude over these penalties.
+    """
+    errors = [
+        solve_mixed_solubility_law_mms(40, "nitsche", penalty_term=p)[0]
+        for p in (10, 100, 1000, 10000)
+    ]
+
+    assert max(errors) / min(errors) < 2, (
+        f"errors {errors} depend too strongly on the penalty parameter"
+    )
