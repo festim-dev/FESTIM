@@ -544,19 +544,25 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         """
         subdomain_0, subdomain_1 = self.interface.subdomains
 
-        # Compute f_i = (c_i / K_S_i) ^ {1, 2} on the interface submesh
+        # NOTE: this repeats what Material.get_solubility_coefficient does, but that
+        # method wraps K_S_0 and E_K_S in fem.Constants bound to a mesh. Here the
+        # expression spans the interface submesh (concentrations) and the parent mesh
+        # (a uniform temperature Constant), and UFL rejects a form whose coefficients
+        # come from two domains. Plain floats carry no domain, so they work for both a
+        # uniform and a space-dependent temperature.
         K_S_0 = subdomain_0.material.get_K_S_0(self.field) * ufl.exp(
             -subdomain_0.material.get_E_K_S(self.field) / (k_B * self._T)
         )
+        K_S_1 = subdomain_1.material.get_K_S_0(self.field) * ufl.exp(
+            -subdomain_1.material.get_E_K_S(self.field) / (k_B * self._T)
+        )
+
+        # Compute f_i = (c_i / K_S_i) ^ {1, 2} on the interface submesh
         f0 = interface_condition_term(
             self._c_0_interface,
             K_S_0,
             subdomain_0.material.solubility_law,
             subdomain_1.material.solubility_law,
-        )
-
-        K_S_1 = subdomain_1.material.get_K_S_0(self.field) * ufl.exp(
-            -subdomain_1.material.get_E_K_S(self.field) / (k_B * self._T)
         )
         f1 = interface_condition_term(
             self._c_1_interface,
