@@ -427,29 +427,42 @@ def test_all_cells_are_not_tagged():
         my_model.initialise()
 
 
-def solve_mixed_solubility_law_mms(n, method):
-    """Solve a 2D MMS case across a Henry (bottom) / Sievert (top) interface.
+def solve_mixed_solubility_law_mms(n, method, sievert_on_top=True):
+    """Solve a 2D MMS case across a mixed Henry / Sievert interface.
 
-    The exact solution satisfies the mixed-law interface condition
-    ``c_bot / K_S_bot = (c_top / K_S_top)**2`` exactly, so an interface
-    formulation that enforces the right condition converges to it.
+    The exact solution satisfies the mixed-law interface condition exactly, so an
+    interface formulation that enforces the right condition converges to it. Both
+    orderings are covered because the squared term sits on whichever side is
+    Sievert, which is a different branch of ``interface_condition_term``.
 
     Args:
         n: the number of cells in each direction
         method: the interface method, 'penalty' or 'nitsche'
+        sievert_on_top: if True the top subdomain (side 1 of the interface) is the
+            Sievert one, otherwise the bottom subdomain (side 0) is
 
     Returns:
         the L2 errors on the top and bottom subdomains
     """
     K_S_top, K_S_bot, D_top, D_bot = 3.0, 6.0, 2.0, 5.0
 
-    def c_top(mod):
+    def c_sievert(mod):
         return lambda x: (
             3 + mod.sin(mod.pi * (2 * x[1] + 0.5)) + 0.1 * mod.cos(2 * mod.pi * x[0])
         )
 
-    def c_bot(mod):
-        return lambda x: K_S_bot / K_S_top**2 * c_top(mod)(x) ** 2
+    if sievert_on_top:
+        # c_bot / K_S_bot = (c_top / K_S_top)**2
+        c_top = c_sievert
+
+        def c_bot(mod):
+            return lambda x: K_S_bot / K_S_top**2 * c_sievert(mod)(x) ** 2
+    else:
+        # (c_bot / K_S_bot)**2 = c_top / K_S_top
+        c_bot = c_sievert
+
+        def c_top(mod):
+            return lambda x: K_S_top / K_S_bot**2 * c_sievert(mod)(x) ** 2
 
     mesh, mt, ct = generate_mesh(n)
 
@@ -459,10 +472,18 @@ def solve_mixed_solubility_law_mms(n, method):
     my_model.facet_meshtags = mt
 
     material_top = F.Material(
-        D_0=D_top, E_D=0, K_S_0=K_S_top, E_K_S=0, solubility_law="sievert"
+        D_0=D_top,
+        E_D=0,
+        K_S_0=K_S_top,
+        E_K_S=0,
+        solubility_law="sievert" if sievert_on_top else "henry",
     )
     material_bottom = F.Material(
-        D_0=D_bot, E_D=0, K_S_0=K_S_bot, E_K_S=0, solubility_law="henry"
+        D_0=D_bot,
+        E_D=0,
+        K_S_0=K_S_bot,
+        E_K_S=0,
+        solubility_law="henry" if sievert_on_top else "sievert",
     )
 
     top_domain = F.VolumeSubdomain(4, material=material_top)
@@ -509,9 +530,13 @@ def solve_mixed_solubility_law_mms(n, method):
     )
 
 
+@pytest.mark.parametrize("sievert_on_top", [True, False])
 @pytest.mark.parametrize("method", ["penalty", "nitsche"])
-def test_mixed_solubility_law_convergence_rate(method):
+def test_mixed_solubility_law_convergence_rate(method, sievert_on_top):
     """Both interface methods converge at order 2 across a Henry/Sievert interface.
+
+    Both orderings of the two laws are covered, since the squared term moves to the
+    other side of the interface.
 
     Before the solubility laws were applied to the Nitsche jump, this case did not
     converge at all with 'nitsche': the error stalled around 0.2 under refinement
@@ -520,7 +545,12 @@ def test_mixed_solubility_law_convergence_rate(method):
     """
     mesh_sizes = [20, 40, 80]
 
-    errors = np.array([solve_mixed_solubility_law_mms(n, method) for n in mesh_sizes])
+    errors = np.array(
+        [
+            solve_mixed_solubility_law_mms(n, method, sievert_on_top=sievert_on_top)
+            for n in mesh_sizes
+        ]
+    )
     rates = np.log(errors[:-1] / errors[1:]) / np.log(2)
 
     assert np.all(rates > 1.8), f"convergence rates {rates} are not close to 2"
