@@ -71,10 +71,17 @@ def build_initialised_model(
     temperature=500,
     tmpdir=None,
     n=10,
+    final_time=None,
+    stepsize=0.5,
 ):
     """Build and initialise (but do not run) a two-material discontinuous model.
 
     Subdomain 0 of the interface is the bottom half, subdomain 1 the top half.
+
+    Args:
+        final_time: if given, the model is transient up to this time, otherwise
+            it is steady state
+        stepsize: the time step of a transient model
 
     Returns:
         the initialised model, the species and the residual export
@@ -111,7 +118,14 @@ def build_initialised_model(
         F.FixedConcentrationBC(bottom_surface, value=1, species=H),
     ]
     my_model.temperature = temperature
-    my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
+    if final_time is None:
+        my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
+    else:
+        my_model.settings = F.Settings(
+            atol=1e-10, rtol=1e-10, transient=True, final_time=final_time
+        )
+        my_model.settings.stepsize = stepsize
+        my_model.show_progress_bar = False
 
     export = F.VTXInterfaceResidualExport(
         field=H, filename=str(tmpdir.join("residual.bp")), interface=interface
@@ -400,3 +414,108 @@ def test_interface_setter_raises_type_error(tmpdir, value):
             filename=str(tmpdir.join("residual.bp")),
             interface=value,
         )
+
+
+@pytest.mark.parametrize(
+    "temperature, T_final",
+    [
+        (lambda t: 500 + 100 * t, lambda x: 600.0),
+        (lambda x, t: 400 + 100 * x[0] + 50 * t, lambda x: 450 + 100 * x[0]),
+    ],
+    ids=["uniform", "space-dependent"],
+)
+def test_residual_uses_the_temperature_of_the_final_timestep(
+    tmpdir, temperature, T_final
+):
+    """After a transient run the residual reflects the temperature at that time.
+
+    The expressions are built once, during initialise, and reference the
+    temperature that the problem then updates in place at every step. If they
+    captured the initial temperature instead, the residual would silently be
+    evaluated at t=0 for the whole simulation. E_K_S is non-zero on both sides so
+    that the temperature actually reaches the residual through K_S.
+    """
+    # BUILD
+    K_S_0_0, K_S_0_1 = 3.0, 6.0
+    E_K_S_0, E_K_S_1 = 0.2, 0.4
+    my_model, H, export = build_initialised_model(
+        law_0="sievert",
+        law_1="henry",
+        K_S_0_0=K_S_0_0,
+        E_K_S_0=E_K_S_0,
+        K_S_0_1=K_S_0_1,
+        E_K_S_1=E_K_S_1,
+        temperature=temperature,
+        tmpdir=tmpdir,
+        final_time=1.0,
+    )
+
+    # RUN
+    my_model.run()
+    impose_concentrations(H, export.interface, c_0_np, c_1_np)
+    export.update()
+
+    # TEST
+    _, _, expected = exact_residual_at_dofs(
+        export, "sievert", "henry", K_S_0_0, E_K_S_0, K_S_0_1, E_K_S_1, T=T_final
+    )
+    assert np.allclose(export.function.x.array, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_residual_is_written_at_every_timestep(tmpdir):
+    """A transient run drives the export once per step without error."""
+    # BUILD
+    my_model, _, export = build_initialised_model(
+        law_0="sievert",
+        law_1="henry",
+        temperature=lambda t: 500 + 100 * t,
+        tmpdir=tmpdir,
+        final_time=1.0,
+        stepsize=0.25,
+    )
+    written = []
+    original_write = export.writer.write
+    export.writer.write = lambda t: written.append(t) or original_write(t)
+
+    # RUN
+    my_model.run()
+
+    # TEST
+    assert written == [0.25, 0.5, 0.75, 1.0]
+
+
+@pytest.mark.parametrize("law_0, law_1", LAW_COMBINATIONS)
+def test_residual_matches_analytical_value_uniform_temperature_with_E_K_S(
+    tmpdir, law_0, law_1
+):
+    """The residual is correct for a uniform temperature and a non-zero E_K_S.
+
+    Regression test. A uniform temperature is a fem.Constant carrying the parent
+    mesh as its domain, which cannot appear in an expression alongside the
+    interface-submesh concentrations. When E_K_S is zero the temperature cancels
+    out of K_S and the clash never shows, so this combination, which is the common
+    one in practice, is the only thing that exposes it.
+    """
+    # BUILD
+    K_S_0_0, K_S_0_1 = 3.0, 6.0
+    E_K_S_0, E_K_S_1 = 0.2, 0.4
+    _, H, export = build_initialised_model(
+        law_0=law_0,
+        law_1=law_1,
+        K_S_0_0=K_S_0_0,
+        E_K_S_0=E_K_S_0,
+        K_S_0_1=K_S_0_1,
+        E_K_S_1=E_K_S_1,
+        temperature=500,
+        tmpdir=tmpdir,
+    )
+    impose_concentrations(H, export.interface, c_0_np, c_1_np)
+
+    # RUN
+    export.update()
+
+    # TEST
+    _, _, expected = exact_residual_at_dofs(
+        export, law_0, law_1, K_S_0_0, E_K_S_0, K_S_0_1, E_K_S_1, T=500
+    )
+    assert np.allclose(export.function.x.array, expected, rtol=1e-12, atol=1e-12)

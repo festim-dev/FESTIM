@@ -10,6 +10,7 @@ import ufl
 from dolfinx import fem, io
 
 from festim import k_B
+from festim.helpers import as_fenics_constant
 from festim.reaction import ArrheniusReaction
 from festim.species import ImplicitSpecies, Species
 from festim.subdomain.interface import Interface, interface_condition_term
@@ -507,7 +508,16 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         self._temperature_fenics = temperature_fenics
         if isinstance(temperature_fenics, fem.Constant):
             self._T_func = None
-            self._T = temperature_fenics
+            # a fem.Constant carries the domain it was built on, so the parent-mesh
+            # temperature cannot appear in an expression with the interface-submesh
+            # concentrations: UFL rejects a form spanning two domains. Mirror it onto
+            # the submesh instead, and refresh the value in update(). Without this,
+            # a uniform temperature raises "Found multiple domains" as soon as
+            # E_K_S is non-zero (with E_K_S == 0 the temperature drops out of the
+            # expression entirely and the clash never surfaces).
+            self._T = as_fenics_constant(
+                float(temperature_fenics.value), interface_submesh
+            )
         else:
             self._T_func = fem.Function(V_interface)
             self._T_interp_data = fem.create_interpolation_data(
@@ -606,6 +616,10 @@ class VTXInterfaceResidualExport(ExportBaseClass):
                 self._interface_cells,
                 interpolation_data=self._T_interp_data,
             )
+        else:
+            # a uniform temperature may still vary in time, and self._T is our own
+            # copy on the submesh, so it has to track the problem's constant
+            self._T.value = self._temperature_fenics.value
 
         self.function.interpolate(self.residual_expr)
         self._f_0_interface.interpolate(self.f_0_expr)
