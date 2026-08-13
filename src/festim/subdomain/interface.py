@@ -382,8 +382,11 @@ class Interface(InterfaceBase):
 
         This method is more stable for certain problems compared to pure penalty.
 
-        Like the penalty method, it handles different solubility laws (Henry vs
-        Sievert) on each side through :func:`interface_condition_term`.
+        Only supports the same solubility law on both sides. The jump it enforces
+        is ``u_0/K_0 - u_1/K_1``, which is the interface condition only when the
+        two laws match; a mixed Henry/Sievert interface needs
+        ``u_0/K_0 = (u_1/K_1)**2``, whose nonlinearity is not covered by the
+        method's stability analysis. Use ``InterfaceMethod.penalty`` for those.
 
         Args:
             dS: Integration measure for the interface.
@@ -392,19 +395,26 @@ class Interface(InterfaceBase):
 
         Returns:
             Variational forms for subdomains 0 and 1.
+
+        Raises:
+            NotImplementedError: If the two subdomains have different solubility
+                laws.
         """
         subdomain_0, subdomain_1 = self.subdomains
+        law_0 = subdomain_0.material.solubility_law
+        law_1 = subdomain_1.material.solubility_law
+        if law_0 != law_1:
+            raise NotImplementedError(
+                f"The Nitsche method does not support an interface between "
+                f"different solubility laws ({law_0} and {law_1} on interface "
+                f"{self.id}). Use InterfaceMethod.penalty instead."
+            )
+
         u_0, u_1 = self.us(species)
         K_0, K_1 = self.Ks(species, temperature)
         v_0, v_1 = self.vs(species)
 
-        law_0, law_1 = (
-            subdomain_0.material.solubility_law,
-            subdomain_1.material.solubility_law,
-        )
-        jump = interface_condition_term(
-            u_0, K_0, law_0, law_1
-        ) - interface_condition_term(u_1, K_1, law_1, law_0)
+        jump = u_0 / K_0 - u_1 / K_1
 
         def mixed_term(u, v, n):
             return ufl.dot(ufl.grad(u), n) * v

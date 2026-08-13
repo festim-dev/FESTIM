@@ -546,23 +546,22 @@ def solve_mixed_solubility_law_mms(
 
 
 @pytest.mark.parametrize("sievert_on_top", [True, False])
-@pytest.mark.parametrize("method", ["penalty", "nitsche"])
-def test_mixed_solubility_law_convergence_rate(method, sievert_on_top):
-    """Both interface methods converge at order 2 across a Henry/Sievert interface.
+def test_mixed_solubility_law_convergence_rate(sievert_on_top):
+    """The penalty method converges at order 2 across a Henry/Sievert interface.
 
     Both orderings of the two laws are covered, since the squared term moves to the
     other side of the interface.
 
-    Before the solubility laws were applied to the Nitsche jump, this case did not
-    converge at all with 'nitsche': the error stalled around 0.2 under refinement
-    because the formulation enforced c_0/K_0 = c_1/K_1 instead of the mixed-law
-    condition.
+    Penalty only: the Nitsche method does not support a mixed interface, see
+    test_nitsche_rejects_a_mixed_solubility_law_interface.
     """
     mesh_sizes = [20, 40, 80]
 
     errors = np.array(
         [
-            solve_mixed_solubility_law_mms(n, method, sievert_on_top=sievert_on_top)
+            solve_mixed_solubility_law_mms(
+                n, "penalty", sievert_on_top=sievert_on_top, penalty_term=1e4
+            )
             for n in mesh_sizes
         ]
     )
@@ -580,60 +579,46 @@ def test_mixed_solubility_law_convergence_rate(method, sievert_on_top):
     ],
     ids=["K_S x10", "K_S x100", "D x250"],
 )
-def test_mixed_law_nitsche_convergence_across_material_contrast(contrast):
-    """Nitsche keeps order 2 on a mixed interface as the material contrast grows.
+def test_mixed_law_convergence_across_material_contrast(contrast):
+    """Order 2 holds on a mixed interface as the material contrast grows.
 
-    The mixed-law condition couples c/K_S on one side to (c/K_S)**2 on the other,
-    so the two sides are scaled very differently once K_S or D differ by decades.
-    A consistent formulation is insensitive to that; the convergence order is what
-    detects it, since an inconsistent one converges to a fixed wrong solution and
-    its error stops decreasing under refinement.
+    The mixed-law condition couples c/K_S on one side to (c/K_S)**2 on the other, so
+    the two sides are scaled very differently once K_S or D differ by decades. The
+    convergence order is what detects a formulation that cannot keep up: an
+    inconsistent one settles on a fixed wrong solution and its error stops
+    decreasing under refinement.
+
+    The penalty term has to grow with the contrast. At the default of 100 this same
+    case does not converge at all.
     """
     mesh_sizes = [20, 40, 80]
 
     errors = np.array(
-        [solve_mixed_solubility_law_mms(n, "nitsche", **contrast) for n in mesh_sizes]
+        [
+            solve_mixed_solubility_law_mms(n, "penalty", penalty_term=1e4, **contrast)
+            for n in mesh_sizes
+        ]
     )
     rates = np.log(errors[:-1] / errors[1:]) / np.log(2)
 
     assert np.all(rates > 1.8), f"convergence rates {rates} are not close to 2"
 
 
-def test_mixed_law_nitsche_insensitive_to_penalty():
-    """Nitsche reaches the same accuracy on a mixed interface at any penalty.
+def test_mixed_law_convergence_at_adequate_penalty():
+    """The penalty method is second order on a mixed interface, in the asymptotic
+    regime.
 
-    This is what consistency buys and what makes the penalty a material-independent
-    knob rather than something to be tuned per problem: the penalty only has to be
-    large enough for stability, not large enough for accuracy. The pure penalty
-    method has no such property, and on this same case its error spans more than two
-    orders of magnitude over these penalties.
-    """
-    errors = [
-        solve_mixed_solubility_law_mms(40, "nitsche", penalty_term=p)[0]
-        for p in (10, 100, 1000, 10000)
-    ]
-
-    assert max(errors) / min(errors) < 2, (
-        f"errors {errors} depend too strongly on the penalty parameter"
-    )
-
-
-@pytest.mark.parametrize("method", ["penalty", "nitsche"])
-def test_mixed_law_convergence_at_adequate_penalty(method):
-    """Both methods are second order on a mixed interface at an adequate penalty.
-
-    Adds a fourth, finer mesh so the rate is measured in the asymptotic regime, and
-    uses a penalty large enough that the constraint error of the pure penalty method
-    has saturated below the discretisation error. That matters because the penalty
-    method is only accurate as the penalty grows: on this same case at a penalty of
-    100 its error does not decrease under refinement at all, so a comparison of the
-    two methods is only meaningful above that threshold.
+    Adds a fourth, finer mesh so the rate is measured where it has settled, and uses
+    a penalty large enough that the constraint error has saturated below the
+    discretisation error. That matters because the penalty method is only accurate
+    as the penalty grows: on this same case at a penalty of 100 the error does not
+    decrease under refinement at all.
     """
     mesh_sizes = [20, 40, 80, 160]
 
     errors = np.array(
         [
-            solve_mixed_solubility_law_mms(n, method, penalty_term=1e4, K_S_bot=60.0)
+            solve_mixed_solubility_law_mms(n, "penalty", penalty_term=1e4, K_S_bot=60.0)
             for n in mesh_sizes
         ]
     )
@@ -642,26 +627,7 @@ def test_mixed_law_convergence_at_adequate_penalty(method):
     assert np.all(rates > 1.9), f"convergence rates {rates} are not close to 2"
 
 
-def test_mixed_law_methods_agree_at_adequate_penalty():
-    """The two interface methods reach the same solution on a mixed interface.
-
-    This is the tightest statement that the Nitsche jump enforces the same condition
-    as the penalty one: with the penalty large enough for both, the two formulations
-    agree on the L2 error to within 1%, rather than merely sharing a convergence
-    order.
-    """
-    kwargs = {"penalty_term": 1e4, "K_S_bot": 60.0}
-
-    nitsche = solve_mixed_solubility_law_mms(160, "nitsche", **kwargs)
-    penalty = solve_mixed_solubility_law_mms(160, "penalty", **kwargs)
-
-    assert np.allclose(nitsche, penalty, rtol=1e-2), (
-        f"nitsche {nitsche} and penalty {penalty} do not agree"
-    )
-
-
-@pytest.mark.parametrize("method", ["penalty", "nitsche"])
-def test_mixed_law_transient_relaxes_to_the_steady_solution(method):
+def test_mixed_law_transient_relaxes_to_the_steady_solution():
     """A transient mixed-law interface relaxes to the known steady solution.
 
     Time stepping is the axis the other mixed-law tests do not touch: they are all
@@ -671,6 +637,8 @@ def test_mixed_law_transient_relaxes_to_the_steady_solution(method):
 
     Deliberately coarse and short: this checks that the transient path reaches the
     right answer, not the order of accuracy, which the steady tests already pin.
+
+    Penalty only: Nitsche does not support a mixed interface.
     """
     K_S_top, K_S_bot, D_top, D_bot = 3.0, 6.0, 2.0, 5.0
 
@@ -703,7 +671,7 @@ def test_mixed_law_transient_relaxes_to_the_steady_solution(method):
     my_model.subdomains = [bottom_domain, top_domain, top_surface, bottom_surface]
 
     my_model.interfaces = [
-        F.Interface(5, (bottom_domain, top_domain), penalty_term=1e4, method=method)
+        F.Interface(5, (bottom_domain, top_domain), penalty_term=1e4, method="penalty")
     ]
 
     H = F.Species("H", mobile=True)
