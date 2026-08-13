@@ -519,3 +519,103 @@ def test_residual_matches_analytical_value_uniform_temperature_with_E_K_S(
         export, law_0, law_1, K_S_0_0, E_K_S_0, K_S_0_1, E_K_S_1, T=500
     )
     assert np.allclose(export.function.x.array, expected, rtol=1e-12, atol=1e-12)
+
+
+@pytest.fixture
+def restore_log_level():
+    """Set the dolfinx log level for one test and put it back afterwards."""
+    original = dolfinx.log.get_log_level()
+    yield dolfinx.log.set_log_level
+    dolfinx.log.set_log_level(original)
+
+
+def build_export_with_known_residual(tmpdir):
+    """An initialised export whose residual comes from the imposed concentrations."""
+    _, H, export = build_initialised_model(
+        law_0="sievert", law_1="henry", K_S_0_0=3.0, K_S_0_1=6.0, tmpdir=tmpdir
+    )
+    impose_concentrations(H, export.interface, c_0_np, c_1_np)
+    export.update()
+    f_0, f_1, residual = exact_residual_at_dofs(
+        export, "sievert", "henry", 3.0, 0.0, 6.0, 0.0, T=500
+    )
+    return export, f_0, f_1, residual
+
+
+def test_statistics_max_matches_the_analytical_residual(tmpdir):
+    """The reported max is the largest analytical residual on the interface."""
+    export, _, _, residual = build_export_with_known_residual(tmpdir)
+
+    assert np.isclose(export.compute_statistics()["max"], np.max(residual), rtol=1e-12)
+
+
+def test_statistics_mean_matches_the_analytical_residual(tmpdir):
+    """The reported mean is the average analytical residual on the interface."""
+    export, _, _, residual = build_export_with_known_residual(tmpdir)
+
+    assert np.isclose(
+        export.compute_statistics()["mean"], np.mean(residual), rtol=1e-12
+    )
+
+
+def test_statistics_max_relative_is_scaled_by_the_side_terms(tmpdir):
+    """The relative max divides the largest mismatch by the largest side term."""
+    export, f_0, f_1, residual = build_export_with_known_residual(tmpdir)
+
+    expected = np.max(residual) / max(np.max(np.abs(f_0)), np.max(np.abs(f_1)))
+    assert np.isclose(export.compute_statistics()["max_relative"], expected, rtol=1e-12)
+
+
+def test_statistics_are_zero_when_the_condition_is_satisfied(tmpdir):
+    """A satisfied interface condition reports a zero maximum residual."""
+    _, H, export = build_initialised_model(
+        law_0="henry", law_1="henry", K_S_0_0=3.0, K_S_0_1=6.0, tmpdir=tmpdir
+    )
+    # same law on both sides, so c_1 = (K_S_1 / K_S_0) * c_0 satisfies it exactly
+    impose_concentrations(H, export.interface, c_0_np, lambda x: 6.0 / 3.0 * c_0_np(x))
+    export.update()
+
+    assert export.compute_statistics()["max"] < 1e-12
+
+
+@pytest.mark.parametrize(
+    "level", [dolfinx.log.LogLevel.WARNING, dolfinx.log.LogLevel.ERROR]
+)
+def test_log_statistics_is_silent_above_info(
+    tmpdir, monkeypatch, restore_log_level, level
+):
+    """Nothing is logged, and nothing is computed, unless INFO is selected."""
+    export, _, _, _ = build_export_with_known_residual(tmpdir)
+    restore_log_level(level)
+
+    lines = []
+    monkeypatch.setattr(dolfinx.log, "log", lambda lvl, msg: lines.append(msg))
+    monkeypatch.setattr(
+        export,
+        "compute_statistics",
+        lambda: pytest.fail("statistics computed while logging is off"),
+    )
+    export.log_statistics(0.5)
+
+    assert lines == []
+
+
+@pytest.mark.parametrize(
+    "level", [dolfinx.log.LogLevel.INFO, dolfinx.log.LogLevel.DEBUG]
+)
+def test_log_statistics_reports_the_interface_at_info(
+    tmpdir, monkeypatch, restore_log_level, level
+):
+    """At INFO the line names the interface and carries the three statistics."""
+    export, _, _, residual = build_export_with_known_residual(tmpdir)
+    restore_log_level(level)
+
+    lines = []
+    monkeypatch.setattr(dolfinx.log, "log", lambda lvl, msg: lines.append(msg))
+    export.log_statistics(0.5)
+
+    assert lines == [
+        f"Interface 5 residual (H) t=5.00000e-01 ; max={np.max(residual):.5e} ; "
+        f"avg={np.mean(residual):.5e} ; "
+        f"max_relative={export.compute_statistics()['max_relative']:.5e}"
+    ]

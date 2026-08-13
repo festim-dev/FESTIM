@@ -4,6 +4,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Union
 
+from mpi4py import MPI
+
 import dolfinx
 import numpy as np
 import ufl
@@ -624,6 +626,71 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         self.function.interpolate(self.residual_expr)
         self._f_0_interface.interpolate(self.f_0_expr)
         self._f_1_interface.interpolate(self.f_1_expr)
+
+    def compute_statistics(self) -> dict[str, float]:
+        """Reduce the residual field over the interface to a few scalars.
+
+        Reduces over all MPI ranks, so this must be called on every rank.
+
+        ``max_relative`` divides the largest mismatch by the largest magnitude of
+        the two side terms, which is what makes the number interpretable: a
+        residual of 1e-3 is small when ``f_0`` is of order 1 and large when ``f_0``
+        is of order 1e-3. It is a single global ratio rather than the largest
+        pointwise ratio, because the pointwise one is unbounded wherever both
+        sides approach zero.
+
+        Returns:
+            the maximum, the mean, and the maximum relative residual
+        """
+        function_space = self.function.function_space
+        index_map = function_space.dofmap.index_map
+        # ghost dofs are owned by another rank; counting them would double count
+        n_owned = index_map.size_local * function_space.dofmap.index_map_bs
+
+        residual = self.function.x.array[:n_owned]
+        f_0 = self._f_0_interface.x.array[:n_owned]
+        f_1 = self._f_1_interface.x.array[:n_owned]
+
+        comm = function_space.mesh.comm
+        maximum = comm.allreduce(np.max(residual, initial=0.0), op=MPI.MAX)
+        total = comm.allreduce(np.sum(residual), op=MPI.SUM)
+        count = comm.allreduce(n_owned, op=MPI.SUM)
+        scale = comm.allreduce(
+            max(np.max(np.abs(f_0), initial=0.0), np.max(np.abs(f_1), initial=0.0)),
+            op=MPI.MAX,
+        )
+
+        return {
+            "max": maximum,
+            "mean": total / count if count else 0.0,
+            "max_relative": maximum / scale if scale > 0 else 0.0,
+        }
+
+    def log_statistics(self, t: float) -> None:
+        """Log the residual statistics for this interface at INFO level.
+
+        Returns immediately unless the user has selected ``INFO`` or below, since
+        the statistics cost an MPI reduction on every timestep. See the
+        troubleshooting guide for how to enable it.
+
+        Args:
+            t: the current time, included in the logged line
+        """
+        if dolfinx.log.get_log_level() > dolfinx.log.LogLevel.INFO:
+            return
+
+        stats = self.compute_statistics()
+
+        # the reduction above is collective, the line itself is not
+        if self.function.function_space.mesh.comm.rank != 0:
+            return
+
+        dolfinx.log.log(
+            dolfinx.log.LogLevel.INFO,
+            f"Interface {self.interface.id} residual ({self.field.name}) "
+            f"{t=:.5e} ; max={stats['max']:.5e} ; avg={stats['mean']:.5e} ; "
+            f"max_relative={stats['max_relative']:.5e}",
+        )
 
 
 class ReactionRateExport(CustomFieldExport):

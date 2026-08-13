@@ -2225,6 +2225,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     export.writer.write(float(self.t))
                 elif isinstance(export, exports.VTXInterfaceResidualExport):
                     export.update()
+                    export.log_statistics(float(self.t))
                     export.writer.write(float(self.t))
                 else:
                     raise NotImplementedError(
