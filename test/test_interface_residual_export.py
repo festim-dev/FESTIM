@@ -1,3 +1,6 @@
+import pathlib
+from itertools import pairwise
+
 from mpi4py import MPI
 
 import dolfinx
@@ -619,3 +622,231 @@ def test_log_statistics_reports_the_interface_at_info(
         f"avg={np.mean(residual):.5e} ; "
         f"max_relative={export.compute_statistics()['max_relative']:.5e}"
     ]
+
+
+def build_1d_model(
+    law_0="sievert",
+    law_1="henry",
+    K_S_0_0=2.0,
+    K_S_0_1=5.0,
+    interface_positions=(1.0,),
+    penalty_terms=None,
+    filename=None,
+):
+    """Build and initialise a 1D discontinuous model with one export per interface.
+
+    In 1D the interface is a single point, so the residual lives on a mesh of
+    dimension 0 and its function space is DG0 rather than CG1.
+
+    Args:
+        interface_positions: where the subdomains meet; one interface per position
+        penalty_terms: the penalty term of each interface, defaulting to 1e4
+
+    Returns:
+        the initialised model, the species and the list of exports
+    """
+    edges = [0.0, *interface_positions, interface_positions[-1] + 1.0]
+    vertices = np.concatenate(
+        [
+            np.linspace(a, b, num=10, endpoint=(b == edges[-1]))
+            for a, b in pairwise(edges)
+        ]
+    )
+
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+    my_model.mesh = F.Mesh1D(vertices=vertices)
+    my_model.show_progress_bar = False
+
+    laws = [law_0, law_1] * len(edges)
+    solubilities = [K_S_0_0, K_S_0_1] * len(edges)
+    volumes = [
+        F.VolumeSubdomain1D(
+            id=i + 1,
+            borders=[a, b],
+            material=F.Material(
+                D_0=1, E_D=0, K_S_0=solubilities[i], E_K_S=0, solubility_law=laws[i]
+            ),
+        )
+        for i, (a, b) in enumerate(pairwise(edges))
+    ]
+    left = F.SurfaceSubdomain1D(id=90, x=edges[0])
+    right = F.SurfaceSubdomain1D(id=91, x=edges[-1])
+    my_model.subdomains = [*volumes, left, right]
+
+    penalties = penalty_terms or [1e4] * (len(volumes) - 1)
+    interfaces = [
+        F.Interface(50 + i, (volumes[i], volumes[i + 1]), penalty_term=penalties[i])
+        for i in range(len(volumes) - 1)
+    ]
+    my_model.interfaces = interfaces
+
+    H = F.Species("H", mobile=True, subdomains=volumes)
+    my_model.species = [H]
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(left, value=3, species=H),
+        F.FixedConcentrationBC(right, value=1, species=H),
+    ]
+    my_model.temperature = 500
+    my_model.settings = F.Settings(atol=1e-12, rtol=1e-12, transient=False)
+
+    exports = [
+        F.VTXInterfaceResidualExport(
+            field=H,
+            interface=interface,
+            filename=None if filename is None else f"{filename}_{interface.id}.bp",
+        )
+        for interface in interfaces
+    ]
+    my_model.exports = exports
+
+    my_model.initialise()
+    # solve: without this every field is zero and the residual is trivially zero
+    my_model.run()
+
+    return my_model, H, exports
+
+
+def residual_at_a_point(species, interface, position, law_0, law_1, K_0, K_1):
+    """The analytical |f_1 - f_0| at an interface point, from the solved fields."""
+    values = []
+    for subdomain, K, law, other in (
+        (interface.subdomains[0], K_0, law_0, law_1),
+        (interface.subdomains[1], K_1, law_1, law_0),
+    ):
+        c = species.subdomain_to_post_processing_solution[subdomain]
+        x = c.function_space.tabulate_dof_coordinates()
+        at_point = c.x.array[np.isclose(x[:, 0], position)][0]
+        values.append(
+            expected_side_term(
+                at_point,
+                K,
+                SolubilityLaw.from_string(law),
+                SolubilityLaw.from_string(other),
+            )
+        )
+    return abs(values[1] - values[0])
+
+
+@pytest.mark.parametrize("law_0, law_1", LAW_COMBINATIONS)
+def test_residual_in_1d_matches_analytical_value(law_0, law_1):
+    """In 1D the residual is the analytical mismatch at the single interface point."""
+    # BUILD
+    K_S_0_0, K_S_0_1 = 2.0, 5.0
+    _, H, exports = build_1d_model(
+        law_0=law_0, law_1=law_1, K_S_0_0=K_S_0_0, K_S_0_1=K_S_0_1
+    )
+
+    # RUN
+    export = exports[0]
+
+    # TEST
+    expected = residual_at_a_point(
+        H, export.interface, 1.0, law_0, law_1, K_S_0_0, K_S_0_1
+    )
+    assert np.isclose(export.function.x.array[0], expected, rtol=1e-10)
+
+
+def test_residual_in_1d_lives_on_a_single_dof():
+    """The 1D interface submesh is a point, so the residual has exactly one value."""
+    _, _, exports = build_1d_model()
+
+    assert exports[0].function.x.array.size == 1
+
+
+def test_statistics_in_1d_agree_with_the_single_value():
+    """With one dof the max and the mean are the same number."""
+    _, _, exports = build_1d_model()
+
+    stats = exports[0].compute_statistics()
+    assert np.isclose(stats["max"], stats["mean"], rtol=1e-12)
+
+
+def test_each_interface_reports_its_own_residual():
+    """With several interfaces, each export reports the residual of its own."""
+    # BUILD
+    K_S_0_0, K_S_0_1 = 2.0, 5.0
+    _, H, exports = build_1d_model(
+        law_0="sievert",
+        law_1="henry",
+        K_S_0_0=K_S_0_0,
+        K_S_0_1=K_S_0_1,
+        interface_positions=(1.0, 2.0),
+    )
+
+    # TEST
+    assert len(exports) == 2
+    for export, position, K_0, K_1 in (
+        (exports[0], 1.0, K_S_0_0, K_S_0_1),
+        (exports[1], 2.0, K_S_0_1, K_S_0_0),
+    ):
+        law_0, law_1 = (
+            export.interface.subdomains[0].material.solubility_law,
+            export.interface.subdomains[1].material.solubility_law,
+        )
+        expected = residual_at_a_point(
+            H,
+            export.interface,
+            position,
+            str(law_0.name).lower(),
+            str(law_1.name).lower(),
+            K_0,
+            K_1,
+        )
+        assert np.isclose(export.function.x.array[0], expected, rtol=1e-10), (
+            f"interface {export.interface.id} at x={position}"
+        )
+
+
+def test_each_export_follows_its_own_interfaces_penalty():
+    """An export reports the residual of its own interface, not a neighbour's.
+
+    The two interfaces are otherwise symmetric and give identical residuals, so
+    they are given different penalty terms: the weakly enforced one must then show
+    the larger mismatch. Swapping the two exports would invert this.
+    """
+    _, _, exports = build_1d_model(
+        interface_positions=(1.0, 2.0), penalty_terms=[1e2, 1e5]
+    )
+
+    weak, strong = exports[0].function.x.array[0], exports[1].function.x.array[0]
+    assert weak > 100 * strong, f"{weak=} is not much larger than {strong=}"
+
+
+def test_no_filename_means_no_writer():
+    """Without a filename the export has no writer and writes nothing."""
+    _, _, exports = build_1d_model(filename=None)
+
+    assert exports[0].writer is None
+
+
+def test_no_filename_still_computes_the_residual():
+    """The residual is still available when no file is written."""
+    _, _, exports = build_1d_model(filename=None)
+
+    assert exports[0].compute_statistics()["max"] > 0
+
+
+def test_no_filename_writes_no_file(tmpdir):
+    """Nothing is created on disk when no filename is given."""
+    # the model has to stay referenced: __del__ closes the writers
+    _model, _, _ = build_1d_model(filename=None)
+
+    assert list(pathlib.Path(str(tmpdir)).iterdir()) == []
+
+
+def test_filename_creates_one_file_per_interface(tmpdir):
+    """A filename still produces a .bp file per interface, written during run()."""
+    _model, _, _ = build_1d_model(
+        interface_positions=(1.0, 2.0), filename=str(tmpdir.join("residual"))
+    )
+
+    written = sorted(p.name for p in pathlib.Path(str(tmpdir)).iterdir())
+    assert written == ["residual_50.bp", "residual_51.bp"]
+
+
+def test_filename_defaults_to_none(tmpdir):
+    """filename is optional; the export is usable without one."""
+    my_export = F.VTXInterfaceResidualExport(
+        field=F.Species("H"), interface=dummy_interface()
+    )
+    assert my_export.filename is None

@@ -23,7 +23,8 @@ class ExportBaseClass:
     """Export functions to VTX file.
 
     Args:
-        filename: The name of the output file
+        filename: The name of the output file, or None for subclasses that
+            support not writing one
         times: if provided, the field will be exported at these timesteps. Otherwise
             exports at all timesteps. Defaults to None.
 
@@ -33,23 +34,28 @@ class ExportBaseClass:
             exports at all timesteps. Defaults to None.
     """
 
-    _filename: Path | str
-    writer: io.VTXWriter
+    _filename: Path | str | None
+    writer: io.VTXWriter | None
 
     def __init__(
         self,
-        filename: str | Path,
+        filename: str | Path | None,
         ext: str,
         times: list[float] | list[int] | None | None = None,
     ):
-        name = Path(filename)
-        if name.suffix != ext:
-            warnings.warn(
-                f"Filename {filename} does not have {ext} extension, adding it."
-            )
-            name = name.with_suffix(ext)
+        if filename is None:
+            # subclasses that can be useful without writing a file accept None; the
+            # others require a filename in their own signature
+            self._filename = None
+        else:
+            name = Path(filename)
+            if name.suffix != ext:
+                warnings.warn(
+                    f"Filename {filename} does not have {ext} extension, adding it."
+                )
+                name = name.with_suffix(ext)
 
-        self._filename = name
+            self._filename = name
         if times:
             self.times = sorted(times)
         else:
@@ -374,18 +380,21 @@ class VTXInterfaceResidualExport(ExportBaseClass):
 
     Args:
         field: The species whose interface residual is exported.
-        filename: The name of the output file.
         interface: The interface between the two subdomains.
+        filename: The name of the output file. If None, no file is written and the
+            residual is only available through the log line and
+            :meth:`compute_statistics`. Defaults to None.
         times: if provided, the field will be exported at these timesteps.
             Otherwise exports at all timesteps. Defaults to None.
 
     Attributes:
         field: The species to export.
-        filename: The name of the output file.
+        filename: The name of the output file, or None.
         interface: The interface between the two subdomains.
         function: Residual function on the interface submesh. Set by
             ``initialise``.
-        writer: VTXWriter used to write the output file. Set by ``initialise``.
+        writer: VTXWriter used to write the output file, None if no filename was
+            given. Set by ``initialise``.
 
     Examples:
 
@@ -401,23 +410,27 @@ class VTXInterfaceResidualExport(ExportBaseClass):
             subdomain_1 = F.VolumeSubdomain(id=2, material=mat_1)
             H = F.Species("H")
 
+            interface = F.Interface(id=5, subdomains=(subdomain_0, subdomain_1))
+
+            # written to a file, and reported to the logger at INFO
             my_export = F.VTXInterfaceResidualExport(
-                field=H,
-                filename="interface_residual.bp",
-                interface=F.Interface(id=5, subdomains=(subdomain_0, subdomain_1)),
+                field=H, interface=interface, filename="interface_residual.bp"
             )
+
+            # only reported to the logger, no file written
+            my_export = F.VTXInterfaceResidualExport(field=H, interface=interface)
     """
 
     times: list[float] | list[int] | None
 
     function: fem.Function
-    writer: io.VTXWriter
+    writer: io.VTXWriter | None
 
     def __init__(
         self,
         field: Species,
-        filename: str | Path,
         interface: Interface,
+        filename: str | Path | None = None,
         times: list[float | int] | None = None,
     ):
         super().__init__(filename, ".bp", times)
@@ -535,12 +548,15 @@ class VTXInterfaceResidualExport(ExportBaseClass):
 
         self.set_dolfinx_expression()
 
-        self.writer = io.VTXWriter(
-            comm=interface_submesh.comm,
-            filename=self.filename,
-            output=[self.function, self._f_0_interface, self._f_1_interface],
-            engine="BP5",
-        )
+        if self.filename is None:
+            self.writer = None
+        else:
+            self.writer = io.VTXWriter(
+                comm=interface_submesh.comm,
+                filename=self.filename,
+                output=[self.function, self._f_0_interface, self._f_1_interface],
+                engine="BP5",
+            )
 
     def set_dolfinx_expression(self) -> None:
         """Build the expressions of the two side terms and of the residual.
@@ -629,6 +645,15 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         self.function.interpolate(self.residual_expr)
         self._f_0_interface.interpolate(self.f_0_expr)
         self._f_1_interface.interpolate(self.f_1_expr)
+
+    def write(self, t: float) -> None:
+        """Write the current residual to the VTX file, if one was requested.
+
+        Args:
+            t: the current time
+        """
+        if self.writer is not None:
+            self.writer.write(t)
 
     def compute_statistics(self) -> dict[str, float]:
         """Reduce the residual field over the interface to a few scalars.
