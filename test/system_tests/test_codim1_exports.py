@@ -335,7 +335,7 @@ def test_outlet_flux_of_a_manifold_carrying_advection():
         mesh=F.Mesh(mesh),
         species=[H_om, H_gam],
         subdomains=[omega, gamma, inlet, outlet, fixed],
-        advection_terms=[F.AdvectionTerm(velocity=vel, subdomain=gamma, species=H_gam)],
+        drift_terms=[F.AdvectionTerm(velocity=vel, subdomain=gamma, species=H_gam)],
         boundary_conditions=[
             F.FixedConcentrationBC(subdomain=inlet, value=1.0, species=H_gam),
             F.FixedConcentrationBC(subdomain=outlet, value=0.0, species=H_gam),

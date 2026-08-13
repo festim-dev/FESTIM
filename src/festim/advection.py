@@ -4,13 +4,23 @@ import basix
 import ufl
 from dolfinx import fem
 
+from festim.drift import DriftTermBase
 from festim.helpers import Value, nmm_interpolate
 from festim.species import Species
 from festim.subdomain import VolumeSubdomain
 
 
-class AdvectionTerm:
+class AdvectionTerm(DriftTermBase):
     """Advection term class.
+
+    Transport by a velocity field given directly, as opposed to one built from a driving
+    gradient (see :class:`festim.SoretTerm`, :class:`festim.ElectromigrationTerm`).
+
+    Assembled in divergence form, ``-div(c v)``, like every drift term. This differs
+    from the ``v . grad(c)`` FESTIM assembled before: the two agree in the interior
+    wherever ``div(v) == 0``, which holds for an incompressible flow, but only the
+    divergence form carries species out through a boundary that has no flux condition on
+    it -- an outlet, typically. See :func:`festim.drift.drift_form`.
 
     args:
         velocity: the velocity field or function
@@ -33,9 +43,8 @@ class AdvectionTerm:
         subdomain: VolumeSubdomain,
         species: Species,
     ):
+        super().__init__(subdomain=subdomain, species=species)
         self.velocity = velocity
-        self.subdomain = subdomain
-        self.species = species
 
     @property
     def velocity(self):
@@ -58,37 +67,14 @@ class AdvectionTerm:
         else:
             raise TypeError(err_message)
 
-    @property
-    def subdomain(self):
-        return self._subdomain
+    def convert_inputs(self, function_space, t=None, temperature=None):
+        self.velocity.convert_input_value(function_space=function_space, t=t)
 
-    @subdomain.setter
-    def subdomain(self, value):
-        if value is None:
-            self._subdomain = value
-        elif isinstance(value, VolumeSubdomain):
-            self._subdomain = value
-        else:
-            raise TypeError(
-                f"Subdomain must be a festim.Subdomain object, not {type(value)}"
-            )
+    def time_dependent_inputs(self):
+        return [self.velocity]
 
-    @property
-    def species(self) -> list[Species]:
-        return self._species
-
-    @species.setter
-    def species(self, value):
-        if not isinstance(value, list):
-            value = [value]
-        # check that all species are of type festim.Species
-        for spe in value:
-            if not isinstance(spe, Species):
-                raise TypeError(
-                    f"elements of species must be of type festim.Species not "
-                    f"{type(spe)}"
-                )
-        self._species = value
+    def drift_velocity(self, D, temperature):
+        return self.velocity.fenics_object
 
 
 class VelocityField(Value):
