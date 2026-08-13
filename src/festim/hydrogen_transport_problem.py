@@ -24,6 +24,9 @@ from festim import (
     problem,
 )
 from festim import (
+    drift as _drift,
+)
+from festim import (
     reaction as _reaction,
 )
 from festim import source as _source
@@ -65,6 +68,16 @@ __all__ = [
 ]
 
 
+def _warn_advection_terms_deprecated():
+    warnings.warn(
+        "advection_terms is deprecated, use drift_terms instead. An advection term is "
+        "one kind of drift term, alongside festim.SoretTerm and "
+        "festim.ElectromigrationTerm, and drift_terms holds all of them.",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+
+
 class HydrogenTransportProblem(problem.ProblemBase):
     """Hydrogen Transport Problem.
 
@@ -80,7 +93,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
         boundary_conditions: The boundary conditions
         exports (list of festim.Export): the exports of the model
         traps (list of F.Trap): the traps of the model
-        advection_terms: the advection terms of the model
+        advection_terms: deprecated, use ``drift_terms``. Appended to it
+        drift_terms: the drift terms of the model -- advection, Soret, electromigration
 
     Attributes:
         mesh : The mesh
@@ -93,7 +107,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
         boundary_conditions: list of Dirichlet boundary conditions
         exports (list of festim.Export): the export
         traps (list of F.Trap): the traps of the model
-        advection_terms: the advection terms of the model
+        advection_terms: deprecated, use ``drift_terms``. Appended to it
+        drift_terms: the drift terms of the model -- advection, Soret, electromigration
         dx (dolfinx.fem.dx): the volume measure of the model
         ds (dolfinx.fem.ds): the surface measure of the model
         function_space (dolfinx.fem.FunctionSpaceBase): the function space of the
@@ -183,6 +198,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         exports=None,
         traps=None,
         advection_terms=None,
+        drift_terms=None,
         petsc_options=None,
         element_immobile: str = "CG",
     ):
@@ -201,7 +217,12 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self.reactions = reactions or []
         self.initial_conditions = initial_conditions or []
         self.traps = traps or []
-        self.advection_terms = advection_terms or []
+        self.drift_terms = list(drift_terms or [])
+        if advection_terms:
+            # appended, not assigned through the deprecated setter, so that passing both
+            # keeps every term the user gave
+            _warn_advection_terms_deprecated()
+            self.drift_terms += list(advection_terms)
         self.temperature_fenics = None
 
         self._unpacked_sources = []
@@ -212,6 +233,28 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self._species_to_D_global = None
         self._species_to_D_global_expr = None
         self._surface_to_volume = None
+
+    @property
+    def advection_terms(self):
+        """Deprecated. The advection terms among :attr:`drift_terms`.
+
+        An advection term is one kind of drift term, alongside
+        :class:`festim.SoretTerm` and :class:`festim.ElectromigrationTerm`, and they all
+        live in ``drift_terms`` now. This reads back only the
+        :class:`festim.AdvectionTerm` entries, so it is *not* an alias of the whole
+        list.
+        """
+        _warn_advection_terms_deprecated()
+        return [t for t in self.drift_terms if isinstance(t, AdvectionTerm)]
+
+    @advection_terms.setter
+    def advection_terms(self, value):
+        _warn_advection_terms_deprecated()
+        # replace the advection terms and keep every other kind, so that assigning here
+        # cannot silently drop a Soret or electromigration term the user set separately
+        self.drift_terms = [
+            t for t in self.drift_terms if not isinstance(t, AdvectionTerm)
+        ] + list(value or [])
 
     @property
     def temperature(self):
@@ -560,6 +603,13 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 # add the global D to the export
                 export.D = self._species_to_D_global.get(export.field)
                 export.D_expr = self._species_to_D_global_expr.get(export.field)
+            # a model without drift terms must not pay for the surface-to-volume
+            # lookup, which needs meshtags this one does not otherwise require
+            if self.drift_terms and isinstance(export, exports.SurfaceFlux):
+                export.drift_velocity = self.drift_velocity_in(
+                    field=export.field,
+                    volume=self.volume_subdomain_of_surface(export.surface),
+                )
             if isinstance(export, exports.MaximumVolume | exports.MinimumVolume):
                 export.volume_meshtags = self.volume_meshtags
             if isinstance(export, exports.MaximumSurface | exports.MinimumSurface):
@@ -619,6 +669,48 @@ class HydrogenTransportProblem(problem.ProblemBase):
             )
             temperature_field.interpolate(temperature_expr)
             return temperature_field
+
+    def drift_velocity_in(
+        self,
+        field: _species.Species,
+        volume: _subdomain.VolumeSubdomain,
+        temperature=None,
+        mesh=None,
+    ):
+        """The summed drift velocity acting on ``field`` in ``volume``.
+
+        Used in two places, both to do with the boundary term the divergence form
+        leaves behind: :class:`festim.SurfaceFlux` has to report it, and
+        :class:`festim.OutflowBC` cancels it.
+
+        Args:
+            field: the species whose flux is being computed
+            volume: the volume subdomain the flux leaves
+            temperature: the temperature on the mesh the integral is taken on, defaults
+                to the problem's
+            mesh: the mesh the integral is taken on, defaults to the problem's
+
+        Returns:
+            the summed drift velocity as a ufl expression, or ``None`` when no drift
+            term acts on ``field`` in ``volume``
+        """
+        temperature = self.temperature_fenics if temperature is None else temperature
+        mesh = self.mesh.mesh if mesh is None else mesh
+
+        velocities = []
+        for term in self.drift_terms:
+            if term.subdomain is not volume:
+                continue
+            if field not in term.species:
+                continue
+            D = volume.material.get_diffusion_coefficient(mesh, temperature, field)
+            velocity = term.drift_velocity(D=D, temperature=temperature)
+            if not _drift.is_zero_velocity(velocity):
+                velocities.append(velocity)
+
+        if not velocities:
+            return None
+        return sum(velocities[1:], velocities[0])
 
     def volume_subdomain_of_surface(
         self, surface: _subdomain.SurfaceSubdomain
@@ -867,11 +959,17 @@ class HydrogenTransportProblem(problem.ProblemBase):
             self._unpacked_sources += reaction.create_sources()
 
     def convert_advection_term_to_fenics_objects(self):
-        """For each advection term convert the input value."""
+        """For each drift term convert its user-given coefficients.
 
-        for advec_term in self.advection_terms:
-            advec_term.velocity.convert_input_value(
-                function_space=self.function_space, t=self.t
+        Runs after ``define_temperature`` so that a coefficient given as a function of
+        ``T``, or a drift velocity built from the temperature gradient, has one to read.
+        """
+
+        for drift_term in self.drift_terms:
+            drift_term.convert_inputs(
+                function_space=self.function_space,
+                t=self.t,
+                temperature=self.temperature_fenics,
             )
 
     def create_flux_values_fenics(self):
@@ -992,18 +1090,39 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     )
                     self.formulation += bc.weak_formulation(u, v, self.ds, D)
 
-        for adv_term in self.advection_terms:
-            # create vector functionspace based on the elements in the mesh
-
-            for species in adv_term.species:
-                conc = species.solution
-                v = species.test_function
-                vel = adv_term.velocity.fenics_object
-
-                advection_term = ufl.inner(ufl.dot(ufl.grad(conc), vel), v) * self.dx(
-                    adv_term.subdomain.id
+        for drift_term in self.drift_terms:
+            vol = drift_term.subdomain
+            for species in drift_term.species:
+                D = vol.material.get_diffusion_coefficient(
+                    self.mesh.mesh, self.temperature_fenics, species
                 )
-                self.formulation += advection_term
+                velocity = drift_term.drift_velocity(
+                    D=D, temperature=self.temperature_fenics
+                )
+                if _drift.warn_if_no_effect(drift_term, species, velocity):
+                    continue
+                self.formulation += _drift.drift_form(
+                    concentration=species.solution,
+                    test_function=species.test_function,
+                    velocity=velocity,
+                    dx=self.dx(vol.id),
+                    coordinate_system=self.mesh.coordinate_system,
+                    mesh=self.mesh.mesh,
+                )
+
+        for bc in self.boundary_conditions:
+            if isinstance(bc, boundary_conditions.OutflowBC):
+                velocity = self.drift_velocity_in(
+                    field=bc.species,
+                    volume=self.volume_subdomain_of_surface(bc.subdomain),
+                )
+                if velocity is not None:
+                    self.formulation += (
+                        bc.species.solution
+                        * ufl.dot(velocity, ufl.FacetNormal(self.mesh.mesh))
+                        * bc.species.test_function
+                        * self.ds(bc.subdomain.id)
+                    )
 
         # check if each species is defined in all volumes
         if not self.settings.transient:
@@ -1065,9 +1184,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
             elif isinstance(self.temperature_fenics, fem.Function):
                 self.temperature_fenics.interpolate(self.temperature_expr)
 
-        for advec_term in self.advection_terms:
-            if advec_term.velocity.explicit_time_dependent:
-                advec_term.velocity.update(t=t)
+        for drift_term in self.drift_terms:
+            drift_term.update_time_dependent_inputs(t=t)
 
     def update_post_processing_solutions(self):
         """Updates the post-processing solutions of each species."""
@@ -1131,11 +1249,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     export,
                     exports.SurfaceFlux | exports.TotalSurface | exports.AverageSurface,
                 ):
-                    if len(self.advection_terms) > 0:
-                        warnings.warn(
-                            "Advection terms are not currently accounted for in the "
-                            "evaluation of surface flux values"
-                        )
                     export.compute(export.field.solution, self.ds)
                 else:
                     export.compute()
@@ -1214,6 +1327,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         exports=None,
         traps=None,
         advection_terms=None,
+        drift_terms=None,
         interfaces: list[_subdomain.Interface] | None = None,
         enclosures: list[_Enclosure] | None = None,
         petsc_options: dict | None = None,
@@ -1253,6 +1367,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             exports,
             traps,
             advection_terms,
+            drift_terms=drift_terms,
             petsc_options=petsc_options,
         )
         self.interfaces = interfaces or []
@@ -1724,13 +1839,21 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 )
 
     def convert_advection_term_to_fenics_objects(self):
-        """For each advection term convert the input value."""
+        """As the base class, but on the function space of the term's own subdomain.
 
-        for advec_term in self.advection_terms:
-            if isinstance(advec_term, AdvectionTerm):
-                for spe in advec_term.species:
-                    V = spe.subdomain_to_function_space[advec_term.subdomain]
-                    advec_term.velocity.convert_input_value(function_space=V, t=self.t)
+        Every coefficient of a submesh integral has to be built on that submesh -- FFCx
+        cannot tabulate a parent-mesh coefficient on submesh cells -- so the temperature
+        is the subdomain's own, as it is for reaction rates.
+        """
+
+        for drift_term in self.drift_terms:
+            for spe in drift_term.species:
+                V = spe.subdomain_to_function_space[drift_term.subdomain]
+                drift_term.convert_inputs(
+                    function_space=V,
+                    t=self.t,
+                    temperature=self.subdomain_temperature(drift_term.subdomain),
+                )
 
     def define_boundary_conditions(self):
         for bc in self._unpacked_bcs:
@@ -1900,6 +2023,50 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 "term per side, each naming the species of that side."
             )
         return candidates[0]
+
+    def outflow_form(self, bc, subdomain: _subdomain.VolumeSubdomain):
+        """The contribution of an :class:`festim.OutflowBC` to ``subdomain``'s form.
+
+        Two positions. On an ordinary surface the integral is the parent ``ds`` of the
+        volume the surface bounds. On the **boundary of a manifold** -- the outlet of a
+        1D fluid, the case this exists for -- everything lives on that manifold's
+        submesh: the measure, the normal, and the velocity, which was already built
+        there when the drift term's inputs were converted.
+
+        Args:
+            bc: the outflow boundary condition
+            subdomain: the volume subdomain whose form is being built
+
+        Returns:
+            the ufl form, or ``None`` if this bc does not belong to ``subdomain`` or no
+            drift acts on its species there
+        """
+        if bc.subdomain.codim(self.mesh.vdim) == 2:
+            manifold = self.manifold_of(bc.subdomain, bc.species)
+            if manifold is not subdomain:
+                return None
+            mesh = manifold.submesh
+            measure = self._manifold_boundary_measure(bc.subdomain, manifold)
+            temperature = self.subdomain_temperature(manifold)
+        else:
+            if self.surface_to_volume[bc.subdomain] is not subdomain:
+                return None
+            mesh = self.mesh.mesh
+            measure = self.ds
+            temperature = self.temperature_fenics
+
+        velocity = self.drift_velocity_in(
+            field=bc.species, volume=subdomain, temperature=temperature, mesh=mesh
+        )
+        if velocity is None:
+            return None
+
+        return (
+            bc.species.subdomain_to_solution[subdomain]
+            * ufl.dot(velocity, ufl.FacetNormal(mesh))
+            * bc.species.subdomain_to_test_function[subdomain]
+            * measure(bc.subdomain.id)
+        )
 
     def flux_bc_target(self, bc):
         """Where a ``ParticleFluxBC`` contributes: ``(volume subdomain, measure,
@@ -2191,19 +2358,36 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             else:
                 form -= source.value.fenics_object * v * dx
 
-        # add advection
-        for adv_term in self.advection_terms:
-            if adv_term.subdomain != subdomain:
+        # add drift (advection, Soret, electromigration)
+        for drift_term in self.drift_terms:
+            if drift_term.subdomain != subdomain:
                 continue
 
-            for spe in adv_term.species:
-                v = spe.subdomain_to_test_function[subdomain]
-                conc = spe.subdomain_to_solution[subdomain]
+            for spe in drift_term.species:
+                velocity = drift_term.drift_velocity(
+                    D=self.diffusion_coefficient(subdomain, spe),
+                    temperature=self.subdomain_temperature(subdomain),
+                )
+                if _drift.warn_if_no_effect(drift_term, spe, velocity):
+                    continue
+                # on a manifold both grad(c) and grad(w) are tangential, so the form
+                # already picks out the tangential part of the velocity
+                form_grad += _drift.drift_form(
+                    concentration=spe.subdomain_to_solution[subdomain],
+                    test_function=spe.subdomain_to_test_function[subdomain],
+                    velocity=velocity,
+                    dx=dx_grad,
+                    coordinate_system=self.mesh.coordinate_system,
+                    mesh=self.mesh.mesh,
+                )
 
-                vel = adv_term.velocity.fenics_object
-                # on a manifold the tangential gradient is orthogonal to the normal, so
-                # dot(grad(c), vel) already picks out the tangential part of vel
-                form_grad += ufl.inner(ufl.dot(ufl.grad(conc), vel), v) * dx_grad
+        # let drift carry the species out where the user says it flows out
+        for bc in self.boundary_conditions:
+            if not isinstance(bc, boundary_conditions.OutflowBC):
+                continue
+            outflow = self.outflow_form(bc, subdomain)
+            if outflow is not None:
+                form_grad += outflow
 
         # store the form(s) in the subdomain object
         self_form = form + form_grad
@@ -2866,6 +3050,14 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
                 export.D = D
 
+                if self.drift_terms and isinstance(export, exports.SurfaceFlux):
+                    export.drift_velocity = self.drift_velocity_in(
+                        field=export.field,
+                        volume=volume,
+                        temperature=temperature,
+                        mesh=mesh,
+                    )
+
             # reset the data and time for SurfaceQuantity and VolumeQuantity
             if isinstance(export, exports.DerivedQuantity):
                 export.t = []
@@ -2962,11 +3154,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     export,
                     exports.SurfaceFlux | exports.TotalSurface | exports.AverageSurface,
                 ):
-                    if len(self.advection_terms) > 0:
-                        warnings.warn(
-                            "Advection terms are not currently accounted for in the "
-                            "evaluation of surface flux values"
-                        )
                     export_vol, _, measure, restriction, entity_maps = (
                         self.export_surface_context(export)
                     )
@@ -3193,6 +3380,52 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
 
                 if self.settings.transient:
                     self.formulation += ((c - c_n) / self.dt) * v * self.dx(vol.id)
+
+        # add drift (advection, Soret, electromigration). The solved variable of a
+        # mobile species is the chemical potential here, so the drift term is written
+        # in terms of the concentration u * K_S, as the diffusion term above is
+        for drift_term in self.drift_terms:
+            vol = drift_term.subdomain
+            for spe in drift_term.species:
+                D = vol.material.get_diffusion_coefficient(
+                    self.mesh.mesh, self.temperature_fenics, spe
+                )
+                conc = spe.solution
+                if spe.mobile:
+                    conc = conc * vol.material.get_solubility_coefficient(
+                        self.mesh.mesh, self.temperature_fenics, spe
+                    )
+                velocity = drift_term.drift_velocity(
+                    D=D, temperature=self.temperature_fenics
+                )
+                if _drift.warn_if_no_effect(drift_term, spe, velocity):
+                    continue
+                self.formulation += _drift.drift_form(
+                    concentration=conc,
+                    test_function=spe.test_function,
+                    velocity=velocity,
+                    dx=self.dx(vol.id),
+                    coordinate_system=self.mesh.coordinate_system,
+                    mesh=self.mesh.mesh,
+                )
+
+        for bc in self.boundary_conditions:
+            if isinstance(bc, boundary_conditions.OutflowBC):
+                volume = self.volume_subdomain_of_surface(bc.subdomain)
+                velocity = self.drift_velocity_in(field=bc.species, volume=volume)
+                if velocity is None:
+                    continue
+                conc = bc.species.solution
+                if bc.species.mobile:
+                    conc = conc * volume.material.get_solubility_coefficient(
+                        self.mesh.mesh, self.temperature_fenics, bc.species
+                    )
+                self.formulation += (
+                    conc
+                    * ufl.dot(velocity, ufl.FacetNormal(self.mesh.mesh))
+                    * bc.species.test_function
+                    * self.ds(bc.subdomain.id)
+                )
 
         for reaction in self.reactions:
             self.add_reaction_term(reaction)

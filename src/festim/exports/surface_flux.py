@@ -12,8 +12,8 @@ from festim.subdomain.volume_subdomain import VolumeSubdomain
 class SurfaceFlux(SurfaceQuantity):
     """Computes the flux of a field on a given surface.
 
-    Only the diffusive flux is computed: an advection term on the subdomain is not
-    accounted for, and FESTIM warns when one is present.
+    The total flux ``-D grad(c) . n + c v . n`` is computed, so a drift term acting on
+    the field -- advection, Soret, electromigration -- contributes.
 
     Args:
         field: species for which the surface flux is computed
@@ -22,7 +22,10 @@ class SurfaceFlux(SurfaceQuantity):
         filename: name of the file to which the surface flux is exported
 
     Attributes:
-        see `festim.SurfaceQuantity`
+        drift_velocity: the summed velocity of the drift terms acting on ``field`` in
+            the subdomain this surface bounds, set by the problem during
+            ``initialise()``. ``None`` when there is none
+        see `festim.SurfaceQuantity` for the rest
     """
 
     field: Species
@@ -32,6 +35,7 @@ class SurfaceFlux(SurfaceQuantity):
     title: str
     value: float
     data: list[float]
+    drift_velocity = None
 
     @property
     def title(self):
@@ -69,6 +73,9 @@ class SurfaceFlux(SurfaceQuantity):
         n = ufl.FacetNormal(mesh)
 
         integrand = -self.D * ufl.dot(ufl.grad(u), n)
+
+        if self.drift_velocity is not None:
+            integrand += u * ufl.dot(self.drift_velocity, n)
 
         self.value = assemble_scalar(
             fem.form(
