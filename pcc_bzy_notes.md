@@ -90,17 +90,44 @@ So deuterium appears in the reported gas flux without leaving the solid, and cha
 balance breaks too (e′ debited, the charged OD⋅ not). That reported flux is not inert:
 it is compared against the measured D₂ data and assigned RMSPE = 40.49% in Fig. 4(f).
 
-**It is load-bearing.** Hydration loads far more deuterium than dry dissociation
-(~0.103 vs ~0.0013 mol/m² of mobile OD here, ~80×), and the D₂ recombination rate goes
-as `C_OD²·C_e²`, so at 80× the concentration that channel runs ~6000× faster and becomes
-the cheapest way out of the solid. Running both ways, everything else identical:
+**Confirmed in TMAP8 itself.** Using the prebuilt `tmap8 2026_07_31` conda package on the
+unmodified upstream input — see [`tmap8_val2g_check/`](tmap8_val2g_check/) for the full
+evidence package and reproduction recipe. The baseline run reproduces upstream's own
+`gold/val-2g_trapping_calibrated.csv` to machine precision (1e-11 across every column,
+identical 764-step sequence), so it is exactly the published case. Applying only
+`conserve_deuterium.diff`, which makes `flux_on_OT_wet` an exact mirror of
+`flux_on_OT_dry`:
 
-- **omitted** (their convention): D₂O peak 2.01×10⁻⁹ mol/s @ 990 K — matches Fig. 4(f)
-- **restored** (deuterium conserved): D₂ takes the whole release, 9.13×10⁻¹⁰ @ 1172 K,
-  and the D₂O peak disappears
+| RMSPE (final) | as published | deuterium conserved |
+|---|---|---|
+| `RMSPE_T2_dry` | 0.1717 | 0.1717 |
+| `RMSPE_T2O_dry` | 0.1774 | 0.1774 |
+| `RMSPE_T2_wet` | 0.4171 | **22.694** |
+| `RMSPE_T2O_wet` | 0.4597 | **2.2506** |
 
-`TMAP8_WET_OT_FLUX_OMITS_D2` in `pcc_bzy_tds.py` switches between them. The dry case is
-complete and unaffected.
+The wet D₂O desorption peak (3.61×10⁷ @ 988 K) disappears completely; what remains is a
+steady water-splitting cycle peaking 185 K too high. The dry system is bit-identical
+between the runs — its block was never touched. So the Fig. 4(f) wet agreement exists
+only because of the missing term.
+
+Why it is load-bearing: hydration loads far more deuterium than dry dissociation, and the
+D₂ recombination rate goes as `C_OD²·C_e²`, so at high hydroxyl concentration that branch
+becomes by far the cheapest way out of the solid. Restored, it drains the hydroxyl faster
+than hydration can charge it. Upstream's own gold file already shows this without running
+anything: over the resolved charging window 10–3600 s the wet system reports 2.64× more
+deuterium leaving as D₂ than it takes in as D₂O, while the dry system balances to 5% on
+the same analysis (`pcc_bzy_tmap8_check.py`).
+
+**The paper says the opposite.** Eq. (9) is written as
+`½ ∂N_OQ/∂t = −∂N_Q2/∂t = A(K₁ P_Q2 C²_Ox − K₋₁ C²_OQ C²_e′)` — the hydroxyl source is
+part of the equation, with no environment qualifier — and the sentence introducing it
+states "Both reactions are reversible on the surface and happen in the dry ... and wet
+... environments." The only environment dependence stated is the pressures. No
+assumption anywhere in the paper covers the omission; the limitations section lists only
+the single trapping site and the high electron concentration. And the wet D₂ flux is
+still reported and scored (40.49% RMSPE), which an intentionally excluded channel would
+not be. Notably, the discrepancy the paper says "cannot be resolved merely by
+recalibrating the current material parameters" is in that same wet D₂ channel.
 
 **Is it a bug?** The conservation violation is not a judgement call — the atoms do not
 balance, and the term that would balance them sits ten lines above in the sibling block.
@@ -108,11 +135,10 @@ Intent is unknowable from here, but it reads as an oversight: the blocks are cop
 twins differing by one addend, and "keep the electron coupling and keep reporting the
 flux, but drop the hydroxyl sink" is not a coherent simplification of anything.
 
-Caveats: the counterfactual comes from a close reimplementation (~10% agreement), not
-from their code; and `val-2g_main_PSS_trapping.i`, used for the optimisation, was not
-inspected. The decisive test is one line — add `+ 2 * flux_base_on_T2_wet` to
-`flux_on_OT_wet` and rerun. Worth filing as a TMAP8 issue: it bears on the paper's claim
-of a single unified model across dry and wet environments.
+Still present on `devel`; no issue or PR covers it (#357 added the case, #387 only
+touched the comparison script). `val-2g_main_PSS_trapping.i`, used for the optimisation,
+was not inspected. Worth filing: it bears on the paper's claim of a single unified model
+across dry and wet environments.
 
 ## Other things the source resolved
 
