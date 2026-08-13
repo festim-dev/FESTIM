@@ -469,7 +469,9 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         interface_submesh, _, _, _ = dolfinx.mesh.create_submesh(
             parent_mesh, fdim, interface_facets
         )
-        V_interface = fem.functionspace(interface_submesh, ("CG", 1))
+        # in 1D the interface is a point, and a point only admits order 0
+        element = ("CG", 1) if fdim > 0 else ("DG", 0)
+        V_interface = fem.functionspace(interface_submesh, element)
 
         self._c_0_interface = fem.Function(
             V_interface, name=f"{self.field.name}_interface_c0"
@@ -517,6 +519,7 @@ class VTXInterfaceResidualExport(ExportBaseClass):
             # a uniform temperature raises "Found multiple domains" as soon as
             # E_K_S is non-zero (with E_K_S == 0 the temperature drops out of the
             # expression entirely and the clash never surfaces).
+            # TODO: unnecessary from 0.11, see update()
             self._T = as_fenics_constant(
                 float(temperature_fenics.value), interface_submesh
             )
@@ -602,8 +605,8 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         c_0 = self.field.subdomain_to_post_processing_solution[subdomain_0]
         c_1 = self.field.subdomain_to_post_processing_solution[subdomain_1]
 
-        # FIXME: once we support dolfinx 0.11 we should be able to mix parent and
-        # sub-meshes in the same expression
+        # TODO: drop all this interpolation once 0.10 is unsupported: 0.11 takes
+        # parent-mesh functions directly in a submesh expression
         self._c_0_interface.interpolate_nonmatching(
             c_0, self._interface_cells, interpolation_data=self._interp_data_0
         )
