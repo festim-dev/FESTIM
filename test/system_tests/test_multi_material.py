@@ -425,3 +425,297 @@ def test_all_cells_are_not_tagged():
         AssertionError, match="All cells must be tagged with a non-zero value"
     ):
         my_model.initialise()
+
+
+def solve_mixed_solubility_law_mms(
+    n,
+    method,
+    sievert_on_top=True,
+    penalty_term=100,
+    K_S_top=3.0,
+    K_S_bot=6.0,
+    D_top=2.0,
+    D_bot=5.0,
+):
+    """Solve a 2D MMS case across a mixed Henry / Sievert interface.
+
+    The exact solution satisfies the mixed-law interface condition exactly, so an
+    interface formulation that enforces the right condition converges to it. Both
+    orderings are covered because the squared term sits on whichever side is
+    Sievert, which is a different branch of ``interface_condition_term``.
+
+    Args:
+        n: the number of cells in each direction
+        method: the interface method, 'penalty' or 'nitsche'
+        sievert_on_top: if True the top subdomain (side 1 of the interface) is the
+            Sievert one, otherwise the bottom subdomain (side 0) is
+        penalty_term: the penalty parameter of the interface
+        K_S_top: the solubility of the top subdomain
+        K_S_bot: the solubility of the bottom subdomain
+        D_top: the diffusivity of the top subdomain
+        D_bot: the diffusivity of the bottom subdomain
+
+    Returns:
+        the L2 errors on the top and bottom subdomains
+    """
+
+    def c_sievert(mod):
+        return lambda x: (
+            3 + mod.sin(mod.pi * (2 * x[1] + 0.5)) + 0.1 * mod.cos(2 * mod.pi * x[0])
+        )
+
+    if sievert_on_top:
+        # c_bot / K_S_bot = (c_top / K_S_top)**2
+        c_top = c_sievert
+
+        def c_bot(mod):
+            return lambda x: K_S_bot / K_S_top**2 * c_sievert(mod)(x) ** 2
+    else:
+        # (c_bot / K_S_bot)**2 = c_top / K_S_top
+        c_bot = c_sievert
+
+        def c_top(mod):
+            return lambda x: K_S_top / K_S_bot**2 * c_sievert(mod)(x) ** 2
+
+    mesh, mt, ct = generate_mesh(n)
+
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+    my_model.mesh = F.Mesh(mesh)
+    my_model.volume_meshtags = ct
+    my_model.facet_meshtags = mt
+
+    material_top = F.Material(
+        D_0=D_top,
+        E_D=0,
+        K_S_0=K_S_top,
+        E_K_S=0,
+        solubility_law="sievert" if sievert_on_top else "henry",
+    )
+    material_bottom = F.Material(
+        D_0=D_bot,
+        E_D=0,
+        K_S_0=K_S_bot,
+        E_K_S=0,
+        solubility_law="henry" if sievert_on_top else "sievert",
+    )
+
+    top_domain = F.VolumeSubdomain(4, material=material_top)
+    bottom_domain = F.VolumeSubdomain(3, material=material_bottom)
+    top_surface = F.SurfaceSubdomain(id=1)
+    bottom_surface = F.SurfaceSubdomain(id=2)
+    my_model.subdomains = [bottom_domain, top_domain, top_surface, bottom_surface]
+
+    my_model.interfaces = [
+        F.Interface(
+            5, (bottom_domain, top_domain), penalty_term=penalty_term, method=method
+        ),
+    ]
+
+    H = F.Species("H", mobile=True)
+    my_model.species = [H]
+    H.subdomains = [bottom_domain, top_domain]
+
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(top_surface, value=c_top(ufl), species=H),
+        F.FixedConcentrationBC(bottom_surface, value=c_bot(ufl), species=H),
+    ]
+
+    x = ufl.SpatialCoordinate(mesh)
+    my_model.sources = [
+        F.ParticleSource(
+            volume=top_domain,
+            species=H,
+            value=-ufl.div(D_top * ufl.grad(c_top(ufl)(x))),
+        ),
+        F.ParticleSource(
+            volume=bottom_domain,
+            species=H,
+            value=-ufl.div(D_bot * ufl.grad(c_bot(ufl)(x))),
+        ),
+    ]
+    my_model.temperature = 500
+    my_model.settings = F.Settings(atol=1e-12, rtol=1e-12, transient=False)
+
+    my_model.initialise()
+    my_model.run()
+
+    return (
+        error_L2(H.subdomain_to_post_processing_solution[top_domain], c_top(np)),
+        error_L2(H.subdomain_to_post_processing_solution[bottom_domain], c_bot(np)),
+    )
+
+
+@pytest.mark.parametrize("sievert_on_top", [True, False])
+def test_mixed_solubility_law_convergence_rate(sievert_on_top):
+    """The penalty method converges at order 2 across a Henry/Sievert interface.
+
+    Both orderings of the two laws are covered, since the squared term moves to the
+    other side of the interface.
+
+    Penalty only: the Nitsche method does not support a mixed interface, see
+    test_nitsche_rejects_a_mixed_solubility_law_interface.
+    """
+    mesh_sizes = [20, 40, 80]
+
+    errors = np.array(
+        [
+            solve_mixed_solubility_law_mms(
+                n, "penalty", sievert_on_top=sievert_on_top, penalty_term=1e4
+            )
+            for n in mesh_sizes
+        ]
+    )
+    rates = np.log(errors[:-1] / errors[1:]) / np.log(2)
+
+    assert np.all(rates > 1.8), f"convergence rates {rates} are not close to 2"
+
+
+@pytest.mark.parametrize(
+    "contrast",
+    [
+        {"K_S_bot": 60.0},
+        {"K_S_bot": 600.0},
+        {"D_bot": 500.0, "D_top": 2.0},
+    ],
+    ids=["K_S x10", "K_S x100", "D x250"],
+)
+def test_mixed_law_convergence_across_material_contrast(contrast):
+    """Order 2 holds on a mixed interface as the material contrast grows.
+
+    The mixed-law condition couples c/K_S on one side to (c/K_S)**2 on the other, so
+    the two sides are scaled very differently once K_S or D differ by decades. The
+    convergence order is what detects a formulation that cannot keep up: an
+    inconsistent one settles on a fixed wrong solution and its error stops
+    decreasing under refinement.
+
+    The penalty term has to grow with the contrast. At the default of 100 this same
+    case does not converge at all.
+    """
+    mesh_sizes = [20, 40, 80]
+
+    errors = np.array(
+        [
+            solve_mixed_solubility_law_mms(n, "penalty", penalty_term=1e4, **contrast)
+            for n in mesh_sizes
+        ]
+    )
+    rates = np.log(errors[:-1] / errors[1:]) / np.log(2)
+
+    assert np.all(rates > 1.8), f"convergence rates {rates} are not close to 2"
+
+
+def test_mixed_law_convergence_at_adequate_penalty():
+    """The penalty method is second order on a mixed interface, in the asymptotic
+    regime.
+
+    Adds a fourth, finer mesh so the rate is measured where it has settled, and uses
+    a penalty large enough that the constraint error has saturated below the
+    discretisation error. That matters because the penalty method is only accurate
+    as the penalty grows: on this same case at a penalty of 100 the error does not
+    decrease under refinement at all.
+    """
+    mesh_sizes = [20, 40, 80, 160]
+
+    errors = np.array(
+        [
+            solve_mixed_solubility_law_mms(n, "penalty", penalty_term=1e4, K_S_bot=60.0)
+            for n in mesh_sizes
+        ]
+    )
+    rates = np.log(errors[:-1] / errors[1:]) / np.log(2)
+
+    assert np.all(rates > 1.9), f"convergence rates {rates} are not close to 2"
+
+
+def test_mixed_law_transient_relaxes_to_the_steady_solution():
+    """A transient mixed-law interface relaxes to the known steady solution.
+
+    Time stepping is the axis the other mixed-law tests do not touch: they are all
+    steady, so the interface condition is only ever enforced on a solution that is
+    already at equilibrium. Here the initial condition is deliberately wrong and the
+    interface has to hold the two sides consistent while the solution relaxes.
+
+    Deliberately coarse and short: this checks that the transient path reaches the
+    right answer, not the order of accuracy, which the steady tests already pin.
+
+    Penalty only: Nitsche does not support a mixed interface.
+    """
+    K_S_top, K_S_bot, D_top, D_bot = 3.0, 6.0, 2.0, 5.0
+
+    def c_top(mod):
+        return lambda x: (
+            3 + mod.sin(mod.pi * (2 * x[1] + 0.5)) + 0.1 * mod.cos(2 * mod.pi * x[0])
+        )
+
+    def c_bot(mod):
+        return lambda x: K_S_bot / K_S_top**2 * c_top(mod)(x) ** 2
+
+    mesh, mt, ct = generate_mesh(20)
+
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+    my_model.mesh = F.Mesh(mesh)
+    my_model.volume_meshtags = ct
+    my_model.facet_meshtags = mt
+
+    material_top = F.Material(
+        D_0=D_top, E_D=0, K_S_0=K_S_top, E_K_S=0, solubility_law="sievert"
+    )
+    material_bottom = F.Material(
+        D_0=D_bot, E_D=0, K_S_0=K_S_bot, E_K_S=0, solubility_law="henry"
+    )
+
+    top_domain = F.VolumeSubdomain(4, material=material_top)
+    bottom_domain = F.VolumeSubdomain(3, material=material_bottom)
+    top_surface = F.SurfaceSubdomain(id=1)
+    bottom_surface = F.SurfaceSubdomain(id=2)
+    my_model.subdomains = [bottom_domain, top_domain, top_surface, bottom_surface]
+
+    my_model.interfaces = [
+        F.Interface(5, (bottom_domain, top_domain), penalty_term=1e4, method="penalty")
+    ]
+
+    H = F.Species("H", mobile=True)
+    my_model.species = [H]
+    H.subdomains = [bottom_domain, top_domain]
+
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(top_surface, value=c_top(ufl), species=H),
+        F.FixedConcentrationBC(bottom_surface, value=c_bot(ufl), species=H),
+    ]
+
+    # start away from the steady solution so the transient term does some work
+    my_model.initial_conditions = [
+        F.InitialConcentration(value=1.0, volume=top_domain, species=H),
+        F.InitialConcentration(value=1.0, volume=bottom_domain, species=H),
+    ]
+
+    x = ufl.SpatialCoordinate(mesh)
+    my_model.sources = [
+        F.ParticleSource(
+            volume=top_domain,
+            species=H,
+            value=-ufl.div(D_top * ufl.grad(c_top(ufl)(x))),
+        ),
+        F.ParticleSource(
+            volume=bottom_domain,
+            species=H,
+            value=-ufl.div(D_bot * ufl.grad(c_bot(ufl)(x))),
+        ),
+    ]
+    my_model.temperature = 500
+    my_model.settings = F.Settings(
+        atol=1e-12, rtol=1e-12, transient=True, final_time=2.0
+    )
+    my_model.settings.stepsize = 0.2
+
+    my_model.initialise()
+    my_model.run()
+
+    error_top = error_L2(H.subdomain_to_post_processing_solution[top_domain], c_top(np))
+    error_bot = error_L2(
+        H.subdomain_to_post_processing_solution[bottom_domain], c_bot(np)
+    )
+
+    assert max(error_top, error_bot) < 2e-2, (
+        f"transient did not relax to the steady solution: {error_top=}, {error_bot=}"
+    )

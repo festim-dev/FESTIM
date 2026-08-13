@@ -1,8 +1,8 @@
 from mpi4py import MPI
 
 import dolfinx
-import dolfinx.fem.petsc
 import numpy as np
+import pytest
 import ufl
 
 import festim as F
@@ -283,3 +283,115 @@ def test_penalty_multispecies():
 
     my_model.initialise()
     my_model.run()
+
+
+def run_mms_case_with_residual_export(tmpdir, penalty_term=10000, T_value=500, n=20):
+    """Run the 2-material MMS case and return the maximum interface residual.
+
+    The exact solution satisfies the interface condition, so any residual comes
+    from the weak (penalty) enforcement of that condition.
+
+    Args:
+        tmpdir: directory the export writes to
+        penalty_term: the penalty term of the interface
+        T_value: the temperature of the model
+        n: the number of cells in each direction
+
+    Returns:
+        the maximum residual over all ranks
+    """
+    K_S_top, K_S_bot, D_top, D_bot = 3.0, 6.0, 2.0, 5.0
+
+    def c_exact_top_ufl(x):
+        return 3 + ufl.sin(ufl.pi * (2 * x[1] + 0.5)) + 0.1 * ufl.cos(2 * ufl.pi * x[0])
+
+    def c_exact_bot_ufl(x):
+        return K_S_bot / K_S_top**2 * c_exact_top_ufl(x) ** 2
+
+    mesh, mt, ct = generate_mesh(n)
+
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+    my_model.mesh = F.Mesh(mesh)
+    my_model.volume_meshtags = ct
+    my_model.facet_meshtags = mt
+
+    material_top = F.Material(D_0=D_top, E_D=0, K_S_0=K_S_top, E_K_S=0)
+    material_bottom = F.Material(D_0=D_bot, E_D=0, K_S_0=K_S_bot, E_K_S=0)
+    material_top.solubility_law = "sievert"
+    material_bottom.solubility_law = "henry"
+
+    top_domain = F.VolumeSubdomain(4, material=material_top)
+    bottom_domain = F.VolumeSubdomain(3, material=material_bottom)
+    top_surface = F.SurfaceSubdomain(id=1)
+    bottom_surface = F.SurfaceSubdomain(id=2)
+    my_model.subdomains = [bottom_domain, top_domain, top_surface, bottom_surface]
+
+    interface = F.Interface(5, (bottom_domain, top_domain), penalty_term=penalty_term)
+    my_model.interfaces = [interface]
+
+    H = F.Species("H", mobile=True)
+    my_model.species = [H]
+    H.subdomains = [bottom_domain, top_domain]
+
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(top_surface, value=c_exact_top_ufl, species=H),
+        F.FixedConcentrationBC(bottom_surface, value=c_exact_bot_ufl, species=H),
+    ]
+
+    x = ufl.SpatialCoordinate(mesh)
+    my_model.sources = [
+        F.ParticleSource(
+            volume=top_domain,
+            species=H,
+            value=-ufl.div(D_top * ufl.grad(c_exact_top_ufl(x))),
+        ),
+        F.ParticleSource(
+            volume=bottom_domain,
+            species=H,
+            value=-ufl.div(D_bot * ufl.grad(c_exact_bot_ufl(x))),
+        ),
+    ]
+    my_model.temperature = T_value
+    my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
+
+    residual_export = F.VTXInterfaceResidualExport(
+        field=H,
+        filename=str(tmpdir.join("interface_residual.bp")),
+        interface=interface,
+    )
+    my_model.exports = [residual_export]
+
+    my_model.initialise()
+    my_model.run()
+
+    local_max = np.max(np.abs(residual_export.function.x.array), initial=0.0)
+    return mesh.comm.allreduce(local_max, op=MPI.MAX)
+
+
+@pytest.mark.parametrize("T_value", [500, lambda x: 300 + 10 * x[1] + 100 * x[0]])
+def test_interface_residual_export_below_tolerance(tmpdir, T_value):
+    """A high penalty term drives the exported interface residual below 1e-3."""
+    residual = run_mms_case_with_residual_export(
+        tmpdir, penalty_term=10000, T_value=T_value
+    )
+
+    assert residual < 1e-3
+
+
+def test_interface_residual_decreases_with_penalty_term(tmpdir):
+    """The residual diagnostic decreases as the penalty term is increased.
+
+    This is the behaviour the diagnostic is meant to reveal: with the penalty
+    method the interface condition is only enforced weakly, and the mismatch
+    left over is what the user tunes the penalty term against.
+    """
+    penalty_terms = [1e2, 1e3, 1e4, 1e5]
+
+    residuals = [
+        run_mms_case_with_residual_export(tmpdir, penalty_term=penalty)
+        for penalty in penalty_terms
+    ]
+
+    assert np.all(np.diff(residuals) < 0), (
+        f"residuals {residuals} are not decreasing with penalty {penalty_terms}"
+    )

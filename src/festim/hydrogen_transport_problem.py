@@ -443,6 +443,12 @@ class HydrogenTransportProblem(problem.ProblemBase):
                             self.settings.stepsize.milestones.append(time)
                     self.settings.stepsize.milestones.sort()
 
+                if isinstance(export, exports.VTXInterfaceResidualExport):
+                    raise NotImplementedError(
+                        f"{type(export).__name__} requires interfaces between "
+                        "subdomains, use festim.HydrogenTransportProblemDiscontinuous"
+                    )
+
                 if isinstance(export, exports.VTXTemperatureExport):
                     self._temperature_as_function = (
                         self._get_temperature_field_as_function()
@@ -1171,9 +1177,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
 class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
     interfaces: list[_subdomain.Interface]
     surface_to_volume: dict
-    _method_interface: _subdomain.interface.InterfaceMethod = (
-        _subdomain.interface.InterfaceMethod.penalty
-    )
+    # None means the user never set the deprecated problem-level attribute, in which
+    # case the method of each interface is left untouched
+    _method_interface: _subdomain.interface.InterfaceMethod | None = None
     subdomain_to_species: dict
 
     def __init__(
@@ -1278,15 +1284,17 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
     def initialise(self):
         # if method_interface is given as an attribute of Problem class, then pass it to
-        # each interface and raise a deprecation warning
-        if hasattr(self, "method_interface"):
+        # each interface and raise a deprecation warning.
+        # NOTE: method_interface is a property, so hasattr() is always True and cannot
+        # be used to detect whether the user actually set it
+        if self._method_interface is not None:
             warnings.warn(
                 "The method_interface attribute of the Problem class is deprecated, "
                 "please set the method_interface attribute of each interface instead",
                 DeprecationWarning,
             )
             for interface in self.interfaces:
-                interface.method = self.method_interface
+                interface.method = self._method_interface
 
         # check that all species have a list of F.VolumeSubdomain as this is
         # different from F.HydrogenTransportProblem
@@ -2096,6 +2104,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     self.temperature_fenics,
                     engine="BP5",
                 )
+            elif isinstance(export, exports.VTXInterfaceResidualExport):
+                export.initialise(self.temperature_fenics)
+
             elif isinstance(export, exports.CustomFieldExport):
                 # need to find an appropriate function space on the right submesh
                 V = self.subdomain_to_V_CG1[export.subdomain]
@@ -2212,6 +2223,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         export.writer.write(float(self.t))
                 elif isinstance(export, exports.VTXTemperatureExport):
                     export.writer.write(float(self.t))
+                elif isinstance(export, exports.VTXInterfaceResidualExport):
+                    export.update()
+                    export.log_statistics(float(self.t))
+                    export.write(float(self.t))
                 else:
                     raise NotImplementedError(
                         f"Export type {type(export)} not implemented"

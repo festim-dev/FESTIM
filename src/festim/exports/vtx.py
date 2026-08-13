@@ -4,12 +4,18 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Union
 
+from mpi4py import MPI
+
+import dolfinx
+import numpy as np
 import ufl
 from dolfinx import fem, io
 
-from festim import k_B as _k_B
+from festim import k_B
+from festim.helpers import as_fenics_constant
 from festim.reaction import ArrheniusReaction
 from festim.species import ImplicitSpecies, Species
+from festim.subdomain.interface import Interface, interface_condition_term
 from festim.subdomain.volume_subdomain import VolumeSubdomain
 
 
@@ -17,7 +23,8 @@ class ExportBaseClass:
     """Export functions to VTX file.
 
     Args:
-        filename: The name of the output file
+        filename: The name of the output file, or None for subclasses that
+            support not writing one
         times: if provided, the field will be exported at these timesteps. Otherwise
             exports at all timesteps. Defaults to None.
 
@@ -27,23 +34,28 @@ class ExportBaseClass:
             exports at all timesteps. Defaults to None.
     """
 
-    _filename: Path | str
-    writer: io.VTXWriter
+    _filename: Path | str | None
+    writer: io.VTXWriter | None
 
     def __init__(
         self,
-        filename: str | Path,
+        filename: str | Path | None,
         ext: str,
         times: list[float] | list[int] | None | None = None,
     ):
-        name = Path(filename)
-        if name.suffix != ext:
-            warnings.warn(
-                f"Filename {filename} does not have {ext} extension, adding it."
-            )
-            name = name.with_suffix(ext)
+        if filename is None:
+            # subclasses that can be useful without writing a file accept None; the
+            # others require a filename in their own signature
+            self._filename = None
+        else:
+            name = Path(filename)
+            if name.suffix != ext:
+                warnings.warn(
+                    f"Filename {filename} does not have {ext} extension, adding it."
+                )
+                name = name.with_suffix(ext)
 
-        self._filename = name
+            self._filename = name
         if times:
             self.times = sorted(times)
         else:
@@ -344,6 +356,371 @@ class CustomFieldExport(ExportBaseClass):
             )
 
 
+class VTXInterfaceResidualExport(ExportBaseClass):
+    """Export the interface condition residual to a VTX file.
+
+    This quantity measures how well the penalty/Nitsche interface condition is
+    satisfied at the interface. It is the absolute difference between the two sides'
+    terms, ``|right - left|``, so it is always non-negative, zero when the condition
+    holds exactly; the lower the value, the better.
+
+    Each side's term depends on the solubility laws of the two subdomains:
+
+    - **Same law on both sides** (Henry-Henry or Sievert-Sievert):
+      ``residual = |c_1/K_S_1 - c_0/K_S_0|``
+    - **Henry (side 0) - Sievert (side 1)**:
+      ``residual = |(c_1/K_S_1)^2 - c_0/K_S_0|``
+    - **Sievert (side 0) - Henry (side 1)**:
+      ``residual = |c_1/K_S_1 - (c_0/K_S_0)^2|``
+
+    The residual is written to the file alongside the two side terms ``f_0`` and
+    ``f_1``, so that the mismatch can be compared to the magnitude of the terms
+    themselves: a residual of 1e-3 is small if ``f_0`` is of order 1, but large if
+    ``f_0`` is of order 1e-3.
+
+    Args:
+        field: The species whose interface residual is exported.
+        interface: The interface between the two subdomains.
+        filename: The name of the output file. If None, no file is written and the
+            residual is only available through the log line and
+            :meth:`compute_statistics`. Defaults to None.
+        times: if provided, the field will be exported at these timesteps.
+            Otherwise exports at all timesteps. Defaults to None.
+
+    Attributes:
+        field: The species to export.
+        filename: The name of the output file, or None.
+        interface: The interface between the two subdomains.
+        function: Residual function on the interface submesh. Set by
+            ``initialise``.
+        writer: VTXWriter used to write the output file, None if no filename was
+            given. Set by ``initialise``.
+
+    Examples:
+
+        .. testsetup:: VTXInterfaceResidualExport
+
+            import festim as F
+
+        .. testcode:: VTXInterfaceResidualExport
+
+            mat_0 = F.Material(D_0=1, E_D=0, K_S_0=1, E_K_S=0, solubility_law="henry")
+            mat_1 = F.Material(D_0=2, E_D=0, K_S_0=5, E_K_S=0, solubility_law="sievert")
+            subdomain_0 = F.VolumeSubdomain(id=1, material=mat_0)
+            subdomain_1 = F.VolumeSubdomain(id=2, material=mat_1)
+            H = F.Species("H")
+
+            interface = F.Interface(id=5, subdomains=(subdomain_0, subdomain_1))
+
+            # written to a file, and reported to the logger at INFO
+            my_export = F.VTXInterfaceResidualExport(
+                field=H, interface=interface, filename="interface_residual.bp"
+            )
+
+            # only reported to the logger, no file written
+            my_export = F.VTXInterfaceResidualExport(field=H, interface=interface)
+    """
+
+    times: list[float] | list[int] | None
+
+    function: fem.Function
+    writer: io.VTXWriter | None
+
+    def __init__(
+        self,
+        field: Species,
+        interface: Interface,
+        filename: str | Path | None = None,
+        times: list[float | int] | None = None,
+    ):
+        super().__init__(filename, ".bp", times)
+        self.field = field
+        self.interface = interface
+
+    @property
+    def field(self) -> Species:
+        return self._field
+
+    @field.setter
+    def field(self, value: Species) -> None:
+        if not isinstance(value, Species):
+            raise TypeError(
+                f"field must be a festim.Species, not {type(value).__name__}"
+            )
+        self._field = value
+
+    @property
+    def interface(self) -> Interface:
+        return self._interface
+
+    @interface.setter
+    def interface(self, value: Interface) -> None:
+        if not isinstance(value, Interface):
+            raise TypeError(
+                f"interface must be a festim.Interface, not {type(value).__name__}"
+            )
+        self._interface = value
+
+    def initialise(self, temperature_fenics: fem.Constant | fem.Function) -> None:
+        """Create the interface submesh, interpolation data, and VTX writer.
+
+        Called by the problem during ``initialise_exports``. Builds a CG1
+        function space on the interface submesh, pre-computes
+        ``create_interpolation_data`` for both subdomain concentrations and
+        (if space-dependent) temperature, builds the residual expressions and
+        opens the VTXWriter.
+
+        Args:
+            temperature_fenics: Temperature field on the parent mesh. Either a
+                ``fem.Constant`` (uniform) or a ``fem.Function`` (spatially
+                varying).
+        """
+        parent_mesh = self.interface.parent_mesh
+        fdim = parent_mesh.topology.dim - 1
+        interface_facets = self.interface.mt.find(self.interface.id)
+
+        interface_submesh, _, _, _ = dolfinx.mesh.create_submesh(
+            parent_mesh, fdim, interface_facets
+        )
+        # in 1D the interface is a point, and a point only admits order 0
+        element = ("CG", 1) if fdim > 0 else ("DG", 0)
+        V_interface = fem.functionspace(interface_submesh, element)
+
+        self._c_0_interface = fem.Function(
+            V_interface, name=f"{self.field.name}_interface_c0"
+        )
+        self._c_1_interface = fem.Function(
+            V_interface, name=f"{self.field.name}_interface_c1"
+        )
+
+        self._f_0_interface = fem.Function(
+            V_interface, name=f"{self.field.name}_interface_f0"
+        )
+        self._f_1_interface = fem.Function(
+            V_interface, name=f"{self.field.name}_interface_f1"
+        )
+        self.function = fem.Function(V_interface)
+        self.function.name = f"{self.field.name}_interface_residual"
+
+        imap = interface_submesh.topology.index_map(interface_submesh.topology.dim)
+        self._interface_cells = np.arange(
+            imap.size_local + imap.num_ghosts, dtype=np.int32
+        )
+
+        subdomain_0, subdomain_1 = self.interface.subdomains
+        V_0 = self.field.subdomain_to_post_processing_solution[
+            subdomain_0
+        ].function_space
+        V_1 = self.field.subdomain_to_post_processing_solution[
+            subdomain_1
+        ].function_space
+
+        self._interp_data_0 = fem.create_interpolation_data(
+            V_interface, V_0, self._interface_cells, padding=1e-11
+        )
+        self._interp_data_1 = fem.create_interpolation_data(
+            V_interface, V_1, self._interface_cells, padding=1e-11
+        )
+
+        self._temperature_fenics = temperature_fenics
+        if isinstance(temperature_fenics, fem.Constant):
+            self._T_func = None
+            # a fem.Constant carries the domain it was built on, so the parent-mesh
+            # temperature cannot appear in an expression with the interface-submesh
+            # concentrations: UFL rejects a form spanning two domains. Mirror it onto
+            # the submesh instead, and refresh the value in update(). Without this,
+            # a uniform temperature raises "Found multiple domains" as soon as
+            # E_K_S is non-zero (with E_K_S == 0 the temperature drops out of the
+            # expression entirely and the clash never surfaces).
+            # TODO: unnecessary from 0.11, see update()
+            self._T = as_fenics_constant(
+                float(temperature_fenics.value), interface_submesh
+            )
+        else:
+            self._T_func = fem.Function(V_interface)
+            self._T_interp_data = fem.create_interpolation_data(
+                V_interface,
+                temperature_fenics.function_space,
+                self._interface_cells,
+                padding=1e-11,
+            )
+            self._T = self._T_func
+
+        self.set_dolfinx_expression()
+
+        if self.filename is None:
+            self.writer = None
+        else:
+            self.writer = io.VTXWriter(
+                comm=interface_submesh.comm,
+                filename=self.filename,
+                output=[self.function, self._f_0_interface, self._f_1_interface],
+                engine="BP5",
+            )
+
+    def set_dolfinx_expression(self) -> None:
+        """Build the expressions of the two side terms and of the residual.
+
+        Evaluates ``K_S = K_S_0 * exp(-E_K_S / (k_B * T))`` on each side and
+        forms the side terms with :func:`interface_condition_term`:
+
+        - **Same law or Henry (side 0)**: ``f_0 = c_0 / K_S_0``
+        - **Sievert (side 0, mixed only)**: ``f_0 = (c_0 / K_S_0)^2``
+
+        and symmetrically for ``f_1``. The residual is ``|f_1 - f_0|``.
+
+        The expressions reference the interface functions and the temperature,
+        which are all updated in place by :meth:`update`, so they only need to
+        be built once (during :meth:`initialise`).
+        """
+        subdomain_0, subdomain_1 = self.interface.subdomains
+
+        # NOTE: this repeats what Material.get_solubility_coefficient does, but that
+        # method wraps K_S_0 and E_K_S in fem.Constants bound to a mesh. Here the
+        # expression spans the interface submesh (concentrations) and the parent mesh
+        # (a uniform temperature Constant), and UFL rejects a form whose coefficients
+        # come from two domains. Plain floats carry no domain, so they work for both a
+        # uniform and a space-dependent temperature.
+        K_S_0 = subdomain_0.material.get_K_S_0(self.field) * ufl.exp(
+            -subdomain_0.material.get_E_K_S(self.field) / (k_B * self._T)
+        )
+        K_S_1 = subdomain_1.material.get_K_S_0(self.field) * ufl.exp(
+            -subdomain_1.material.get_E_K_S(self.field) / (k_B * self._T)
+        )
+
+        # Compute f_i = (c_i / K_S_i) ^ {1, 2} on the interface submesh
+        f0 = interface_condition_term(
+            self._c_0_interface,
+            K_S_0,
+            subdomain_0.material.solubility_law,
+            subdomain_1.material.solubility_law,
+        )
+        f1 = interface_condition_term(
+            self._c_1_interface,
+            K_S_1,
+            subdomain_1.material.solubility_law,
+            subdomain_0.material.solubility_law,
+        )
+
+        interpolation_points = self.function.function_space.element.interpolation_points
+
+        self.f_0_expr = fem.Expression(f0, interpolation_points)
+        self.f_1_expr = fem.Expression(f1, interpolation_points)
+        self.residual_expr = fem.Expression(abs(f1 - f0), interpolation_points)
+
+    def update(self) -> None:
+        """Recompute the residual from the current solutions.
+
+        Interpolates the concentration of each subdomain (and the temperature if
+        it is space-dependent) onto the interface submesh, then evaluates the
+        side terms and the residual. Called by the problem before each write.
+        """
+        subdomain_0, subdomain_1 = self.interface.subdomains
+
+        # Get the concentration from each subdomain on the interface submesh
+        c_0 = self.field.subdomain_to_post_processing_solution[subdomain_0]
+        c_1 = self.field.subdomain_to_post_processing_solution[subdomain_1]
+
+        # TODO: drop all this interpolation once 0.10 is unsupported: 0.11 takes
+        # parent-mesh functions directly in a submesh expression
+        self._c_0_interface.interpolate_nonmatching(
+            c_0, self._interface_cells, interpolation_data=self._interp_data_0
+        )
+        self._c_1_interface.interpolate_nonmatching(
+            c_1, self._interface_cells, interpolation_data=self._interp_data_1
+        )
+
+        # Get the temperature on the interface submesh
+        if self._T_func is not None:
+            self._T_func.interpolate_nonmatching(
+                self._temperature_fenics,
+                self._interface_cells,
+                interpolation_data=self._T_interp_data,
+            )
+        else:
+            # a uniform temperature may still vary in time, and self._T is our own
+            # copy on the submesh, so it has to track the problem's constant
+            self._T.value = self._temperature_fenics.value
+
+        self.function.interpolate(self.residual_expr)
+        self._f_0_interface.interpolate(self.f_0_expr)
+        self._f_1_interface.interpolate(self.f_1_expr)
+
+    def write(self, t: float) -> None:
+        """Write the current residual to the VTX file, if one was requested.
+
+        Args:
+            t: the current time
+        """
+        if self.writer is not None:
+            self.writer.write(t)
+
+    def compute_statistics(self) -> dict[str, float]:
+        """Reduce the residual field over the interface to a few scalars.
+
+        Reduces over all MPI ranks, so this must be called on every rank.
+
+        ``max_relative`` divides the largest mismatch by the largest magnitude of
+        the two side terms, which is what makes the number interpretable: a
+        residual of 1e-3 is small when ``f_0`` is of order 1 and large when ``f_0``
+        is of order 1e-3. It is a single global ratio rather than the largest
+        pointwise ratio, because the pointwise one is unbounded wherever both
+        sides approach zero.
+
+        Returns:
+            the maximum, the mean, and the maximum relative residual
+        """
+        function_space = self.function.function_space
+        index_map = function_space.dofmap.index_map
+        # ghost dofs are owned by another rank; counting them would double count
+        n_owned = index_map.size_local * function_space.dofmap.index_map_bs
+
+        residual = self.function.x.array[:n_owned]
+        f_0 = self._f_0_interface.x.array[:n_owned]
+        f_1 = self._f_1_interface.x.array[:n_owned]
+
+        comm = function_space.mesh.comm
+        maximum = comm.allreduce(np.max(residual, initial=0.0), op=MPI.MAX)
+        total = comm.allreduce(np.sum(residual), op=MPI.SUM)
+        count = comm.allreduce(n_owned, op=MPI.SUM)
+        scale = comm.allreduce(
+            max(np.max(np.abs(f_0), initial=0.0), np.max(np.abs(f_1), initial=0.0)),
+            op=MPI.MAX,
+        )
+
+        return {
+            "max": maximum,
+            "mean": total / count if count else 0.0,
+            "max_relative": maximum / scale if scale > 0 else 0.0,
+        }
+
+    def log_statistics(self, t: float) -> None:
+        """Log the residual statistics for this interface at INFO level.
+
+        Returns immediately unless the user has selected ``INFO`` or below, since
+        the statistics cost an MPI reduction on every timestep. See the
+        troubleshooting guide for how to enable it.
+
+        Args:
+            t: the current time, included in the logged line
+        """
+        if dolfinx.log.get_log_level() > dolfinx.log.LogLevel.INFO:
+            return
+
+        stats = self.compute_statistics()
+
+        # the reduction above is collective, the line itself is not
+        if self.function.function_space.mesh.comm.rank != 0:
+            return
+
+        dolfinx.log.log(
+            dolfinx.log.LogLevel.INFO,
+            f"Interface {self.interface.id} residual ({self.field.name}) "
+            f"{t=:.5e} ; max={stats['max']:.5e} ; avg={stats['mean']:.5e} ; "
+            f"max_relative={stats['max_relative']:.5e}",
+        )
+
+
 class ReactionRateExport(CustomFieldExport):
     """Export a reaction rate to a VTX file
 
@@ -369,7 +746,6 @@ class ReactionRateExport(CustomFieldExport):
         subdomain: VolumeSubdomain | None = None,
         checkpoint: bool = False,
     ):
-
         reactant_names = [reactant.name for reactant in reaction.reactant]
         if isinstance(reaction.product, list):
             product_names = [product.name for product in reaction.product]
@@ -379,9 +755,9 @@ class ReactionRateExport(CustomFieldExport):
         def expression(T, **kwargs):
             _reactant_names = [kwargs[name] for name in reactant_names]
             _product_names = [kwargs[name] for name in product_names]
-            k = reaction.k_0 * ufl.exp(-reaction.E_k / (_k_B * T))
+            k = reaction.k_0 * ufl.exp(-reaction.E_k / (k_B * T))
             if reaction.p_0 and reaction.E_p:
-                p = reaction.p_0 * ufl.exp(-reaction.E_p / (_k_B * T))
+                p = reaction.p_0 * ufl.exp(-reaction.E_p / (k_B * T))
             elif reaction.p_0:
                 p = reaction.p_0
             else:

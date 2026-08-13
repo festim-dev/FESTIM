@@ -17,6 +17,7 @@ from .vtx import (
     CustomFieldExport,
     ExportBaseClass,
     ReactionRateExport,
+    VTXInterfaceResidualExport,
     VTXSpeciesExport,
     VTXTemperatureExport,
 )
@@ -40,6 +41,7 @@ __all__ = [
     "SurfaceQuantity",
     "TotalSurface",
     "TotalVolume",
+    "VTXInterfaceResidualExport",
     "VTXSpeciesExport",
     "VTXTemperatureExport",
     "VolumeQuantity",
