@@ -93,14 +93,39 @@ class FieldQuantity(DerivedQuantity):
         self._domain = value
 
     @property
+    def reads_domain_itself(self) -> bool:
+        """Whether :attr:`field` lives on :attr:`domain`, rather than beside it.
+
+        Only a manifold makes this a real question. A codim-1 volume subdomain is both
+        a subdomain a species can live on and a set of facets a *bulk* species has a
+        trace on, and the two mean different integrals over the same geometry:
+
+        * ``Total(field=H_manifold, domain=gamma)`` integrates the manifold's own field
+          over the manifold, on its submesh;
+        * ``Total(field=H_bulk, domain=gamma)`` integrates the bulk field over the
+          facets gamma occupies, read from the side the bulk species lives on.
+
+        A species that does not declare its subdomains is treated as living on the
+        domain, which is the single-mesh case where the distinction cannot arise.
+        """
+        subdomains = getattr(self.field, "subdomains", None)
+        if not subdomains:
+            return True
+        return self.domain in subdomains
+
+    @property
     def domain_name(self) -> str:
         """``"volume"`` or ``"surface"``, for titles.
 
-        Taken from the *declared* type rather than the geometry, so that the title of a
-        quantity on a codim-1 volume subdomain still calls it a volume: that is how the
-        user declared it, and it keeps csv headers stable across this refactor.
+        A surface subdomain is always a surface. A volume subdomain is a volume when
+        the field lives on it, and a surface when it does not -- a bulk quantity over a
+        manifold's facets is a surface quantity in every sense the user cares about,
+        and that is the header ``TotalSurface(field=bulk, surface=gamma)`` wrote before
+        this refactor.
         """
-        return "surface" if isinstance(self.domain, SurfaceSubdomain) else "volume"
+        if isinstance(self.domain, SurfaceSubdomain):
+            return "surface"
+        return "volume" if self.reads_domain_itself else "surface"
 
     @property
     def title(self):

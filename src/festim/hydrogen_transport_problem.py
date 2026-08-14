@@ -1975,6 +1975,21 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
     # post-processing is confined to these overrides.
     # ------------------------------------------------------------------
 
+    def _reads_domain_itself(self, domain, field) -> bool:
+        """Whether ``field`` lives on ``domain`` itself rather than beside it.
+
+        The one discriminator the manifold export cases turn on; see
+        :attr:`festim.exports.quantity.FieldQuantity.reads_domain_itself`, which asks
+        the same question of a quantity. A codim-0 volume subdomain is always its own,
+        so only a manifold reaches the membership test.
+        """
+        if not isinstance(domain, _subdomain.VolumeSubdomain):
+            return False
+        if domain.codim(self.mesh.vdim) != 1:
+            return True
+        subdomains = getattr(field, "subdomains", None)
+        return True if not subdomains else domain in subdomains
+
     def volume_of(self, domain, field=None) -> _subdomain.VolumeSubdomain:
         """The volume subdomain whose submesh ``domain`` lives on: itself if it is a
         volume subdomain, the volume it bounds if it is a surface.
@@ -1985,7 +2000,12 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         one is bounded by the same surface.
         """
         if isinstance(domain, _subdomain.VolumeSubdomain):
-            return domain
+            # a bulk species has no solution on a manifold's submesh: its quantity over
+            # those facets is read from the side it actually lives on, which is the
+            # rule coupling terms already use
+            if self._reads_domain_itself(domain, field):
+                return domain
+            return self.coupling_side(domain, field)
         if domain.codim(self.mesh.vdim) == 2:
             return self.manifold_of(domain, field)
         return self.surface_to_volume[domain]
@@ -2000,6 +2020,11 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         :attr:`~festim.VolumeSubdomain.submesh_cell_tag`.
         """
         if isinstance(domain, _subdomain.VolumeSubdomain):
+            if not self._reads_domain_itself(domain, field):
+                # a bulk field over a manifold's facets. The parent ds integrates to
+                # exactly zero over interior facets, so this has to be the dS coupling
+                # measure -- a silent zero rather than an error otherwise
+                return self.unindexed_coupling_measure(domain)
             # export_volume_measure builds and caches exactly this measure, tagging
             # owned cells only so a ghost is not counted twice in parallel. Building a
             # fresh ufl.Measure per timestep here would also defeat form caching.
@@ -2072,19 +2097,20 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
     def restriction_for(self, domain, field=None) -> str | None:
         """Which side of an interior facet a quantity over ``domain`` is read on.
 
-        Every measure :meth:`measure_for` returns is a cell or exterior facet measure
-        -- a manifold's own ``dx`` on its submesh, the boundary ``ds`` of that submesh,
-        or the parent ``dx``/``ds`` -- so nothing needs restricting and this is
-        ``None``.
+        Only a bulk field over an interior manifold's facets needs one: that integral
+        uses the ``dS`` coupling measure, where every discontinuous terminal has to be
+        restricted. The side is the one the field lives on, which is the same rule
+        :meth:`export_surface_context` applies to a ``SurfaceFlux``, so the two agree
+        on sign.
 
-        It is a hook rather than a constant because the interior-facet case is real and
-        unimplemented: a ``Total`` of a *bulk* species over the facets an interior
-        manifold occupies would use the ``dS`` coupling measure, exactly as
-        :meth:`export_surface_context` does for a ``SurfaceFlux``, and would then need
-        ``self.restriction_of(domain, volume)``. Wiring that up means deciding how a
-        FieldQuantity names which side it wants, which is a design question rather than
-        a mechanical one -- see the note in the reconciliation patch.
+        Everything else -- a manifold's own ``dx``, the boundary ``ds`` of its submesh,
+        the parent ``dx`` and ``ds`` -- is a cell or exterior facet integral, where
+        nothing needs restricting.
         """
+        if isinstance(domain, _subdomain.VolumeSubdomain) and not (
+            self._reads_domain_itself(domain, field)
+        ):
+            return self.restriction_of(domain, self.volume_of(domain, field))
         return None
 
     def custom_quantity_kwargs(self, domain) -> dict:
@@ -3252,6 +3278,20 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     "has no single field to resolve which manifold that is; use a "
                     "Total, Average, Maximum, Minimum or SurfaceFlux there instead."
                 )
+
+        # resolve every field quantity's domain now, and throw the result away. The
+        # resolution is memoised, so this costs nothing at post-processing; what it buys
+        # is that a locator matching no entity, a species on neither side of a manifold,
+        # or a surface that is not a manifold's boundary is reported from initialise()
+        # -- next to the model definition that caused it -- rather than from the first
+        # timestep. SurfaceQuantity already gets this from export_surface_context; the
+        # field quantities resolve lazily through measure_for and would not.
+        for export in self.exports:
+            if isinstance(export, exports.IntegralQuantity):
+                self.measure_for(export.domain, export.field)
+                self.restriction_for(export.domain, export.field)
+            elif isinstance(export, exports.ExtremumQuantity):
+                self.entities_for(export.domain, export.field)
 
     def initialise_exports(self):
         self.check_export_compatibility()
