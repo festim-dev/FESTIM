@@ -51,7 +51,7 @@ What sets :math:`\mathbf{v}` depends on the physics.
 **Advection** (:class:`festim.AdvectionTerm`) takes the velocity directly, for hydrogen carried by a moving fluid.
 
 .. note::
-    Before FESTIM 2.1, :class:`festim.AdvectionTerm` was assembled as :math:`\mathbf{v} \cdot \nabla c_\mathrm{m}`. That form agrees with the divergence form wherever :math:`\nabla \cdot \mathbf{v} = 0` — as it is for an incompressible flow — but it puts no flux through a boundary that carries no condition, so nothing was carried out through an outlet. Models with a non-solenoidal velocity, or with an untagged boundary the flow crosses, will give different results.
+    Before FESTIM 2.2, :class:`festim.AdvectionTerm` was assembled as :math:`\mathbf{v} \cdot \nabla c_\mathrm{m}`. That form agrees with the divergence form wherever :math:`\nabla \cdot \mathbf{v} = 0` — as it is for an incompressible flow — but it puts no flux through a boundary that carries no condition, so nothing was carried out through an outlet. Models with a non-solenoidal velocity, or with an untagged boundary the flow crosses, will give different results.
 
 **Soret effect** (:class:`festim.SoretTerm`) :cite:`Pendergrass1976,Longhurst1985`, also called thermophoresis, temperature-assisted diffusion, or thermodiffusion, drives hydrogen along a temperature gradient:
 
