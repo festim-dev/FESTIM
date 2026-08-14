@@ -60,7 +60,7 @@ Advection
 
 Hydrogen carried by a moving fluid, with the velocity given directly as a
 ``dolfinx.fem.Function`` on a vector function space. See the note on
-:ref:`the divergence form <conservative_form>` below -- this changed in FESTIM 2.1:
+:ref:`the divergence form <conservative_form>` below -- this changed in FESTIM 2.2:
 
 .. code-block:: python
 
@@ -85,7 +85,7 @@ see :ref:`outflow` below.
 
 .. warning::
 
-    **This changes results for existing advection models.** Before FESTIM 2.1,
+    **This changes results for existing advection models.** Before FESTIM 2.2,
     :class:`festim.AdvectionTerm` used :math:`\mathbf{v} \cdot \nabla c`. Your results
     are unchanged if both of the following hold:
 
