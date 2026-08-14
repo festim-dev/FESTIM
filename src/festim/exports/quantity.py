@@ -28,6 +28,7 @@ import ufl
 from scifem import assemble_scalar
 
 from festim.exports.derived_quantity import DerivedQuantity
+from festim.helpers import restrict
 from festim.species import Species
 from festim.subdomain.surface_subdomain import SurfaceSubdomain
 from festim.subdomain.volume_subdomain import VolumeSubdomain
@@ -121,7 +122,7 @@ class IntegralQuantity(FieldQuantity):
     ``problem.measure_for(domain)`` serves every integral quantity.
     """
 
-    def compute(self, u, measure: ufl.Measure, entity_maps=None):
+    def compute(self, u, measure: ufl.Measure, entity_maps=None, restriction=None):
         """Assembles the quantity and appends it to :attr:`data`.
 
         Args:
@@ -130,13 +131,19 @@ class IntegralQuantity(FieldQuantity):
                 ``measure(domain.id)``. ``dx`` or ``ds`` on the parent mesh, or a ``dx``
                 on a submesh for a codimensional subdomain
             entity_maps: entity maps relating the parent mesh and the submeshes
+            restriction: ``"+"``, ``"-"`` or ``None``. Which side of an interior facet
+                to read the field on, when ``measure`` is an interior facet measure.
+                Supplied by the problem via ``restriction_for``; ``None`` for every
+                cell and exterior facet integral, where nothing needs restricting
         """
-        self.value = self.integrate(u, measure(self.domain.id), entity_maps)
+        self.value = self.integrate(
+            u, measure(self.domain.id), entity_maps, restriction
+        )
         self.data.append(self.value)
         return self.value
 
     @abstractmethod
-    def integrate(self, u, dmeasure, entity_maps):
+    def integrate(self, u, dmeasure, entity_maps, restriction):
         """The value of the quantity, given the restricted measure ``dmeasure``."""
 
 
@@ -202,8 +209,10 @@ class Total(IntegralQuantity):
 
     _quantity_name = "Total"
 
-    def integrate(self, u, dmeasure, entity_maps):
-        return assemble_scalar(u * dmeasure, entity_maps=entity_maps)
+    def integrate(self, u, dmeasure, entity_maps, restriction=None):
+        return assemble_scalar(
+            restrict(u, restriction) * dmeasure, entity_maps=entity_maps
+        )
 
 
 class Average(IntegralQuantity):
@@ -218,9 +227,14 @@ class Average(IntegralQuantity):
 
     _quantity_name = "Average"
 
-    def integrate(self, u, dmeasure, entity_maps):
-        return assemble_scalar(u * dmeasure, entity_maps=entity_maps) / assemble_scalar(
-            1 * dmeasure, entity_maps=entity_maps
+    def integrate(self, u, dmeasure, entity_maps, restriction=None):
+        # the denominator is restricted too: on an interior facet an unrestricted
+        # constant is not a valid integrand, and the measure of the facet is the same
+        # read from either side
+        return assemble_scalar(
+            restrict(u, restriction) * dmeasure, entity_maps=entity_maps
+        ) / assemble_scalar(
+            restrict(1, restriction) * dmeasure, entity_maps=entity_maps
         )
 
 

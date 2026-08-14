@@ -1209,7 +1209,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
     # place, rather than being branched on at each call site in post-processing.
     # ------------------------------------------------------------------
 
-    def measure_for(self, domain) -> ufl.Measure:
+    def measure_for(self, domain, field=None) -> ufl.Measure:
         """The *unrestricted* measure that integrates over ``domain``.
 
         Unrestricted means before ``measure(domain.id)``, which the quantity applies
@@ -1217,7 +1217,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         """
         return self.ds if isinstance(domain, _subdomain.SurfaceSubdomain) else self.dx
 
-    def integration_mesh_for(self, domain) -> dolfinx.mesh.Mesh:
+    def integration_mesh_for(self, domain, field=None) -> dolfinx.mesh.Mesh:
         """The mesh that :meth:`measure_for` integrates over.
 
         Anything built for an integrand rather than looked up -- a spatial coordinate,
@@ -1227,7 +1227,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         """
         return self.mesh.mesh
 
-    def entities_for(self, domain) -> tuple[dolfinx.mesh.MeshTags, int]:
+    def entities_for(self, domain, field=None) -> tuple[dolfinx.mesh.MeshTags, int]:
         """The meshtags in which ``domain`` is tagged, and the dimension of its
         entities.
 
@@ -1261,11 +1261,12 @@ class HydrogenTransportProblem(problem.ProblemBase):
         if isinstance(export, exports.IntegralQuantity):
             export.compute(
                 u=self.solution_for(export.field, domain),
-                measure=self.measure_for(domain),
-                entity_maps=self.entity_maps_for(domain),
+                measure=self.measure_for(domain, export.field),
+                entity_maps=self.entity_maps_for(domain, export.field),
+                restriction=self.restriction_for(domain, export.field),
             )
         elif isinstance(export, exports.ExtremumQuantity):
-            meshtags, entity_dim = self.entities_for(domain)
+            meshtags, entity_dim = self.entities_for(domain, export.field)
             export.compute(
                 u=self.collapsed_solution_for(export.field, domain),
                 meshtags=meshtags,
@@ -1276,9 +1277,18 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 f"cannot compute derived quantity of type {type(export).__name__}"
             )
 
-    def entity_maps_for(self, domain):
+    def entity_maps_for(self, domain, field=None):
         """Entity maps relating the integration domain to the meshes the coefficients
         live on. A single-mesh problem needs none."""
+        return None
+
+    def restriction_for(self, domain, field=None) -> str | None:
+        """Which side of an interior facet an integral over ``domain`` is read on.
+
+        ``None`` for every cell and exterior facet integral, which is all a single-mesh
+        problem has. Overridden where a measure may be an interior facet one; see
+        :meth:`festim.helpers.restrict`.
+        """
         return None
 
     def post_processing(self):
@@ -1965,21 +1975,22 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
     # post-processing is confined to these overrides.
     # ------------------------------------------------------------------
 
-    def volume_of(self, domain) -> _subdomain.VolumeSubdomain:
+    def volume_of(self, domain, field=None) -> _subdomain.VolumeSubdomain:
         """The volume subdomain whose submesh ``domain`` lives on: itself if it is a
-        volume subdomain, the volume it bounds if it is a surface."""
+        volume subdomain, the volume it bounds if it is a surface.
+
+        A codim-2 surface bounds a *manifold* rather than a codim-0 volume, so it is
+        not a key of ``surface_to_volume``. The drift PR resolves that case with
+        :meth:`manifold_of`, which needs the field to pick the manifold when more than
+        one is bounded by the same surface.
+        """
         if isinstance(domain, _subdomain.VolumeSubdomain):
             return domain
-        try:
-            return self.surface_to_volume[domain]
-        except KeyError:
-            raise NotImplementedError(
-                f"surface subdomain {domain.id} is not adjacent to any volume "
-                "subdomain of the parent mesh. A codim-2 surface bounds a manifold, "
-                "and derived quantities there are not supported yet."
-            ) from None
+        if domain.codim(self.mesh.vdim) == 2:
+            return self.manifold_of(domain, field)
+        return self.surface_to_volume[domain]
 
-    def measure_for(self, domain) -> ufl.Measure:
+    def measure_for(self, domain, field=None) -> ufl.Measure:
         """The unrestricted measure that integrates over ``domain``.
 
         For a codim-0 subdomain this is the parent-mesh measure, as before. For a
@@ -1988,16 +1999,22 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         meshtags -- so the integral is assembled on the manifold's own submesh against
         :attr:`~festim.VolumeSubdomain.submesh_cell_tag`.
         """
-        if (
-            isinstance(domain, _subdomain.VolumeSubdomain)
-            and domain.codim(self.mesh.vdim) == 1
-        ):
-            return ufl.Measure(
-                "dx", domain=domain.submesh, subdomain_data=domain.submesh_cell_tag
-            )
-        return super().measure_for(domain)
+        if isinstance(domain, _subdomain.VolumeSubdomain):
+            # export_volume_measure builds and caches exactly this measure, tagging
+            # owned cells only so a ghost is not counted twice in parallel. Building a
+            # fresh ufl.Measure per timestep here would also defeat form caching.
+            return self.export_volume_measure(domain)
 
-    def integration_mesh_for(self, domain) -> dolfinx.mesh.Mesh:
+        if domain.codim(self.mesh.vdim) == 2:
+            # the boundary of a manifold: an ordinary exterior facet integral on that
+            # manifold's submesh, not a codim-2 integral of the parent mesh
+            return self._manifold_boundary_measure(
+                domain, self.volume_of(domain, field)
+            )
+
+        return super().measure_for(domain, field)
+
+    def integration_mesh_for(self, domain, field=None) -> dolfinx.mesh.Mesh:
         """The mesh :meth:`measure_for` integrates over: the submesh of a manifold, the
         parent mesh otherwise."""
         if (
@@ -2005,9 +2022,14 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             and domain.codim(self.mesh.vdim) == 1
         ):
             return domain.submesh
-        return super().integration_mesh_for(domain)
+        if (
+            isinstance(domain, _subdomain.SurfaceSubdomain)
+            and domain.codim(self.mesh.vdim) == 2
+        ):
+            return self.volume_of(domain, field).submesh
+        return super().integration_mesh_for(domain, field)
 
-    def entities_for(self, domain) -> tuple[dolfinx.mesh.MeshTags, int]:
+    def entities_for(self, domain, field=None) -> tuple[dolfinx.mesh.MeshTags, int]:
         """The meshtags in which ``domain`` is tagged, and the dimension of its
         entities -- on the *submesh*, because that is where the fields live.
 
@@ -2018,22 +2040,52 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         if isinstance(domain, _subdomain.VolumeSubdomain):
             return domain.submesh_cell_tag, domain.submesh.topology.dim
 
-        volume = self.volume_of(domain)
+        volume = self.volume_of(domain, field)
+        if domain.codim(self.mesh.vdim) == 2:
+            # the manifold's own facet tags are not transferred to its submesh, but
+            # _manifold_boundary_measure already builds tags for exactly this surface
+            measure = self._manifold_boundary_measure(domain, volume)
+            return (
+                measure.subdomain_data(),
+                volume.submesh.topology.dim - 1,
+            )
         if volume.ft is None:
             raise NotImplementedError(
-                f"surface subdomain {domain.id} bounds a manifold, whose facet tags "
-                "are not transferred to its submesh."
+                f"surface subdomain {domain.id} has no facet tags on the submesh of "
+                f"volume subdomain {volume.id}."
             )
         return volume.ft, volume.submesh.topology.dim - 1
 
     def solution_for(self, field, domain):
-        return field.subdomain_to_post_processing_solution[self.volume_of(domain)]
+        return field.subdomain_to_post_processing_solution[
+            self.volume_of(domain, field)
+        ]
 
     def collapsed_solution_for(self, field, domain) -> fem.Function:
-        return field.subdomain_to_post_processing_solution[self.volume_of(domain)]
+        return field.subdomain_to_post_processing_solution[
+            self.volume_of(domain, field)
+        ]
 
-    def entity_maps_for(self, domain):
+    def entity_maps_for(self, domain, field=None):
         return [sd.cell_map for sd in self.volume_subdomains]
+
+    def restriction_for(self, domain, field=None) -> str | None:
+        """Which side of an interior facet a quantity over ``domain`` is read on.
+
+        Every measure :meth:`measure_for` returns is a cell or exterior facet measure
+        -- a manifold's own ``dx`` on its submesh, the boundary ``ds`` of that submesh,
+        or the parent ``dx``/``ds`` -- so nothing needs restricting and this is
+        ``None``.
+
+        It is a hook rather than a constant because the interior-facet case is real and
+        unimplemented: a ``Total`` of a *bulk* species over the facets an interior
+        manifold occupies would use the ``dS`` coupling measure, exactly as
+        :meth:`export_surface_context` does for a ``SurfaceFlux``, and would then need
+        ``self.restriction_of(domain, volume)``. Wiring that up means deciding how a
+        FieldQuantity names which side it wants, which is a design question rather than
+        a mechanical one -- see the note in the reconciliation patch.
+        """
+        return None
 
     def custom_quantity_kwargs(self, domain) -> dict:
         """The keyword arguments handed to a ``CustomQuantity``'s ``expr``, built for
@@ -3178,39 +3230,27 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         """Rejects the derived quantities that cannot yet be computed on a
         codimensional subdomain.
 
-        Only the codim-2 surfaces are left: they bound a manifold, and no
-        ``surface_to_volume`` entry maps to them. The extrema resolve their entities
-        through :meth:`entities_for` and a ``CustomQuantity`` builds its integrand on
-        :meth:`integration_mesh_for`, so both handle every codimension on their own.
-        Without this check a codim-2 domain fails far from its cause, as a bare
-        ``KeyError``.
+        Only ``CustomQuantity`` on a codim-2 surface is left. Every other quantity now
+        resolves that case: ``SurfaceFlux`` through :meth:`export_surface_context`, and
+        the field quantities through :meth:`measure_for` and :meth:`entities_for`, both
+        of which reach the bounded manifold via :meth:`manifold_of`. That resolution is
+        keyed on the quantity's ``field``, and a ``CustomQuantity`` has none -- its
+        integrand may name any number of species -- so there is nothing to pick the
+        manifold with when a surface bounds more than one.
         """
         for export in self.exports:
-            # `domain` on the new quantities, `surface` on SurfaceFlux, `subdomain`
-            # on CustomQuantity
-            domain = next(
-                (
-                    d
-                    for d in (
-                        getattr(export, "domain", None),
-                        getattr(export, "surface", None),
-                        getattr(export, "subdomain", None),
-                    )
-                    if d is not None
-                ),
-                None,
-            )
-            if domain is None:
+            if not isinstance(export, exports.CustomQuantity):
                 continue
-
+            domain = export.subdomain
             if (
                 isinstance(domain, _subdomain.SurfaceSubdomain)
                 and domain.codim(self.mesh.vdim) == 2
             ):
                 raise NotImplementedError(
-                    f"{type(export).__name__} is defined on codim-2 surface subdomain "
-                    f"{domain.id}, which bounds a manifold. Derived quantities on the "
-                    "boundary of a codim-1 volume subdomain are not supported yet."
+                    f"CustomQuantity {export.title!r} is defined on codim-2 surface "
+                    f"subdomain {domain.id}, which bounds a manifold. A CustomQuantity "
+                    "has no single field to resolve which manifold that is; use a "
+                    "Total, Average, Maximum, Minimum or SurfaceFlux there instead."
                 )
 
     def initialise_exports(self):

@@ -58,11 +58,20 @@ class _SurfaceAlias:
 
 
 class _LegacyIntegralCompute:
-    """Keeps ``compute(u, dx=...)`` and ``compute(u, ds=...)`` working."""
+    """Keeps ``compute(u, dx=...)`` and ``compute(u, ds=...)`` working.
 
-    def compute(self, u, measure=None, entity_maps=None, *, dx=None, ds=None):
+    ``restriction`` is accepted and forwarded rather than swallowed: the discontinuous
+    problem passes it by keyword for every surface integral, so dropping it here would
+    read an interior-facet quantity off an arbitrary side.
+    """
+
+    def compute(
+        self, u, measure=None, entity_maps=None, *, dx=None, ds=None, restriction=None
+    ):
         measure = next(m for m in (measure, dx, ds) if m is not None)
-        return super().compute(u=u, measure=measure, entity_maps=entity_maps)
+        return super().compute(
+            u=u, measure=measure, entity_maps=entity_maps, restriction=restriction
+        )
 
 
 class _LegacyExtremumCompute:
