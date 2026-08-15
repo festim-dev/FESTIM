@@ -1,0 +1,23 @@
+# Experimental points digitised from Fig. 5 of Fuerst, Taylor & Shimada,
+# IEEE Trans. Plasma Sci. 52 (2024) 3925, doi:10.1109/TPS.2024.3356857.
+# Produced by digitise_fig5.py from the published PDF; feed rates land within
+# a few sccm of the round numbers the campaign used, which is the digitisation
+# error. 3.95% D2 in He.
+series,temperature_K,total_pressure_Pa,feed_sccm,permeated_sccm
+450C_250kPa,723.15,250000,101.1,3.891
+450C_250kPa,723.15,250000,191.0,7.205
+450C_250kPa,723.15,250000,297.5,8.733
+450C_250kPa,723.15,250000,396.7,9.447
+450C_250kPa,723.15,250000,497.4,10.138
+450C_250kPa,723.15,250000,597.3,10.487
+450C_250kPa,723.15,250000,696.2,10.635
+450C_250kPa,723.15,250000,796.8,10.448
+450C_250kPa,723.15,250000,895.8,10.209
+450C_250kPa,723.15,250000,995.7,9.926
+300C_90kPa,573.15,90000,90.2,1.679
+300C_90kPa,573.15,90000,181.9,2.155
+300C_90kPa,573.15,90000,272.5,2.386
+300C_90kPa,573.15,90000,363.8,2.415
+300C_90kPa,573.15,90000,455.6,2.444
+300C_90kPa,573.15,90000,546.9,2.445
+300C_90kPa,573.15,90000,638.7,2.474
