@@ -794,3 +794,137 @@ def test_coupling_reads_the_species_solution_on_the_manifold_s_own_side():
     assert np.allclose(values(H_mr, middle), 2.0, atol=1e-8)
     # the right strip shares the species but nothing else, and only sees its own wall
     assert np.allclose(values(H_mr, right), 0.0, atol=1e-8)
+
+
+# --- an interface and an interior manifold in one model ---------------------------
+#
+# The two are independent mechanisms on different facets, but they meet in the form of
+# any volume subdomain bounded by both: an interface condition and a manifold coupling
+# are both dS integrals of the parent mesh, so that form needs the shared measure.
+
+PENALTY = 10.0
+
+
+def build_interface_and_manifold(n=12):
+    """Three strips joined at ``x = 1/3`` by an interior manifold and at ``x = 2/3`` by
+    an :class:`festim.Interface`, so the middle strip is bounded by both."""
+    mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, n, n)
+    # the interface relates u_0/K_0 to u_1/K_1, so the bulks need a solubility
+    mat = F.Material(D_0=D_BULK, E_D=0.0, K_S_0=1.0, E_K_S=0.0)
+
+    left = F.VolumeSubdomain(
+        id=LEFT_ID, material=mat, locator=lambda x: x[0] <= 1 / 3 + 1e-14
+    )
+    middle = F.VolumeSubdomain(
+        id=MID_ID,
+        material=mat,
+        locator=lambda x: np.logical_and(x[0] >= 1 / 3 - 1e-14, x[0] <= 2 / 3 + 1e-14),
+    )
+    right = F.VolumeSubdomain(
+        id=RIGHT_ID, material=mat, locator=lambda x: x[0] >= 2 / 3 - 1e-14
+    )
+    gamma = F.VolumeSubdomain(
+        id=GAMMA_1_ID,
+        material=F.Material(D_0=D_GAMMA, E_D=0.0),
+        dim=1,
+        locator=lambda x: np.isclose(x[0], 1 / 3),
+    )
+    outer_l = F.SurfaceSubdomain(id=OUTER_L_ID, locator=lambda x: np.isclose(x[0], 0.0))
+    outer_r = F.SurfaceSubdomain(id=OUTER_R_ID, locator=lambda x: np.isclose(x[0], 1.0))
+
+    H_l = F.Species("H_l", subdomains=[left])
+    # the interface enforces the continuity of this one across x = 2/3
+    H_mr = F.Species("H_mr", subdomains=[middle, right])
+    H_g = F.Species("H_g", subdomains=[gamma])
+
+    sources, bcs = [], []
+    for bulk_species, k in ((H_l, K1_LEFT), (H_mr, K1_RIGHT)):
+        source, flux = _exchange(gamma, H_g, bulk_species, k)
+        sources.append(source)
+        bcs.append(flux)
+    bcs += [
+        F.FixedConcentrationBC(subdomain=outer_l, value=2.0, species=H_l),
+        F.FixedConcentrationBC(subdomain=outer_r, value=0.0, species=H_mr),
+    ]
+
+    model = F.HydrogenTransportProblemDiscontinuous(
+        mesh=F.Mesh(mesh),
+        species=[H_l, H_mr, H_g],
+        subdomains=[left, middle, right, gamma, outer_l, outer_r],
+        sources=sources,
+        boundary_conditions=bcs,
+        interfaces=[
+            F.Interface(id=9, subdomains=[middle, right], penalty_term=PENALTY)
+        ],
+        temperature=500,
+        settings=F.Settings(atol=1e-12, rtol=1e-12, transient=False),
+    )
+    return model, (left, middle, right, gamma), (H_l, H_mr, H_g)
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+def test_interface_and_interior_manifold_bounding_one_subdomain(recwarn):
+    """A strip may have a manifold on one side and an interface on the other.
+
+    What the two may not do is cover the *same* facets, which is checked separately.
+
+    One flux crosses everything at steady state, so the drop across each element of the
+    chain predicts the same J. That holds whatever the interface's own resistance is,
+    which is what makes it a fair check of the coupling rather than of the penalty
+    constant.
+    """
+    model, (left, middle, right, gamma), (H_l, H_mr, H_g) = (
+        build_interface_and_manifold()
+    )
+    model.initialise()
+
+    # neither the left bulk species nor the manifold's own species touches both sides
+    # of the interface, and neither is a mistake, so neither should warn
+    assert [w for w in recwarn if "interface" in str(w.message)] == []
+
+    # the middle strip's form now carries a manifold dS and an interface dS
+    assert_subdomain_data_is_shared(middle.F, "the middle strip")
+
+    model.run()
+
+    def values(spe, subdomain):
+        return spe.subdomain_to_post_processing_solution[subdomain].x.array
+
+    c_left, c_g = values(H_l, left), values(H_g, gamma)
+    c_middle, c_right = values(H_mr, middle), values(H_mr, right)
+
+    # monotone step down from the fed wall to the empty one
+    assert np.isclose(c_left.max(), 2.0, atol=1e-10)
+    assert c_left.min() > c_g.max()
+    assert c_g.min() > c_middle.max()
+    assert c_middle.min() > c_right.max()
+    assert np.isclose(c_right.min(), 0.0, atol=1e-10)
+
+    # the same flux through both bulk strips and both faces of the manifold
+    bulk_conductance = 3 * D_BULK
+    fluxes = [
+        bulk_conductance * (2.0 - c_left.min()),
+        K1_LEFT * (c_left.min() - c_g.max()),
+        K1_RIGHT * (c_g.min() - c_middle.max()),
+        bulk_conductance * (c_middle.max() - c_middle.min()),
+        bulk_conductance * (c_right.max() - 0.0),
+    ]
+    assert np.allclose(fluxes, fluxes[0], rtol=1e-6)
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+def test_species_on_one_side_of_an_interface_warns():
+    """A species on exactly one of an interface's subdomains cannot be made continuous
+    across it. That is either deliberate -- a species absent from the neighbouring
+    material -- or a subdomain missing from its list, and only the user can tell which,
+    so it is skipped out loud."""
+    model, (_, _, right, _), _ = build_interface_and_manifold()
+    outer_r = next(s for s in model.subdomains if s.id == OUTER_R_ID)
+    confined = F.Species("H_right_only", subdomains=[right])
+    model.species.append(confined)
+    model.boundary_conditions.append(
+        F.FixedConcentrationBC(subdomain=outer_r, value=1.0, species=confined)
+    )
+
+    with pytest.warns(UserWarning, match="the other side of interface 9"):
+        model.initialise()

@@ -2513,6 +2513,41 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         gas_species.F = form
 
+    def interface_species(self, interface: _subdomain.Interface):
+        """The mobile species whose continuity ``interface`` enforces.
+
+        An interface condition relates the two solutions of one species across the
+        facets, so it applies to a species that has a solution on both of its volume
+        subdomains. In a model with codim-1 subdomains most species do not: a
+        manifold's own species lives on a subdomain that is not a volume of any
+        interface, and a bulk species may be confined to one side of a manifold. Those
+        are simply not part of this interface's condition.
+
+        A species present on exactly one of the two sides is the ambiguous case. It is
+        either deliberately absent from the neighbouring material or a subdomain
+        missing from its ``subdomains``, and only the user can tell which, so it is
+        skipped with a warning rather than silently.
+        """
+        subdomain_0, subdomain_1 = interface.subdomains
+        coupled = []
+        for species in self.species:
+            if not species.mobile:
+                continue
+            present = [s for s in (subdomain_0, subdomain_1) if s in species.subdomains]
+            if len(present) == 2:
+                coupled.append(species)
+            elif present:
+                missing = subdomain_1 if present[0] is subdomain_0 else subdomain_0
+                warnings.warn(
+                    f"species {species.name} lives on volume subdomain "
+                    f"{present[0].id} but not on {missing.id}, the other side of "
+                    f"interface {interface.id}, so the interface condition is not "
+                    "applied to it. Add the missing subdomain to its `subdomains` if "
+                    "it was meant to be continuous across that interface.",
+                    stacklevel=2,
+                )
+        return coupled
+
     def create_formulation(self):
         """Takes all the formulations for each subdomain and adds the interface
         conditions.
@@ -2525,11 +2560,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         # bounding the same volume subdomain still agree on their subdomain data
         dInterface = self.interior_facet_measure
 
-        all_mobile_species = [spe for spe in self.species if spe.mobile]
         for interface in self.interfaces:
             F_0, F_1 = interface.get_formulation(
                 dInterface,
-                species=all_mobile_species,
+                species=self.interface_species(interface),
                 temperature=self.temperature_fenics,
             )
             subdomain_0, subdomain_1 = interface.subdomains
