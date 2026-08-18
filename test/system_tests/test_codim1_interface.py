@@ -164,7 +164,7 @@ def test_interior_manifold_conserves_particles():
     c_r = H_r.subdomain_to_solution[right]
     c_g = H_g.subdomain_to_solution[gamma]
     entity_maps = [sd.cell_map for sd in model.volume_subdomains]
-    dS = model.coupling_measure(gamma)
+    dS = model.facet_measure(gamma)(gamma.id)
 
     def assemble(form):
         return model.mesh.mesh.comm.allreduce(
@@ -246,7 +246,7 @@ def test_interior_manifold_inside_a_single_subdomain():
     model.initialise()
 
     assert model.manifold_is_interior(gamma)
-    assert model.coupling_measure(gamma).integral_type() == "interior_facet"
+    assert model.facet_measure(gamma)(gamma.id).integral_type() == "interior_facet"
 
     model.run()
 
@@ -515,3 +515,194 @@ def test_interior_manifold_3d_tilted_mms():
             for i in range(len(refinements) - 1)
         ]
         assert all(r > 1.8 for r in rates), (field, rates)
+
+
+# --- several interior-facet integrands in one form -------------------------------
+#
+# An interior manifold's coupling and an Interface's continuity condition are both dS
+# integrals of the parent mesh, and both need integration data of their own. They
+# cannot each carry their own measure: UFL collects one subdomain_data entry per
+# integral of a form, and dolfinx.fem.form asserts they are all the same object before
+# using the first for every id. Any volume subdomain bounded by two of them at once
+# therefore exercises the shared measure.
+
+K1_LEFT, K1_RIGHT, K2_LEFT, K2_RIGHT = 2.0, 3.0, 4.0, 5.0
+MID_ID, GAMMA_1_ID, GAMMA_2_ID, INTERFACE_ID = 6, 7, 8, 9
+
+
+def _exchange(gamma, gamma_species, bulk_species, k):
+    # NOTE perhaps having a small helper like this could be nice to have in the
+    # base code at some point
+    """The two halves of a codimensional coupling: a source feeding the manifold and
+    the matching flux leaving the bulk."""
+    dependencies = {"c_b": bulk_species, "c_g": gamma_species}
+    return (
+        F.ParticleSource(
+            value=lambda c_g, c_b: k * (c_b - c_g),
+            species=gamma_species,
+            volume=gamma,
+            species_dependent_value=dependencies,
+        ),
+        F.ParticleFluxBC(
+            subdomain=gamma,
+            species=bulk_species,
+            value=lambda c_g, c_b: k * (c_g - c_b),
+            species_dependent_value=dependencies,
+        ),
+    )
+
+
+def build_two_junctions(n=12, second_junction="manifold"):
+    """Three vertical strips, joined at ``x = 1/3`` by an interior manifold and at
+    ``x = 2/3`` by either a second manifold or an :class:`festim.Interface`.
+
+    Either way the middle strip is bounded by two interior-facet integrands at once, so
+    both of their ``dS`` integrals land in its form.
+    """
+    mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, n, n)
+    mat = F.Material(D_0=D_BULK, E_D=0.0, K_S_0=1.0, E_K_S=0.0)
+    mat_gamma = F.Material(D_0=D_GAMMA, E_D=0.0)
+
+    left = F.VolumeSubdomain(
+        id=LEFT_ID, material=mat, locator=lambda x: x[0] <= 1 / 3 + 1e-14
+    )
+    middle = F.VolumeSubdomain(
+        id=MID_ID,
+        material=mat,
+        locator=lambda x: np.logical_and(x[0] >= 1 / 3 - 1e-14, x[0] <= 2 / 3 + 1e-14),
+    )
+    right = F.VolumeSubdomain(
+        id=RIGHT_ID, material=mat, locator=lambda x: x[0] >= 2 / 3 - 1e-14
+    )
+    gamma_1 = F.VolumeSubdomain(
+        id=GAMMA_1_ID,
+        material=mat_gamma,
+        dim=1,
+        locator=lambda x: np.isclose(x[0], 1 / 3),
+    )
+    outer_l = F.SurfaceSubdomain(id=OUTER_L_ID, locator=lambda x: np.isclose(x[0], 0.0))
+    outer_r = F.SurfaceSubdomain(id=OUTER_R_ID, locator=lambda x: np.isclose(x[0], 1.0))
+
+    H_l = F.Species("H_l", subdomains=[left])
+    H_g1 = F.Species("H_g1", subdomains=[gamma_1])
+    interfaces, sources, bcs = [], [], []
+
+    if second_junction == "manifold":
+        gamma_2 = F.VolumeSubdomain(
+            id=GAMMA_2_ID,
+            material=mat_gamma,
+            dim=1,
+            locator=lambda x: np.isclose(x[0], 2 / 3),
+        )
+        H_m = F.Species("H_m", subdomains=[middle])
+        H_r = F.Species("H_r", subdomains=[right])
+        H_g2 = F.Species("H_g2", subdomains=[gamma_2])
+        extra = [gamma_2]
+        species = [H_l, H_m, H_r, H_g1, H_g2]
+        for bulk_species, k in ((H_m, K2_LEFT), (H_r, K2_RIGHT)):
+            source, flux = _exchange(gamma_2, H_g2, bulk_species, k)
+            sources.append(source)
+            bcs.append(flux)
+        outflow_species = H_r
+    else:
+        # an Interface needs its species defined on both of its subdomains, so the
+        # middle and right strips share one
+        H_m = F.Species("H_m", subdomains=[middle, right])
+        extra = []
+        species = [H_l, H_m, H_g1]
+        interfaces = [F.Interface(id=INTERFACE_ID, subdomains=[middle, right])]
+        outflow_species = H_m
+
+    for bulk_species, k in ((H_l, K1_LEFT), (H_m, K1_RIGHT)):
+        source, flux = _exchange(gamma_1, H_g1, bulk_species, k)
+        sources.append(source)
+        bcs.append(flux)
+
+    bcs += [
+        F.FixedConcentrationBC(subdomain=outer_l, value=2.0, species=H_l),
+        F.FixedConcentrationBC(subdomain=outer_r, value=0.0, species=outflow_species),
+    ]
+
+    model = F.HydrogenTransportProblemDiscontinuous(
+        mesh=F.Mesh(mesh),
+        species=species,
+        subdomains=[left, middle, right, gamma_1, *extra, outer_l, outer_r],
+        sources=sources,
+        boundary_conditions=bcs,
+        interfaces=interfaces,
+        temperature=500,
+        settings=F.Settings(atol=1e-12, rtol=1e-12, transient=False),
+    )
+    return model, (left, middle, right, gamma_1, *extra), species
+
+
+def assert_subdomain_data_is_shared(form, name):
+    """Check DOLFINx's own invariant, with a message that says what broke.
+
+    ``dolfinx.fem.form`` asserts that all the integrals of a form sharing a domain and
+    an integral type carry the *same* ``subdomain_data`` object, then uses the first of
+    them for every subdomain id. A violation surfaces either as a bare
+    ``AssertionError`` deep inside the compiler or, with assertions disabled, as one
+    manifold silently integrated over another's facets.
+    """
+    if not isinstance(form, ufl.Form):
+        # a manifold carrying no coupling term contributes nothing to the parent mesh
+        return
+    for per_type in form.subdomain_data().values():
+        for integral_type, data in per_type.items():
+            distinct = {id(d) for d in data if d is not None}
+            assert len(distinct) <= 1, (
+                f"the {integral_type} integrals of {name} carry {len(distinct)} "
+                "different subdomain_data objects; they must share one"
+            )
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+def test_two_interior_manifolds_bounding_one_subdomain():
+    """A strip between two grain boundaries couples to both at once.
+
+    At steady state the chain is a series of resistances carrying one flux J::
+
+        2 - 0 = J (1/(3D) + 1/k1L + 1/k1R + 1/(3D) + 1/k2L + 1/k2R + 1/(3D))
+
+    Each manifold is uniform along its length, so its own diffusion term drops out and
+    the concentrations are pinned exactly. All four exchange rates differ, so a swapped
+    restriction -- or one manifold integrated over the other's facets -- moves them.
+    """
+    model, subdomains, species = build_two_junctions(second_junction="manifold")
+    left, middle, right, gamma_1, gamma_2 = subdomains
+    H_l, H_m, H_r, H_g1, H_g2 = species
+    model.initialise()
+
+    for subdomain in subdomains:
+        assert_subdomain_data_is_shared(subdomain.F, f"volume subdomain {subdomain.id}")
+
+    # sharing means the same object, not merely equal data
+    shared = model.interior_facet_measure
+    assert model.facet_measure(gamma_1) is shared
+    assert model.facet_measure(gamma_2) is shared
+    assert {tag for tag, _ in shared.subdomain_data()} == {GAMMA_1_ID, GAMMA_2_ID}
+
+    model.run()
+
+    # walk the resistance chain back from the empty wall on the right
+    bulk_r = 1 / (3 * D_BULK)
+    flux = 2.0 / (3 * bulk_r + 1 / K1_LEFT + 1 / K1_RIGHT + 1 / K2_LEFT + 1 / K2_RIGHT)
+    c_right_max = flux * bulk_r
+    c_gamma_2 = c_right_max + flux / K2_RIGHT
+    c_mid_min = c_gamma_2 + flux / K2_LEFT
+    c_mid_max = c_mid_min + flux * bulk_r
+    c_gamma_1 = c_mid_max + flux / K1_RIGHT
+    c_left_min = c_gamma_1 + flux / K1_LEFT
+
+    def values(spe, subdomain):
+        return spe.subdomain_to_post_processing_solution[subdomain].x.array
+
+    assert np.isclose(values(H_l, left).max(), 2.0, atol=1e-10)
+    assert np.isclose(values(H_l, left).min(), c_left_min, atol=1e-8)
+    assert np.allclose(values(H_g1, gamma_1), c_gamma_1, atol=1e-8)
+    assert np.isclose(values(H_m, middle).max(), c_mid_max, atol=1e-8)
+    assert np.isclose(values(H_m, middle).min(), c_mid_min, atol=1e-8)
+    assert np.allclose(values(H_g2, gamma_2), c_gamma_2, atol=1e-8)
+    assert np.isclose(values(H_r, right).max(), c_right_max, atol=1e-8)
+    assert np.isclose(values(H_r, right).min(), 0.0, atol=1e-10)

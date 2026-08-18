@@ -529,14 +529,18 @@ def test_export_volume_measure_is_on_the_submesh_for_a_manifold():
     assert model.export_volume_measure(omega) is model.dx
 
 
-def test_unindexed_coupling_measure_agrees_with_the_indexed_one():
-    """Derived quantities need the measure itself, since they index it by the id of the
-    subdomain they export, exactly as they do with the parent ds."""
+def test_facet_measure_is_unindexed():
+    """Derived quantities index the measure they are handed by the id of the subdomain
+    they export, exactly as they do with the parent ds, so it must reach them
+    unrestricted. A manifold on the boundary of the mesh is integrated with that same
+    parent ``ds``."""
     model, _, gamma, _ = build_manifold_model([])
     model.initialise()
 
-    unindexed = model.unindexed_coupling_measure(gamma)
-    assert unindexed(gamma.id) == model.coupling_measure(gamma)
+    measure = model.facet_measure(gamma)
+    assert measure is model.ds
+    assert measure.subdomain_id() == "everywhere"
+    assert measure(gamma.id).subdomain_id() == gamma.id
 
 
 def test_manifold_boundary_measure_is_memoised():

@@ -222,7 +222,7 @@ def test_flux_on_an_interior_manifold_is_not_silently_zero():
     # even if the closed form above were ever relaxed
     parent = model.mesh.mesh
     n = ufl.FacetNormal(parent)
-    dS_gamma = model.coupling_measure(gamma)
+    dS_gamma = model.facet_measure(gamma)(gamma.id)
     for species, volume, title in (
         (H_l, left, "H_l flux surface 3"),
         (H_r, right, "H_r flux surface 3"),
