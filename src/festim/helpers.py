@@ -46,6 +46,7 @@ def as_mapped_function(
     species_dependent_value: dict[str, "Species"] | None = None,
     subdomain: "VolumeSubdomain | None" = None,
     mesh: dolfinx.mesh.Mesh | None = None,
+    foreign_subdomain: "VolumeSubdomain | None" = None,
 ) -> ufl.core.expr.Expr:
     """Maps a user given callable function to the mesh, time, temperature or the
     concentration of other species within festim as needed.
@@ -88,33 +89,43 @@ def as_mapped_function(
         if species.concentration is not None:
             kwargs[name] = species.concentration
         else:  # discontinuous case: the species has one solution per subdomain
-            kwargs[name] = solution_on(species, subdomain)
+            kwargs[name] = solution_on(species, subdomain, foreign_subdomain)
 
     return value(**kwargs)
 
 
-def solution_on(species: "Species", subdomain: "VolumeSubdomain"):
+def solution_on(
+    species: "Species",
+    subdomain: "VolumeSubdomain",
+    foreign_subdomain: "VolumeSubdomain | None" = None,
+):
     """The solution of ``species`` to use in an expression assembled for ``subdomain``.
 
     Usually the species lives on ``subdomain`` and this is just a dictionary lookup.
     In a codimensional coupling the expression deliberately reaches across meshes -- a
     source on a manifold subdomain depending on the bulk concentration, say -- and the
-    species then has a single solution elsewhere, which is the one to use.
+    solution to read is the one on the side of the manifold the term belongs to. The
+    caller knows which side that is and passes it as ``foreign_subdomain``; failing
+    that, a species with a single solution has only one it could mean.
 
     Args:
         species: the species whose solution is needed
         subdomain: the volume subdomain the expression is assembled for
+        foreign_subdomain: where to read a species that does not live on ``subdomain``,
+            optional
 
     Returns:
         The ufl expression of the species solution
 
     Raises:
         ValueError: if the species lives on several subdomains, none of which is
-            ``subdomain``, so the choice would be arbitrary
+            ``subdomain`` or ``foreign_subdomain``, so the choice would be arbitrary
     """
     solutions = species.subdomain_to_solution
     if subdomain in solutions:
         return solutions[subdomain]
+    if foreign_subdomain in solutions:
+        return solutions[foreign_subdomain]
     if len(solutions) == 1:
         return next(iter(solutions.values()))
     others = [s.id for s in solutions]
@@ -315,6 +326,7 @@ class Value:
         up_to_ufl_expr: bool | None = False,
         subdomain: "VolumeSubdomain | None" = None,
         mesh: dolfinx.mesh.Mesh | None = None,
+        foreign_subdomain: "VolumeSubdomain | None" = None,
     ):
         """Converts a user given value to a relevent fenics object depending on the type
         of the value provided.
@@ -335,6 +347,10 @@ class Value:
                 so that ``ufl.SpatialCoordinate`` and any ``fem.Constant`` are built
                 on the integration domain, not on the space of the unknown. Only
                 meaningful with ``up_to_ufl_expr=True``.
+            foreign_subdomain: where to read a species that does not live on
+                ``subdomain``. A term coupling a codim-1 subdomain to the bulk reaches
+                into one particular side of it, and a bulk species defined on several
+                subdomains has a solution on each; see :func:`solution_on`. Optional.
         """
         if mesh is None and function_space is not None:
             mesh = function_space.mesh
@@ -377,6 +393,7 @@ class Value:
                     temperature=temperature,
                     species_dependent_value=self.species_dependent_value,
                     subdomain=subdomain,
+                    foreign_subdomain=foreign_subdomain,
                 )
 
             else:

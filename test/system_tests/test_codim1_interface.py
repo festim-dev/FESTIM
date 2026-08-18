@@ -706,3 +706,91 @@ def test_two_interior_manifolds_bounding_one_subdomain():
     assert np.allclose(values(H_g2, gamma_2), c_gamma_2, atol=1e-8)
     assert np.isclose(values(H_r, right).max(), c_right_max, atol=1e-8)
     assert np.isclose(values(H_r, right).min(), 0.0, atol=1e-10)
+
+
+# --- a bulk species that lives on more than one subdomain -------------------------
+
+
+def build_shared_bulk_species(n=12):
+    """Three strips with a manifold between the first two, where the bulk species of
+    the second strip also lives on the third.
+
+    A species spanning several subdomains has a solution on each, so the coupling
+    source on the manifold has to be told which one it reads -- the side of the
+    manifold the term belongs to. Nothing couples the middle and right strips here, so
+    at steady state no flux crosses the manifold and everything upstream of it settles
+    at the fed wall's value.
+    """
+    mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, n, n)
+    mat = F.Material(D_0=D_BULK, E_D=0.0)
+
+    left = F.VolumeSubdomain(
+        id=LEFT_ID, material=mat, locator=lambda x: x[0] <= 1 / 3 + 1e-14
+    )
+    middle = F.VolumeSubdomain(
+        id=MID_ID,
+        material=mat,
+        locator=lambda x: np.logical_and(x[0] >= 1 / 3 - 1e-14, x[0] <= 2 / 3 + 1e-14),
+    )
+    right = F.VolumeSubdomain(
+        id=RIGHT_ID, material=mat, locator=lambda x: x[0] >= 2 / 3 - 1e-14
+    )
+    gamma = F.VolumeSubdomain(
+        id=GAMMA_1_ID,
+        material=F.Material(D_0=D_GAMMA, E_D=0.0),
+        dim=1,
+        locator=lambda x: np.isclose(x[0], 1 / 3),
+    )
+    outer_l = F.SurfaceSubdomain(id=OUTER_L_ID, locator=lambda x: np.isclose(x[0], 0.0))
+    outer_r = F.SurfaceSubdomain(id=OUTER_R_ID, locator=lambda x: np.isclose(x[0], 1.0))
+
+    H_l = F.Species("H_l", subdomains=[left])
+    H_mr = F.Species("H_mr", subdomains=[middle, right])
+    H_g = F.Species("H_g", subdomains=[gamma])
+
+    sources, bcs = [], []
+    for bulk_species, k in ((H_l, K1_LEFT), (H_mr, K1_RIGHT)):
+        source, flux = _exchange(gamma, H_g, bulk_species, k)
+        sources.append(source)
+        bcs.append(flux)
+    bcs += [
+        F.FixedConcentrationBC(subdomain=outer_l, value=2.0, species=H_l),
+        F.FixedConcentrationBC(subdomain=outer_r, value=0.0, species=H_mr),
+    ]
+
+    model = F.HydrogenTransportProblemDiscontinuous(
+        mesh=F.Mesh(mesh),
+        species=[H_l, H_mr, H_g],
+        subdomains=[left, middle, right, gamma, outer_l, outer_r],
+        sources=sources,
+        boundary_conditions=bcs,
+        temperature=500,
+        settings=F.Settings(atol=1e-12, rtol=1e-12, transient=False),
+    )
+    return model, (left, middle, right, gamma), (H_l, H_mr, H_g)
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+def test_coupling_reads_the_species_solution_on_the_manifold_s_own_side():
+    """``H_mr`` has a solution on the middle strip and another on the right one, and
+    the exchange with the manifold reads the middle.
+
+    Reading the right one instead would leave the two halves of the exchange
+    disagreeing -- the source on the manifold pulling towards 0 while the flux out of
+    the middle strip pushes towards its own concentration -- and nothing would
+    equilibrate at the fed wall's value.
+    """
+    model, (left, middle, right, gamma), (H_l, H_mr, H_g) = build_shared_bulk_species()
+    model.initialise()
+    model.run()
+
+    def values(spe, subdomain):
+        return spe.subdomain_to_post_processing_solution[subdomain].x.array
+
+    # no outlet past the manifold, so no flux crosses it and everything upstream sits
+    # at the fed wall's value
+    assert np.allclose(values(H_l, left), 2.0, atol=1e-8)
+    assert np.allclose(values(H_g, gamma), 2.0, atol=1e-8)
+    assert np.allclose(values(H_mr, middle), 2.0, atol=1e-8)
+    # the right strip shares the species but nothing else, and only sees its own wall
+    assert np.allclose(values(H_mr, right), 0.0, atol=1e-8)

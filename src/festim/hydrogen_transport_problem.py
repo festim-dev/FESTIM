@@ -1715,6 +1715,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     temperature=temperature,
                     up_to_ufl_expr=True,
                     subdomain=source.volume,
+                    foreign_subdomain=self.source_coupling_side(source),
                 )
 
     def convert_advection_term_to_fenics_objects(self):
@@ -2088,6 +2089,24 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             return False
         return not self.foreign_species(source, source.volume)
 
+    def source_coupling_side(self, source) -> _subdomain.VolumeSubdomain | None:
+        """The bulk subdomain a coupling source on a manifold reads, or ``None`` if
+        ``source`` is not one half of a codimensional coupling.
+
+        Which side of the manifold the term belongs to is decided by the bulk species
+        the source names (see :meth:`coupling_side`), and the expression has to read
+        that species' solution *there*. It cannot work that out for itself: a bulk
+        species defined on several subdomains -- because it is continuous across an
+        interface, say -- has a solution on each of them.
+        """
+        if source.volume not in self.manifold_to_volumes:
+            return None
+        foreign = self.foreign_species(source, source.volume)
+        if not foreign:
+            return None
+        # foreign_species has already checked that they all resolve to the same side
+        return self.coupling_side(source.volume, foreign[0])
+
     def diffusion_coefficient(self, subdomain: _subdomain.VolumeSubdomain, species):
         """The diffusion coefficient of ``species`` for the gradient terms of
         ``subdomain``, defined on the mesh those terms are integrated over."""
@@ -2196,12 +2215,11 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             if source.volume != subdomain:
                 continue
             v = source.species.subdomain_to_test_function[subdomain]
-            foreign = self.foreign_species(source, subdomain) if is_manifold else []
-            if foreign:
+            bulk = self.source_coupling_side(source) if is_manifold else None
+            if bulk is not None:
                 # a source on a manifold that reads a bulk concentration: the exchange
                 # half that feeds the manifold. It must be integrated on the parent
                 # mesh, and restricted to the side the bulk species lives on
-                bulk = self.coupling_side(subdomain, foreign[0])
                 restriction = self.restriction_of(subdomain, bulk)
                 form_coupling -= (
                     self.restrict(source.value.fenics_object, restriction)
