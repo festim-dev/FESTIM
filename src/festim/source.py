@@ -1,4 +1,3 @@
-import numpy as np
 import ufl
 from dolfinx import fem
 
@@ -20,13 +19,7 @@ class SourceBase:
     """
 
     value: (
-        float
-        | int
-        | fem.Constant
-        | np.ndarray
-        | fem.Expression
-        | ufl.core.expr.Expr
-        | fem.Function
+        float | int | fem.Constant | fem.Expression | ufl.core.expr.Expr | fem.Function
     )
     volume: VolumeSubdomain
 
@@ -36,7 +29,6 @@ class SourceBase:
             float
             | int
             | fem.Constant
-            | np.ndarray
             | fem.Expression
             | ufl.core.expr.Expr
             | fem.Function
@@ -77,11 +69,21 @@ class ParticleSource(SourceBase):
         value: the value of the source
         volume: the volume subdomains where the source is applied
         species: the species to which the source is applied
+        species_dependent_value: a dictionary mapping the argument names in a callable
+            ``value`` to festim.Species objects, allowing the source to depend on the
+            concentration of other species. Example: ``{"c1": species1}`` where ``"c1"``
+            is the argument name in the callable ``value`` and ``species1`` is a
+            festim.Species object.
 
     Attributes:
-        value: the value of the source
+        value: the value of the source, as a festim.Value object
         volume: the volume subdomains where the source is applied
         species: the species to which the source is applied
+        species_dependent_value: a dictionary mapping the argument names in a callable
+            ``value`` to festim.Species objects, allowing the source to depend on the
+            concentration of other species. Example: ``{"c1": species1}`` where ``"c1"``
+            is the argument name in the callable ``value`` and ``species1`` is a
+            festim.Species object.
 
     Examples:
 
@@ -95,13 +97,37 @@ class ParticleSource(SourceBase):
             ParticleSource(volume=my_vol, value=lambda t: 1 + t, species="H")
             ParticleSource(volume=my_vol, value=lambda T: 1 + T, species="H")
             ParticleSource(volume=my_vol, value=lambda x, t: 1 + x[0] + t, species="H")
+            ParticleSource(volume=my_vol, value=lambda c1: 2 * c1**2, species="H",
+            species_dependent_value={"c1": species1})
     """
 
     species: Species
+    species_dependent_value: dict[str, Species] | None
 
-    def __init__(self, value, volume, species: Species):
+    def __init__(
+        self,
+        value,
+        volume,
+        species: Species,
+        species_dependent_value: dict[str, "Species"] | None = None,
+    ):
         self.species = species
+        self.species_dependent_value = species_dependent_value
+
         super().__init__(value, volume)
+
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        if isinstance(value, Value):
+            self._value = value
+        else:
+            self._value = Value(
+                value, species_dependent_value=self.species_dependent_value
+            )
 
     @property
     def species(self):

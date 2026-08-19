@@ -2,8 +2,8 @@ from types import LambdaType
 
 from mpi4py import MPI
 
-import adios4dolfinx
 import dolfinx
+import io4dolfinx
 import numpy as np
 import pytest
 from dolfinx import fem
@@ -159,8 +159,8 @@ def test_checkpointing_single_species(tmpdir):
     u_ref.interpolate(f)
     filename = tmpdir.join("initial_condition.bp")
 
-    adios4dolfinx.write_mesh(filename, mesh)
-    adios4dolfinx.write_function(filename, u_ref, name="my_function", time=0.2)
+    io4dolfinx.write_mesh(filename, mesh)
+    io4dolfinx.write_function(filename, u_ref, name="my_function", time=0.2)
 
     # create problem
     my_problem = F.HydrogenTransportProblem()
@@ -213,9 +213,9 @@ def test_checkpointing_multiple_species(tmpdir):
     u_ref2.interpolate(f2)
     filename = tmpdir.join("initial_condition.bp")
 
-    adios4dolfinx.write_mesh(filename, mesh)
-    adios4dolfinx.write_function(filename, u_ref1, name="my_function1", time=0.2)
-    adios4dolfinx.write_function(filename, u_ref2, name="my_function2", time=0.3)
+    io4dolfinx.write_mesh(filename, mesh)
+    io4dolfinx.write_function(filename, u_ref1, name="my_function1", time=0.2)
+    io4dolfinx.write_function(filename, u_ref2, name="my_function2", time=0.3)
 
     # create problem
     my_problem = F.HydrogenTransportProblem()

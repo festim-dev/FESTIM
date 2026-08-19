@@ -1,16 +1,12 @@
 import warnings
 from typing import Any
 
-from mpi4py import MPI
 from petsc4py import PETSc
 
 import dolfinx
 import numpy as np
 import tqdm.auto
 import ufl
-from dolfinx import fem
-from dolfinx.nls.petsc import NewtonSolver
-from packaging.version import Version
 
 import festim as F
 from festim.mesh.mesh import Mesh as _Mesh
@@ -124,6 +120,12 @@ class ProblemBase:
         """Defines the dirichlet boundary conditions of the model."""
         for bc in self.boundary_conditions:
             if isinstance(bc, F.DirichletBCBase):
+                if getattr(bc, "_gas_species", None) is not None:
+                    # the value depends on an enclosure pressure, which is an unknown
+                    # living in a real function space and cannot be interpolated, so
+                    # the value stays a ufl expression and the BC is weak-only
+                    self.create_dirichletbc_value_ufl(bc)
+                    continue
                 form = self.create_dirichletbc_form(bc)
                 if not bc.enforce_weakly:
                     self.bc_forms.append(form)
@@ -169,63 +171,27 @@ class ProblemBase:
     def create_solver(self):
         """Creates the solver of the model."""
 
-        if Version(dolfinx.__version__) == Version("0.9.0"):
-            problem = fem.petsc.NonlinearProblem(
-                self.formulation,
-                self.u,
-                bcs=self.bc_forms,
-            )
-            self.solver = NewtonSolver(MPI.COMM_WORLD, problem)
+        from dolfinx.fem.petsc import NonlinearProblem
 
-            self.solver.atol = (
-                self.settings.atol
-                if not callable(self.settings.rtol)
-                else self.settings.rtol(float(self.t))
-            )
-            self.solver.rtol = (
-                self.settings.rtol
-                if not callable(self.settings.rtol)
-                else self.settings.rtol(float(self.t))
-            )
-            self.solver.max_it = self.settings.max_iterations
+        petsc_options = self.get_petsc_options()
+        self.solver = NonlinearProblem(
+            self.formulation,
+            self.u,
+            bcs=self.bc_forms,
+            petsc_options=petsc_options,
+            petsc_options_prefix="festim_solver",
+        )
 
-            ksp = self.solver.krylov_solver
-
-            if self.petsc_options is None:
-                ksp.setType("preonly")
-                ksp.getPC().setType("lu")
-                ksp.getPC().setFactorSolverType("mumps")
-                ksp.setErrorIfNotConverged(True)
-            else:
-                # Set PETSc options
-                opts = PETSc.Options()
-                option_prefix = ksp.getOptionsPrefix()
-                for k, v in self.petsc_options.items():
-                    opts[f"{option_prefix}{k}"] = v
-                ksp.setFromOptions()
-
-        elif Version(dolfinx.__version__) > Version("0.9.0"):
-            from dolfinx.fem.petsc import NonlinearProblem
-
-            petsc_options = self.get_petsc_options()
-            self.solver = NonlinearProblem(
-                self.formulation,
-                self.u,
-                bcs=self.bc_forms,
-                petsc_options=petsc_options,
-                petsc_options_prefix="festim_solver",
-            )
-
-            self.solver.solver.setMonitor(F.helpers.SnesMonitor)
-            self.solver.solver.getKSP().setMonitor(F.helpers.KSPMonitor)
-            self.solver.solver.setConvergenceTest(F.helpers.convergenceTest)
-            # Delete PETSc options post setting them, ref:
-            # https://gitlab.com/petsc/petsc/-/issues/1201
-            snes = self.solver.solver
-            prefix = snes.getOptionsPrefix()
-            opts = PETSc.Options()
-            for k in petsc_options.keys():
-                del opts[f"{prefix}{k}"]
+        self.solver.solver.setMonitor(F.helpers.SnesMonitor)
+        self.solver.solver.getKSP().setMonitor(F.helpers.KSPMonitor)
+        self.solver.solver.setConvergenceTest(F.helpers.convergenceTest)
+        # Delete PETSc options post setting them, ref:
+        # https://gitlab.com/petsc/petsc/-/issues/1201
+        snes = self.solver.solver
+        prefix = snes.getOptionsPrefix()
+        opts = PETSc.Options()
+        for k in petsc_options.keys():
+            del opts[f"{prefix}{k}"]
 
     def run(self):
         """Runs the model."""
@@ -245,10 +211,7 @@ class ProblemBase:
                 self.progress_bar.close()
         else:
             # Solve steady-state
-            if Version(dolfinx.__version__) == Version("0.9.0"):
-                self.solver.solve(self.u)
-            elif Version(dolfinx.__version__) > Version("0.9.0"):
-                self.solver.solve()
+            self.solver.solve()
             self.post_processing()
 
     def iterate(self):
@@ -272,15 +235,12 @@ class ProblemBase:
         self.update_time_dependent_values()
 
         # solve main problem
-        if Version(dolfinx.__version__) == Version("0.9.0"):
-            nb_its, _converged = self.solver.solve(self.u)
-        elif Version(dolfinx.__version__) > Version("0.9.0"):
-            _ = self.solver.solve()
-            converged_reason = self.solver.solver.getConvergedReason()
-            assert converged_reason > 0, (
-                f"Non-linear solver did not converge. Reason code: {converged_reason}. \n See https://petsc.org/release/manualpages/SNES/SNESConvergedReason/ for more information."  # noqa: E501
-            )
-            nb_its = self.solver.solver.getIterationNumber()
+        _ = self.solver.solve()
+        converged_reason = self.solver.solver.getConvergedReason()
+        assert converged_reason > 0, (
+            f"Non-linear solver did not converge. Reason code: {converged_reason}. \n See https://petsc.org/release/manualpages/SNES/SNESConvergedReason/ for more information."  # noqa: E501
+        )
+        nb_its = self.solver.solver.getIterationNumber()
 
         # post processing
         self.post_processing()

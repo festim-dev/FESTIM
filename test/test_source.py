@@ -195,6 +195,47 @@ def test_TypeError_is_raised_when_volume_wrong_type(volume_input):
         F.ParticleSource(volume=volume_input, value=1.0, species=my_spe)
 
 
+def test_particle_source_stores_species_dependent_value():
+    """Test that the species_dependent_value passed to ParticleSource is stored on its
+    value."""
+    volume = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=dummy_mat)
+    species = F.Species("test")
+    other_species = F.Species("other")
+    species_dependent_value = {"c1": other_species}
+
+    source = F.ParticleSource(
+        value=lambda c1: 2 * c1,
+        volume=volume,
+        species=species,
+        species_dependent_value=species_dependent_value,
+    )
+
+    assert source.value.species_dependent_value == species_dependent_value
+
+
+def test_particle_source_species_dependent_value_defaults_to_empty_dict():
+    """Test that species_dependent_value defaults to an empty dict when not given."""
+    volume = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=dummy_mat)
+    species = F.Species("test")
+
+    source = F.ParticleSource(value=1.0, volume=volume, species=species)
+
+    assert source.value.species_dependent_value == {}
+
+
+def test_particle_source_keeps_species_dependent_value_of_given_value_object():
+    """Test that a Value given to ParticleSource keeps its own species_dependent_value
+    when none is passed to the source."""
+    volume = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=dummy_mat)
+    species = F.Species("test")
+    other_species = F.Species("other")
+
+    my_value = F.Value(lambda c1: 2 * c1, species_dependent_value={"c1": other_species})
+    source = F.ParticleSource(value=my_value, volume=volume, species=species)
+
+    assert source.value.species_dependent_value == {"c1": other_species}
+
+
 @pytest.mark.parametrize(
     "species_input",
     [

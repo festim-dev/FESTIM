@@ -1,4 +1,4 @@
-from festim.reaction import Reaction as _Reaction
+from festim.reaction import ArrheniusReaction as _ArrheniusReaction
 from festim.species import ImplicitSpecies as _ImplicitSpecies
 from festim.species import Species as _Species
 
@@ -16,7 +16,7 @@ class Trap(_Species):
         E_k (float): the trapping rate constant activation energy (eV)
         p_0 (float): the detrapping rate constant pre-exponential factor (s-1)
         E_p (float): the detrapping rate constant activation energy (eV)
-        volume (F.VolumeSubdomain1D): The volume subdomain where the trap is.
+        volume (F.VolumeSubdomain): The volume subdomain where the trap is.
 
     Attributes:
         name (str, optional): a name given to the trap. Defaults to None.
@@ -25,9 +25,9 @@ class Trap(_Species):
         E_k (float): the trapping rate constant activation energy (eV)
         p_0 (float): the detrapping rate constant pre-exponential factor (s-1)
         E_p (float): the detrapping rate constant activation energy (eV)
-        volume (F.VolumeSubdomain1D): The volume subdomain where the trap is.
+        volume (F.VolumeSubdomain): The volume subdomain where the trap is.
         trapped_concentration (_Species): The immobile trapped concentration
-        trap_reaction (_Reaction): The reaction for trapping the mobile conc.
+        trap_reaction (_ArrheniusReaction): The reaction for trapping the mobile conc.
         empty_trap_sites (F.ImplicitSpecies): The implicit species for the
         empty trap sites
 
@@ -77,7 +77,7 @@ class Trap(_Species):
             cm = _Species("mobile")
             ct = _Species("trapped")
             trap_sites = F.ImplicitSpecies(n=1, others=[ct])
-            trap_reaction = _Reaction(
+            trap_reaction = _ArrheniusReaction(
                 reactant=[cm, trap_sites],
                 product=ct,
                 k_0=1,
@@ -111,7 +111,7 @@ class Trap(_Species):
         self.empty_trap_sites = _ImplicitSpecies(
             n=self.n, others=[self.trapped_concentration]
         )
-        self.reaction = _Reaction(
+        self.reaction = _ArrheniusReaction(
             reactant=[self.mobile_species, self.empty_trap_sites],
             product=self.trapped_concentration,
             k_0=self.k_0,

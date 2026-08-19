@@ -7,6 +7,10 @@ API reference
     :members:
     :show-inheritance:
 
+.. automodule:: festim.enclosure
+    :members:
+    :show-inheritance:
+
 .. automodule:: festim.exports
     :members:
     :show-inheritance:

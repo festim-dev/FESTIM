@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" role="img" aria-label="Placeholder profile photo">
+  <rect width="400" height="400" fill="#e3e6ea"/>
+  <circle cx="200" cy="155" r="65" fill="#b6bec9"/>
+  <path d="M 200 240 c -75 0 -125 45 -125 110 v 50 h 250 v -50 c 0 -65 -50 -110 -125 -110 z" fill="#b6bec9"/>
+  <text x="200" y="380" text-anchor="middle" font-family="sans-serif" font-size="22" fill="#7c8796">photo to come</text>
+</svg>
