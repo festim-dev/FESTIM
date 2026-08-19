@@ -879,8 +879,14 @@ def test_interface_and_interior_manifold_bounding_one_subdomain(recwarn):
     model.initialise()
 
     # neither the left bulk species nor the manifold's own species touches both sides
-    # of the interface, and neither is a mistake, so neither should warn
-    assert [w for w in recwarn if "interface" in str(w.message)] == []
+    # species the interface could not couple. Matched on the phrase unique to that
+    # warning: initialise() emits unrelated ones that also mention interfaces.
+    skipped = [
+        str(w.message)
+        for w in recwarn
+        if "the interface condition is not applied" in str(w.message)
+    ]
+    assert skipped == []
 
     # the middle strip's form now carries a manifold dS and an interface dS
     assert_subdomain_data_is_shared(middle.F, "the middle strip")
