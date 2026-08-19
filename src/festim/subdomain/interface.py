@@ -351,7 +351,7 @@ class Interface(InterfaceBase):
                         f"{subdomain_1.material.solubility_law}"
                     )
 
-        equality = right - left
+        equality = left - right
 
         F_0 = self.penalty_term * ufl.inner(equality, v_0) * dS(self.id)
         F_1 = -self.penalty_term * ufl.inner(equality, v_1) * dS(self.id)
