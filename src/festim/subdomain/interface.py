@@ -147,6 +147,39 @@ class InterfaceBase(ABC):
         )
 
     @abstractmethod
+    def equality_scale(self, species: "Species", temperature):
+        """The factor that converts :meth:`equality` into concentration units.
+
+        ``equality`` is written in potential units -- ``c/K`` for a matching pair,
+        a partial pressure for a mixed one -- so it cannot be compared to a flux
+        directly. Nitsche's stabilisation and adjoint terms need it in concentration
+        units, so that ``penalty_term * D / h * scale * equality`` is a flux and
+        ``penalty_term`` is the dimensionless O(10) stabilisation parameter Nitsche's
+        theory calls for, whatever units the problem is posed in.
+
+        For a matching pair the scale is the mean solubility, which recovers the
+        textbook jump ``c_0 - c_1`` when the two materials share a solubility. For a
+        Sievert/Henry pair it is the Henry coefficient, exactly ``dc/dP`` on that
+        side, so ``scale * equality`` reads as the concentration the Henry side is
+        missing relative to equilibrium -- polynomial in both unknowns, with none of
+        the degeneracy of the Sievert side's ``dc/dP = K**2/(2c)`` at ``c = 0``.
+
+        Args:
+            species: The species for which to compute the scale.
+            temperature: A function that returns temperature at given restrictions.
+
+        Returns:
+            A factor with units of concentration over ``equality``'s units.
+        """
+        subdomain_0, subdomain_1 = self.subdomains
+        K_0, K_1 = self.Ks(species, temperature)
+
+        if subdomain_0.material.solubility_law == subdomain_1.material.solubility_law:
+            return 0.5 * (K_0 + K_1)
+        if subdomain_0.material.solubility_law == SolubilityLaw.HENRY:
+            return K_0
+        return K_1
+
     def get_formulation(
         self,
         dS: ufl.Measure,
@@ -326,6 +359,39 @@ class Interface(InterfaceBase):
             subdomain_1, u_1, K_1
         )
 
+    def equality_scale(self, species: "Species", temperature):
+        """The factor that converts :meth:`equality` into concentration units.
+
+        ``equality`` is written in potential units -- ``c/K`` for a matching pair,
+        a partial pressure for a mixed one -- so it cannot be compared to a flux
+        directly. Nitsche's stabilisation and adjoint terms need it in concentration
+        units, so that ``penalty_term * D / h * scale * equality`` is a flux and
+        ``penalty_term`` is the dimensionless O(10) stabilisation parameter Nitsche's
+        theory calls for, whatever units the problem is posed in.
+
+        For a matching pair the scale is the mean solubility, which recovers the
+        textbook jump ``c_0 - c_1`` when the two materials share a solubility. For a
+        Sievert/Henry pair it is the Henry coefficient, exactly ``dc/dP`` on that
+        side, so ``scale * equality`` reads as the concentration the Henry side is
+        missing relative to equilibrium -- polynomial in both unknowns, with none of
+        the degeneracy of the Sievert side's ``dc/dP = K**2/(2c)`` at ``c = 0``.
+
+        Args:
+            species: The species for which to compute the scale.
+            temperature: A function that returns temperature at given restrictions.
+
+        Returns:
+            A factor with units of concentration over ``equality``'s units.
+        """
+        subdomain_0, subdomain_1 = self.subdomains
+        K_0, K_1 = self.Ks(species, temperature)
+
+        if subdomain_0.material.solubility_law == subdomain_1.material.solubility_law:
+            return 0.5 * (K_0 + K_1)
+        if subdomain_0.material.solubility_law == SolubilityLaw.HENRY:
+            return K_0
+        return K_1
+
     def get_formulation(
         self,
         dS: ufl.Measure,
@@ -408,7 +474,10 @@ class Interface(InterfaceBase):
         the consistency and the stabilisation term enter the two sides equally and
         oppositely, so particles are conserved exactly whatever ``equality`` is; and
         like the penalty it goes through :meth:`equality`, so a Sievert/Henry pair is
-        coupled through partial pressures rather than through ``c/K``.
+        coupled through partial pressures rather than through ``c/K``. Unlike the
+        penalty, ``penalty_term`` is dimensionless here: the constraint is brought
+        into concentration units by :meth:`equality_scale` first, so the same value
+        of order 10 works whatever units the problem is posed in.
 
         Args:
             dS: Integration measure for the interface.
@@ -421,7 +490,11 @@ class Interface(InterfaceBase):
         u_0, u_1 = self.us(species)
         v_0, v_1 = self.vs(species)
         D_0, D_1 = self.Ds(species, temperature)
-        equality = self.equality(species, temperature)
+        # in concentration units, so that the two terms below are fluxes and
+        # penalty_term stays a dimensionless stabilisation parameter
+        jump = self.equality_scale(species, temperature) * self.equality(
+            species, temperature
+        )
 
         res = self.restriction
         n_0 = ufl.FacetNormal(dS.ufl_domain())(res[0])
@@ -436,17 +509,17 @@ class Interface(InterfaceBase):
         # {D grad(u) . n}: at the exact solution both sides equal the transmitted
         # flux, so this term reproduces it and the two below vanish
         avg_flux = 0.5 * (flux(u_0, D_0) + flux(u_1, D_1))
-        # gamma * D / h : a flux per unit of ``equality``, as the penalty must be
+        # gamma * D / h : turns the concentration jump into a flux
         stabilisation = self.penalty_term * (D_0 + D_1) / (h_0 + h_1)
 
         # consistency
         F_0 = -avg_flux * v_0 * dS(self.id)
         F_1 = +avg_flux * v_1 * dS(self.id)
         # adjoint consistency (symmetric variant)
-        F_0 += -0.5 * flux(v_0, D_0) * equality * dS(self.id)
-        F_1 += -0.5 * flux(v_1, D_1) * equality * dS(self.id)
+        F_0 += -0.5 * flux(v_0, D_0) * jump * dS(self.id)
+        F_1 += -0.5 * flux(v_1, D_1) * jump * dS(self.id)
         # stabilisation
-        F_0 += stabilisation * equality * v_0 * dS(self.id)
-        F_1 += -stabilisation * equality * v_1 * dS(self.id)
+        F_0 += stabilisation * jump * v_0 * dS(self.id)
+        F_1 += -stabilisation * jump * v_1 * dS(self.id)
 
         return F_0, F_1
