@@ -13,26 +13,21 @@ that cancels against the bulk instead.
 
 For a 1D two-layer problem, eliminating the interface values gives
 
-    J = delta_drive / (R + 1/penalty_term)
-    R = L_0/(D_0 K_0) + L_1/(D_1 K_1)
+    J = delta_drive / (R + 1/penalty_term)    [flux]
+    R = L_0/(D_0 K_0) + L_1/(D_1 K_1)         [interface resistance]
 
-for the correct sign, and R - 1/penalty_term for the wrong one. A
-manufactured solution that satisfies the interface condition solves both
-forms exactly, so an MMS test on its own detects nothing. What the sign
-changes is the gain applied to the residual that remains:
-1/(R + 1/penalty_term) is monotone and bounded for every
-penalty_term, while 1/(R - 1/penalty_term) is singular at
-penalty_term = 1/R and negative below it, i.e. transport runs up the
-chemical potential gradient.
-
-The bug therefore hides when penalty_term is well below 1/R *and*
-the interface carries no flux, which was the regime of the existing
-2 material mms test with penalty_term=1. It appears once either
-condition breaks: a real flux through the interface (#1233), or a
-penalty_term near 1/R (#1236, where R ~ 0.1 and the MWE uses
-penalty_term = 10).
-
-The tests below break both conditions deliberately.
+for the correct sign, and (R - 1/penalty_term) for the wrong one.
+What the sign changes is the constitutive relation at the interface:
+the correct sign gives a, monotone, bounded value for every penalty_term,
+while the reversed one gives a singularity at penalty_term = 1/R and
+negative below it, i.e. transport runs up the chemical potential gradient.
+An MMS that satisfies the interface condition with zero interface flux solves
+both forms exactly, so it detects nothing directly; there the wrong sign shows
+up only as ill-conditioning amplifying the discretization residual,
+which is why #1236 needed penalty_term near 1/R to surface it. The
+tests below instead drive a real flux across the interface, where the
+wrong sign is a first-order error in the solution and no conditioning
+argument is needed.
 """
 
 from mpi4py import MPI
