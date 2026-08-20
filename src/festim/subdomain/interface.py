@@ -147,39 +147,6 @@ class InterfaceBase(ABC):
         )
 
     @abstractmethod
-    def equality_scale(self, species: "Species", temperature):
-        """The factor that converts :meth:`equality` into concentration units.
-
-        ``equality`` is written in potential units -- ``c/K`` for a matching pair,
-        a partial pressure for a mixed one -- so it cannot be compared to a flux
-        directly. Nitsche's stabilisation and adjoint terms need it in concentration
-        units, so that ``penalty_term * D / h * scale * equality`` is a flux and
-        ``penalty_term`` is the dimensionless O(10) stabilisation parameter Nitsche's
-        theory calls for, whatever units the problem is posed in.
-
-        For a matching pair the scale is the mean solubility, which recovers the
-        textbook jump ``c_0 - c_1`` when the two materials share a solubility. For a
-        Sievert/Henry pair it is the Henry coefficient, exactly ``dc/dP`` on that
-        side, so ``scale * equality`` reads as the concentration the Henry side is
-        missing relative to equilibrium -- polynomial in both unknowns, with none of
-        the degeneracy of the Sievert side's ``dc/dP = K**2/(2c)`` at ``c = 0``.
-
-        Args:
-            species: The species for which to compute the scale.
-            temperature: A function that returns temperature at given restrictions.
-
-        Returns:
-            A factor with units of concentration over ``equality``'s units.
-        """
-        subdomain_0, subdomain_1 = self.subdomains
-        K_0, K_1 = self.Ks(species, temperature)
-
-        if subdomain_0.material.solubility_law == subdomain_1.material.solubility_law:
-            return 0.5 * (K_0 + K_1)
-        if subdomain_0.material.solubility_law == SolubilityLaw.HENRY:
-            return K_0
-        return K_1
-
     def get_formulation(
         self,
         dS: ufl.Measure,
