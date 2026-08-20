@@ -140,6 +140,47 @@ Some of the 300 °C residual isn't the model's: in that panel the measured 150 k
 sits **above** the 190 kPa one, which no monotonic model can reproduce and which is not
 the ordering the other three temperatures show.
 
+### How they seem to have fitted it
+
+```bash
+mpirun -np 16 -x OMP_NUM_THREADS=1 \
+    python pd_permeator.py --per-condition --reduced    # ~20 s
+```
+
+Their Fig. 6 reports four `k_d` values, one per temperature, **each with an error bar** —
+and a fit producing one number per temperature would have no spread to draw. Read as the
+scatter across the four pressures, that says `k_d` was optimised condition by condition
+and only then collapsed onto an Arrhenius law. It is also the only way their Fig. 4's
+CM-O lines can sit on every pressure series at once, 300 °C included: no single `k_d(T)`
+can put 150 kPa above 190 kPa, but sixteen independent ones can. Running that procedure:
+
+```
+k_d fitted to each condition on its own  [mol_D2 m-2 s-1 Pa-1]
+  T (C)      90 kPa    150 kPa    190 kPa    250 kPa   spread   their eq.(9)
+    450    2.761e-06  2.729e-06  2.587e-06  2.805e-06   x1.08     8.109e-06
+    400    2.502e-06  1.851e-06  2.311e-06  2.477e-06   x1.35     5.766e-06
+    350    1.348e-06  1.594e-06  1.529e-06  1.722e-06   x1.28     3.882e-06
+    300    9.518e-07  2.312e-06  1.247e-06  1.587e-06   x2.43     2.439e-06
+
+  rms per condition with its own k_d: mean 3.1%, worst 8.8%
+  Arrhenius through them: 3.522e-05 exp(-15545/RT)
+```
+
+- The fits become good — **3.1% rms** against 10.9% for one global Arrhenius. So the
+  temperature trend in the residual is an artefact of forcing a single `k_d(T)`, not a
+  missing resistance.
+- The pressure spread grows just as their error bars do: ×1.08 at 450 °C → ×2.43 at
+  300 °C, against ×1.9 → ×2.6 measured off Fig. 6 (theirs inflated by the marker itself
+  and by whatever else they folded in).
+- The 300 °C / 150 kPa anomaly is simply absorbed — that condition alone wants
+  `k_d = 2.3e-6`, about twice its neighbours.
+
+**It does not explain the size of `k_d`.** Collapsing the sixteen values gives
+`3.522e-05 exp(-15545/RT)`, essentially where the global fit already sat and nowhere near
+eq. (9). Nor is eq. (9) a misprint: digitising Fig. 6's markers gives 8.0, 6.1, 3.3 and
+2.6e-6 from 450 to 300 °C, which eq. (9) reproduces to 6–14%. The factor of two to three
+is in the model, not in the estimator.
+
 Three other checks:
 
 - **Their pure-D₂ campaign** (`--uhp`) is the one part of the data in closed form, the

@@ -90,6 +90,28 @@ Part of the 300 C residual is not the model's fault: in that panel the measured 
 series sits *above* the 190 kPa one, which no monotonic model can reproduce and which is
 not the ordering the other three temperatures show.
 
+*How they seem to have fitted it* (``--per-condition``). Their Fig. 6 reports four k_d
+values, one per temperature, each with an error bar -- and a fit giving one number per
+temperature would have no spread to draw. Read as the scatter across the four pressures,
+that says k_d was optimised condition by condition and only then collapsed onto an
+Arrhenius law, which is also the only way the CM-O lines of their Fig. 4 can sit on
+every pressure series at once, 300 C included. Running that procedure here:
+
+* the fits become good, 3.1% rms on average and 8.8% at worst, against 10.9% for one
+  global Arrhenius. So the temperature trend in the residual above is an artefact of
+  forcing a single k_d(T), not a missing resistance;
+* the spread across pressures at fixed temperature grows exactly as their error bars do,
+  x1.08 at 450 C rising to x2.43 at 300 C against their x1.9 to x2.6 (theirs measured
+  off the figure, and inflated by the marker and by whatever else they folded in);
+* the 300 C 150 kPa anomaly is simply absorbed: that condition alone wants
+  k_d = 2.3e-6, about twice its neighbours.
+
+What it does **not** explain is the size of k_d. Collapsing the sixteen values onto an
+Arrhenius law gives 3.522e-5 exp(-15545/RT), essentially where the global fit already
+was and nowhere near their eq. (9). Nor is eq. (9) a misprint: digitising the markers of
+Fig. 6 gives 8.0, 6.1, 3.3 and 2.6e-6 at 450 to 300 C, which eq. (9) reproduces to
+6-14%. The factor of two to three is in the model, not in the estimator.
+
 *Against their pure-D2 campaign* (``--uhp``). That one is reported in closed form, as
 the permeability fit of eq. (7), so it needs no figure. Their optimised k_d reproduces
 it to 9-11% at all four temperatures. Note that fitting k_d to *this* campaign gives
@@ -835,6 +857,110 @@ def fit_dissociation_constant(
     return float(np.exp(fit.x[0])), float(fit.x[1])
 
 
+def point_model(reduced: bool = False):
+    """One operating point in, sccm out. The finite element model, or the reduced one.
+
+    The two agree to -0.29% on average over the measured grid (``--compare`` prints
+    that), so for a scan whose conclusion is about the *fitting procedure* rather than
+    about the transport, the reduced model is a sound and much cheaper stand-in.
+    """
+    if reduced:
+        return plug_flow
+    return lambda case: solve(case, **SWEEP_MESH, comm=MPI.COMM_SELF)["permeated"]
+
+
+def fit_per_condition(measurements: dict | None = None, reduced: bool = False) -> dict:
+    """Optimise k_d separately for each (T, P), rather than one Arrhenius for all.
+
+    Their Fig. 6 reports four k_d values, one per temperature, **each with an error
+    bar**. A fit that produced a single number per temperature would have no spread to
+    draw, so the bars are most naturally read as the scatter across the four pressures
+    -- meaning k_d was optimised condition by condition and only then collapsed onto an
+    Arrhenius law. That would explain why the CM-O lines of their Fig. 4 sit on every
+    pressure series individually, including the 300 C panel where the measured 150 kPa
+    curve runs *above* the 190 kPa one. No single k_d(T) can reproduce that inversion;
+    one k_d per condition can, trivially.
+
+    This runs that procedure: sixteen one-parameter fits. Parallelism is over conditions
+    rather than over points -- each rank takes whole conditions and solves them with
+    private ``COMM_SELF`` meshes, so there is no collective call inside the optimiser
+    and the ranks never wait on each other.
+
+    Returns ``{(temperature, pressure): (k_d, rms)}``.
+    """
+    from scipy.optimize import least_squares
+
+    measurements = measurements or load_measurements()
+    evaluate = point_model(reduced)
+    comm = MPI.COMM_WORLD
+    items = sorted(measurements.items())
+    key = f"_one_{comm.rank}"
+
+    mine = {}
+    for index, ((temperature, pressure), entry) in enumerate(items):
+        if index % comm.size != comm.rank:
+            continue
+        measured = np.array(entry["permeated"])
+
+        def residuals(parameters, entry=entry, measured=measured):
+            # a fixed value rather than an Arrhenius: zero activation energy
+            KD_LAWS[key] = (np.exp(parameters[0]), 0.0)
+            modelled = [evaluate(_case_for(entry, feed, key)) for feed in entry["feed"]]
+            return np.log(np.array(modelled) / measured)
+
+        start = np.log(dissociation_constant(_case_for(entry, 100.0, "optimised")))
+        fit = least_squares(residuals, [start], diff_step=1e-3)
+        mine[temperature, pressure] = (
+            float(np.exp(fit.x[0])),
+            float(np.sqrt(np.mean(np.square(fit.fun)))),
+        )
+    KD_LAWS.pop(key, None)
+
+    fitted = {}
+    for chunk in comm.allgather(mine):
+        fitted.update(chunk)
+    return fitted
+
+
+def report_per_condition_fit(fitted: dict) -> tuple[float, float]:
+    """Prints the per-condition k_d values and Arrhenius-fits them, as Fig. 6 does.
+
+    Returns the pre-exponential and activation energy of that fit, which is the number
+    to hold against their eq. (9) -- it is produced by the same estimator.
+    """
+    temperatures = sorted({t for t, _ in fitted}, reverse=True)
+    pressures = sorted({p for _, p in fitted})
+
+    print("\nk_d fitted to each condition on its own  [mol_D2 m-2 s-1 Pa-1]")
+    header = "  T (C)  " + "".join(f"{p / 1e3:>11.0f} kPa" for p in pressures)
+    print(header + "     spread   their eq.(9)")
+    for temperature in temperatures:
+        row = [fitted.get((temperature, p)) for p in pressures]
+        values = [entry[0] for entry in row if entry]
+        spread = max(values) / min(values)
+        paper = dissociation_constant(Case(temperature=temperature, kd_law="optimised"))
+        cells = "".join(f"{v[0]:>15.3e}" if v else f"{'--':>15}" for v in row)
+        print(f"  {temperature - 273.15:5.0f}{cells}   x{spread:5.2f}   {paper:11.3e}")
+
+    residuals = [entry[1] for entry in fitted.values()]
+    print(
+        f"\n  rms per condition with its own k_d: mean {100 * np.mean(residuals):.1f}%,"
+        f" worst {100 * max(residuals):.1f}%"
+    )
+
+    # collapse to an Arrhenius law the way Fig. 6 does
+    inverse_t = np.array([1.0 / (F.R * t) for t, _ in fitted])
+    log_kd = np.array([np.log(value) for value, _ in fitted.values()])
+    slope, intercept = np.polyfit(inverse_t, log_kd, 1)
+    prefactor, activation = float(np.exp(intercept)), float(-slope)
+    print(
+        f"  Arrhenius through them: {prefactor:.3e} exp(-{activation:.0f}/RT)"
+        f"   [their eq. (9): {KD_LAWS['optimised'][0]:.2e}"
+        f" exp(-{KD_LAWS['optimised'][1]:.0f}/RT)]"
+    )
+    return prefactor, activation
+
+
 def per_condition_error(law: str, measurements: dict, model=None) -> list[tuple]:
     """Fractional rms disagreement condition by condition, worst first.
 
@@ -1068,6 +1194,11 @@ def main() -> None:
         action="store_true",
         help="with --compare: use the plug-flow model instead of FESTIM",
     )
+    parser.add_argument(
+        "--per-condition",
+        action="store_true",
+        help="fit k_d to each (T, P) on its own, as their Fig. 6 implies, and stop",
+    )
     parser.add_argument("--figure", default="pd_permeator.png")
     args = parser.parse_args()
 
@@ -1075,6 +1206,13 @@ def main() -> None:
         if MPI.COMM_WORLD.rank == 0:
             serra_consistency()
             uhp_calibration()
+        return
+    if args.per_condition:
+        # collective: every rank fits its share of the conditions
+        fitted = fit_per_condition(reduced=args.reduced)
+        if MPI.COMM_WORLD.rank == 0:
+            print(f"\nmodel: {'reduced (plug flow)' if args.reduced else 'FESTIM'}")
+            report_per_condition_fit(fitted)
         return
     if args.compare:
         # every rank, not just rank 0: compare() makes collective calls
