@@ -530,7 +530,9 @@ def test_export_base_class_times_and_extension(tmp_path):
     """
     with pytest.warns(UserWarning, match="does not have .bp extension"):
         export = F.ExportBaseClass(
-            filename=tmp_path / "wrong_extension.txt", ext=".bp", times=[3.0, 1.0, 2.0]
+            filename=tmp_path / "wrong_extension.txt",
+            format="vtx",
+            times=[3.0, 1.0, 2.0],
         )
 
     assert export.filename.suffix == ".bp"
@@ -538,5 +540,7 @@ def test_export_base_class_times_and_extension(tmp_path):
 
 
 def test_export_base_class_no_times(tmp_path):
-    export = F.ExportBaseClass(filename=tmp_path / "correct.bp", ext=".bp", times=None)
+    export = F.ExportBaseClass(
+        filename=tmp_path / "correct.bp", format="vtx", times=None
+    )
     assert export.times is None
