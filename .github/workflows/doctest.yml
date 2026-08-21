@@ -6,6 +6,13 @@ jobs:
   docbuild:
     runs-on: ubuntu-latest
 
+    # conda-forge's MPICH uses the UCX netmod, which probes RDMA devices during
+    # MPI_Init. Some Azure runners expose a MANA verbs device (mana_0) that UCX
+    # fails to open, aborting the process with SIGTERM (exit 143). Restricting
+    # UCX to TCP/shared-memory/self skips that probe.
+    env:
+      UCX_TLS: tcp,self,sm
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
