@@ -1171,9 +1171,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
 class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
     interfaces: list[_subdomain.Interface]
     surface_to_volume: dict
-    _method_interface: _subdomain.interface.InterfaceMethod = (
-        _subdomain.interface.InterfaceMethod.penalty
-    )
+    # None unless the user sets the deprecated problem-level attribute; only then
+    # does initialise() push it onto the interfaces (see method_interface)
+    _method_interface: _subdomain.interface.InterfaceMethod | None = None
     subdomain_to_species: dict
 
     def __init__(
@@ -1263,6 +1263,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             "please use the method_interface attribute of each interface instead",
             DeprecationWarning,
         )
+        if self._method_interface is None:
+            return _subdomain.interface.InterfaceMethod.penalty
         return self._method_interface
 
     @method_interface.setter
@@ -1278,15 +1280,16 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
     def initialise(self):
         # if method_interface is given as an attribute of Problem class, then pass it to
-        # each interface and raise a deprecation warning
-        if hasattr(self, "method_interface"):
+        # each interface and raise a deprecation warning. ``hasattr`` cannot be used to
+        # detect that: method_interface is a property, so it is always present
+        if self._method_interface is not None:
             warnings.warn(
                 "The method_interface attribute of the Problem class is deprecated, "
                 "please set the method_interface attribute of each interface instead",
                 DeprecationWarning,
             )
             for interface in self.interfaces:
-                interface.method = self.method_interface
+                interface.method = self._method_interface
 
         # check that all species have a list of F.VolumeSubdomain as this is
         # different from F.HydrogenTransportProblem
