@@ -143,12 +143,16 @@ class Mesh:
             dolfinx.mesh.MeshTags: the volume meshtags
         """
         # find all cells in domain and mark them as 0
-        num_cells = self._mesh.topology.index_map(self.vdim).size_local
+        # ghosts are included: in parallel the locators below return indices of
+        # both owned and ghost entities
+        cell_map = self._mesh.topology.index_map(self.vdim)
+        num_cells = cell_map.size_local + cell_map.num_ghosts
         mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
         tags_volumes = np.full(num_cells, 0, dtype=np.int32)
 
         # find all facets in domain and mark them as 0
-        num_facets = self._mesh.topology.index_map(self.fdim).size_local
+        facet_map = self._mesh.topology.index_map(self.fdim)
+        num_facets = facet_map.size_local + facet_map.num_ghosts
         mesh_facet_indices = np.arange(num_facets, dtype=np.int32)
         tags_facets = np.full(num_facets, 0, dtype=np.int32)
 
