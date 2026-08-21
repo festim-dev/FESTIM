@@ -81,6 +81,28 @@ class ProblemBase:
     def timesteps(self):
         return self._timesteps
 
+    def _register_export_milestones(self, export) -> None:
+        """Add the times an export asks for to the stepsize milestones.
+
+        Without this the adaptive stepsize can step over the requested times and the
+        export silently never fires.
+
+        Args:
+            export: the export whose `times` should be hit exactly
+        """
+        if not getattr(export, "times", None):
+            return
+        if self.settings is None or self.settings.stepsize is None:
+            return
+        for time in export.times:
+            if time not in self.settings.stepsize.milestones:
+                warnings.warn(
+                    "To ensure that the exports data at the desired times"
+                    "the values in export.times are added to milestones"
+                )
+                self.settings.stepsize.milestones.append(time)
+        self.settings.stepsize.milestones.sort()
+
     def define_meshtags_and_measures(self):
         """Defines the facet and volume meshtags of the model which are used to define
         the measures fo the model, dx and ds."""

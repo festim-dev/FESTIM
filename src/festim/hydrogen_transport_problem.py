@@ -1,12 +1,10 @@
 import warnings
 from collections.abc import Callable
 
-from mpi4py import MPI
 from petsc4py import PETSc
 
 import basix
 import dolfinx
-import io4dolfinx
 import numpy as np
 import numpy.typing as npt
 import scifem
@@ -53,6 +51,12 @@ __all__ = [
     "HydrogenTransportProblem",
     "HydrogenTransportProblemDiscontinuous",
 ]
+
+
+def _block_name(export) -> str:
+    """Name of the block an export writes into, for multi-mesh formats like vtkhdf."""
+    subdomain = getattr(export, "subdomain", None)
+    return "mesh" if subdomain is None else f"subdomain_{subdomain.id}"
 
 
 class HydrogenTransportProblem(problem.ProblemBase):
@@ -428,75 +432,50 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 )
                 self.temperature_fenics.interpolate(self.temperature_expr)
 
+    def _export_functions(self, export):
+        """Resolve what a field export should write.
+
+        Args:
+            export: the export to resolve
+
+        Returns:
+            the functions to write, the name to store each one under, and the mesh
+            they live on
+        """
+        if isinstance(export, exports.TemperatureExport):
+            self._temperature_as_function = self._get_temperature_field_as_function()
+            return (
+                [self._temperature_as_function],
+                [self._temperature_as_function.name],
+                self._temperature_as_function.function_space.mesh,
+            )
+        elif isinstance(export, exports.SpeciesExport):
+            functions = export.get_functions()
+            names = [species.name for species in export.field]
+            return functions, names, self.mesh.mesh
+        elif isinstance(export, exports.CustomFieldExport):
+            export.function = fem.Function(self.V_CG_1)
+            export.set_dolfinx_expression(
+                temperature=self.temperature_fenics,
+                time=self.t,
+            )
+            return (
+                [export.function],
+                [export.filename.stem],
+                export.function.function_space.mesh,
+            )
+        raise NotImplementedError(f"Export type {type(export)} not implemented")
+
     def initialise_exports(self):
         """Defines the export writers of the model, if field is given as a string, find
         species object in self.species."""
 
+        # formats that hold several meshes in one file (vtkhdf) let exports share a
+        # filename: the first one to claim it truncates, the rest append as new blocks
+        initialised_files = set()
         for export in self.exports:
-            if isinstance(export, exports.ExportBaseClass):
-                if export.times:
-                    for time in export.times:
-                        if time not in self.settings.stepsize.milestones:
-                            msg = "To ensure that the exports data at the desired times"
-                            msg += "the values in export.times are added to milestones"
-                            warnings.warn(msg)
-                            self.settings.stepsize.milestones.append(time)
-                    self.settings.stepsize.milestones.sort()
-
-                if isinstance(export, exports.VTXTemperatureExport):
-                    self._temperature_as_function = (
-                        self._get_temperature_field_as_function()
-                    )
-                    export.writer = dolfinx.io.VTXWriter(
-                        comm=self._temperature_as_function.function_space.mesh.comm,
-                        filename=export.filename,
-                        output=self._temperature_as_function,
-                        engine="BP5",
-                    )
-                    continue
-
-                elif isinstance(export, exports.VTXSpeciesExport):
-                    functions = export.get_functions()
-                    if not export._checkpoint:
-                        export.writer = dolfinx.io.VTXWriter(
-                            comm=functions[0].function_space.mesh.comm,
-                            filename=export.filename,
-                            output=functions,
-                            engine="BP5",
-                        )
-
-                    else:
-                        io4dolfinx.write_mesh(
-                            filename=export.filename,
-                            mesh=self.mesh.mesh,
-                            backend="adios2",
-                        )
-
-                elif isinstance(export, exports.CustomFieldExport):
-                    export.function = fem.Function(self.V_CG_1)
-                    export.set_dolfinx_expression(
-                        temperature=self.temperature_fenics,
-                        time=self.t,
-                    )
-
-                    export.writer = dolfinx.io.VTXWriter(
-                        comm=export.function.function_space.mesh.comm,
-                        filename=export.filename,
-                        output=export.function,
-                        engine="BP5",
-                    )
-                    continue
-
-            elif isinstance(export, exports.DerivedQuantity):
-                # raise not implemented error if the derived quantity don't match the
-                # type of mesh eg. SurfaceFlux is used with cylindrical mesh
-                if self.mesh.coordinate_system != CoordinateSystem.CARTESIAN:
-                    raise NotImplementedError(
-                        f"Derived quantity exports are not implemented for "
-                        f"{self.mesh.coordinate_system!s} meshes"
-                    )
-
-            # if name of species is given then replace with species object
+            # if name of species is given then replace with species object. Done first
+            # so that the writers below get real Species to work from.
             if hasattr(export, "field"):
                 if isinstance(export.field, list):
                     for idx, field in enumerate(export.field):
@@ -509,9 +488,26 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         export.field, self.species
                     )
 
-            # Initialize XDMFFile for writer
-            if isinstance(export, exports.XDMFExport):
-                export.define_writer(MPI.COMM_WORLD)
+            if isinstance(export, exports.ExportBaseClass):
+                self._register_export_milestones(export)
+                functions, names, mesh = self._export_functions(export)
+                export.define_writer(
+                    functions,
+                    names,
+                    mesh,
+                    block_name=_block_name(export),
+                    overwrite=export.filename not in initialised_files,
+                )
+                initialised_files.add(export.filename)
+
+            elif isinstance(export, exports.DerivedQuantity):
+                # raise not implemented error if the derived quantity don't match the
+                # type of mesh eg. SurfaceFlux is used with cylindrical mesh
+                if self.mesh.coordinate_system != CoordinateSystem.CARTESIAN:
+                    raise NotImplementedError(
+                        f"Derived quantity exports are not implemented for "
+                        f"{self.mesh.coordinate_system!s} meshes"
+                    )
 
             # clean data for profile1D export
             if isinstance(export, exports.Profile1DExport):
@@ -1075,31 +1071,17 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 ):
                     continue
 
-            # handle VTX exports
+            # handle field exports
             if isinstance(export, exports.ExportBaseClass):
-                if isinstance(export, exports.VTXSpeciesExport):
-                    if export._checkpoint:
-                        for field in export.field:
-                            io4dolfinx.write_function(
-                                filename=export.filename,
-                                u=field.post_processing_solution,
-                                time=float(self.t),
-                                name=field.name,
-                            )
-                    else:
-                        export.writer.write(float(self.t))
-                elif (
-                    isinstance(export, exports.VTXTemperatureExport)
-                    and self.temperature_time_dependent
-                ):
+                if isinstance(export, exports.TemperatureExport):
+                    if not self.temperature_time_dependent:
+                        # nothing changed since the last write
+                        continue
                     self._temperature_as_function.interpolate(
                         self._get_temperature_field_as_function()
                     )
-                    export.writer.write(float(self.t))
-                elif isinstance(export, exports.CustomFieldExport):
-                    # update internal function
-                    export.function.interpolate(export.dolfinx_expression)
-                    export.writer.write(float(self.t))
+                export.update()
+                export.write(float(self.t))
 
             # TODO if export type derived quantity
             if isinstance(export, exports.SurfaceQuantity):
@@ -1143,9 +1125,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 # if filename given write export data to file
                 if export.filename is not None:
                     export.write(t=float(self.t))
-
-            if isinstance(export, exports.XDMFExport):
-                export.write(float(self.t))
 
             if isinstance(export, exports.Profile1DExport):
                 # computing dofs at each time step is costly so storing it in the export
@@ -2073,50 +2052,68 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     t=self.t,
                 )
 
-    def initialise_exports(self):
-        for export in self.exports:
-            if isinstance(export, exports.VTXSpeciesExport):
-                functions = export.get_functions()
-                if not export._checkpoint:
-                    export.writer = dolfinx.io.VTXWriter(
-                        functions[0].function_space.mesh.comm,
-                        export.filename,
-                        functions,
-                        engine="BP5",
-                    )
-                else:
-                    io4dolfinx.write_mesh(
-                        filename=export.filename,
-                        mesh=functions[0].function_space.mesh,
-                        backend="adios2",
-                    )
-            elif isinstance(export, exports.VTXTemperatureExport):
-                assert isinstance(self.temperature_fenics, fem.Function), (
-                    "Temperature must be space-dependent to be exported as "
-                    "VTXTemperatureExport"
-                )
-                export.writer = dolfinx.io.VTXWriter(
-                    self.temperature_fenics.function_space.mesh.comm,
-                    export.filename,
-                    self.temperature_fenics,
-                    engine="BP5",
-                )
-            elif isinstance(export, exports.CustomFieldExport):
-                # need to find an appropriate function space on the right submesh
-                V = self.subdomain_to_V_CG1[export.subdomain]
-                export.function = fem.Function(V)
-                export.set_dolfinx_expression(
-                    # need to pass the right temperature
-                    temperature=self.temperature_fenics,
-                    time=self.t,
-                )
+    def _export_functions(self, export):
+        """Resolve what a field export should write.
 
-                export.writer = dolfinx.io.VTXWriter(
-                    comm=export.function.function_space.mesh.comm,
-                    filename=export.filename,
-                    output=export.function,
-                    engine="BP5",
+        Species and custom fields live on submeshes here, so each export writes on the
+        mesh of its own subdomain rather than on the parent mesh.
+
+        Args:
+            export: the export to resolve
+
+        Returns:
+            the functions to write, the name to store each one under, and the mesh
+            they live on
+        """
+        if isinstance(export, exports.SpeciesExport):
+            functions = export.get_functions()
+            # NOTE: names are deliberately un-suffixed (`H`, not `H_1`) even though the
+            # collapsed functions are named per subdomain: checkpoints written before
+            # this refactor used the bare species name and are read back by name.
+            names = [species.name for species in export.field]
+            return functions, names, functions[0].function_space.mesh
+        elif isinstance(export, exports.TemperatureExport):
+            assert isinstance(self.temperature_fenics, fem.Function), (
+                "Temperature must be space-dependent to be exported as "
+                "TemperatureExport"
+            )
+            return (
+                [self.temperature_fenics],
+                [self.temperature_fenics.name],
+                self.temperature_fenics.function_space.mesh,
+            )
+        elif isinstance(export, exports.CustomFieldExport):
+            # need to find an appropriate function space on the right submesh
+            V = self.subdomain_to_V_CG1[export.subdomain]
+            export.function = fem.Function(V)
+            export.set_dolfinx_expression(
+                # need to pass the right temperature
+                temperature=self.temperature_fenics,
+                time=self.t,
+            )
+            return (
+                [export.function],
+                [export.filename.stem],
+                export.function.function_space.mesh,
+            )
+        raise NotImplementedError(f"Export type {type(export)} not implemented")
+
+    def initialise_exports(self):
+        # formats that hold several meshes in one file (vtkhdf) let exports share a
+        # filename: the first one to claim it truncates, the rest append as new blocks
+        initialised_files = set()
+        for export in self.exports:
+            if isinstance(export, exports.ExportBaseClass):
+                self._register_export_milestones(export)
+                functions, names, mesh = self._export_functions(export)
+                export.define_writer(
+                    functions,
+                    names,
+                    mesh,
+                    block_name=_block_name(export),
+                    overwrite=export.filename not in initialised_files,
                 )
+                initialised_files.add(export.filename)
 
         # compute diffusivity function for surface fluxes
         # for the discontinuous case, we don't use D_global as in
@@ -2193,34 +2190,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     current_time=float(self.t), times=export.times
                 ):
                     continue
-            # handle VTX exports
+            # handle field exports
             if isinstance(export, exports.ExportBaseClass):
-                if isinstance(export, exports.CustomFieldExport):
-                    # update internal function
-                    export.function.interpolate(export.dolfinx_expression)
-                    export.writer.write(float(self.t))
-                elif isinstance(export, exports.VTXSpeciesExport):
-                    if export._checkpoint:
-                        for species in export.field:
-                            post_processing_solution = (
-                                species.subdomain_to_post_processing_solution[
-                                    export._subdomain
-                                ]
-                            )
-                            io4dolfinx.write_function(
-                                filename=export.filename,
-                                u=post_processing_solution,
-                                time=float(self.t),
-                                name=species.name,
-                            )
-                    else:
-                        export.writer.write(float(self.t))
-                elif isinstance(export, exports.VTXTemperatureExport):
-                    export.writer.write(float(self.t))
-                else:
-                    raise NotImplementedError(
-                        f"Export type {type(export)} not implemented"
-                    )
+                export.update()
+                export.write(float(self.t))
             # handle derived quantities
             if isinstance(export, exports.SurfaceQuantity):
                 if isinstance(
@@ -2374,8 +2347,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
     def __del__(self):
         for export in self.exports:
             if isinstance(export, exports.ExportBaseClass):
-                if hasattr(export, "writer") and export.writer is not None:
-                    export.writer.close()
+                export.close()
 
 
 class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
