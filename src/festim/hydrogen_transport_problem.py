@@ -53,12 +53,6 @@ __all__ = [
 ]
 
 
-def _block_name(export) -> str:
-    """Name of the block an export writes into, for multi-mesh formats like vtkhdf."""
-    subdomain = getattr(export, "subdomain", None)
-    return "mesh" if subdomain is None else f"subdomain_{subdomain.id}"
-
-
 class HydrogenTransportProblem(problem.ProblemBase):
     """Hydrogen Transport Problem.
 
@@ -432,7 +426,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 )
                 self.temperature_fenics.interpolate(self.temperature_expr)
 
-    def _export_functions(self, export):
+    def _export_context(
+        self, export
+    ) -> tuple[list[fem.Function], list[str], dolfinx.mesh.Mesh]:
         """Resolve what a field export should write.
 
         Args:
@@ -488,14 +484,14 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         export.field, self.species
                     )
 
-            if isinstance(export, exports.ExportBaseClass):
+            if isinstance(export, exports.FieldExportBase):
                 self._register_export_milestones(export)
-                functions, names, mesh = self._export_functions(export)
+                functions, names, mesh = self._export_context(export)
+                # everything lives on the parent mesh here, so a single block per file
                 export.define_writer(
                     functions,
                     names,
                     mesh,
-                    block_name=_block_name(export),
                     overwrite=export.filename not in initialised_files,
                 )
                 initialised_files.add(export.filename)
@@ -1072,7 +1068,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     continue
 
             # handle field exports
-            if isinstance(export, exports.ExportBaseClass):
+            if isinstance(export, exports.FieldExportBase):
                 if isinstance(export, exports.TemperatureExport):
                     if not self.temperature_time_dependent:
                         # nothing changed since the last write
@@ -2052,7 +2048,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     t=self.t,
                 )
 
-    def _export_functions(self, export):
+    def _export_context(
+        self, export
+    ) -> tuple[list[fem.Function], list[str], dolfinx.mesh.Mesh]:
         """Resolve what a field export should write.
 
         Species and custom fields live on submeshes here, so each export writes on the
@@ -2103,14 +2101,18 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         # filename: the first one to claim it truncates, the rest append as new blocks
         initialised_files = set()
         for export in self.exports:
-            if isinstance(export, exports.ExportBaseClass):
+            if isinstance(export, exports.FieldExportBase):
                 self._register_export_milestones(export)
-                functions, names, mesh = self._export_functions(export)
+                functions, names, mesh = self._export_context(export)
+                # exports on different submeshes share a file as separate blocks
+                subdomain = getattr(export, "subdomain", None)
                 export.define_writer(
                     functions,
                     names,
                     mesh,
-                    block_name=_block_name(export),
+                    block_name=(
+                        "mesh" if subdomain is None else f"subdomain_{subdomain.id}"
+                    ),
                     overwrite=export.filename not in initialised_files,
                 )
                 initialised_files.add(export.filename)
@@ -2191,7 +2193,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 ):
                     continue
             # handle field exports
-            if isinstance(export, exports.ExportBaseClass):
+            if isinstance(export, exports.FieldExportBase):
                 export.update()
                 export.write(float(self.t))
             # handle derived quantities
@@ -2346,7 +2348,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
     def __del__(self):
         for export in self.exports:
-            if isinstance(export, exports.ExportBaseClass):
+            if isinstance(export, exports.FieldExportBase):
                 export.close()
 
 

@@ -1,3 +1,4 @@
+import warnings
 from pathlib import Path
 
 from festim.species import Species
@@ -10,6 +11,10 @@ class XDMFExport(SpeciesExport):
     """Export species fields to an XDMF file.
 
     Thin wrapper over :class:`festim.SpeciesExport` with ``format="xdmf"``.
+
+    .. deprecated::
+        Use :class:`festim.SpeciesExport` with ``format="xdmf"`` instead. This class
+        will be removed in a future release.
 
     Args:
         filename: The name of the output file
@@ -26,6 +31,12 @@ class XDMFExport(SpeciesExport):
         subdomain: VolumeSubdomain = None,
         times: list[float] | list[int] | None = None,
     ) -> None:
+        warnings.warn(
+            "XDMFExport is deprecated and will be removed in a future release, use "
+            "SpeciesExport(..., format='xdmf') instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         super().__init__(
             filename, field, subdomain=subdomain, format="xdmf", times=times
         )

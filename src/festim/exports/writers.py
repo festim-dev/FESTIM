@@ -2,7 +2,7 @@
 
 Each writer knows how to put a list of :class:`dolfinx.fem.Function` in a file, and
 nothing about FESTIM. Adding a new output format means adding a class here and an
-entry in :data:`festim.exports.field.ExportBaseClass._FORMATS`.
+entry in :data:`festim.exports.field._FORMAT_TO_WRITER`.
 """
 
 from abc import ABC, abstractmethod

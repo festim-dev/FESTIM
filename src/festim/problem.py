@@ -89,11 +89,23 @@ class ProblemBase:
 
         Args:
             export: the export whose `times` should be hit exactly
+
+        Raises:
+            AttributeError: if the problem has no settings
+            ValueError: if the problem is steady state, where `times` is meaningless
         """
         if not getattr(export, "times", None):
             return
-        if self.settings is None or self.settings.stepsize is None:
-            return
+        if self.settings is None:
+            raise AttributeError(
+                f"{type(self).__name__}.settings must be set before initialising the "
+                "exports"
+            )
+        if self.settings.stepsize is None:
+            raise ValueError(
+                f"{type(export).__name__} was given times={export.times} but the "
+                "problem is steady state, so there is no stepsize to add milestones to"
+            )
         for time in export.times:
             if time not in self.settings.stepsize.milestones:
                 warnings.warn(

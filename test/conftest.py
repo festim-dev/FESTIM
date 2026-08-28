@@ -6,8 +6,10 @@ rank, ``pytest-18`` on another). Tests that write a file do so with collective M
 calls -- ADIOS2 and HDF5 both coordinate across ``COMM_WORLD`` -- so ranks writing to
 different paths deadlock, each waiting on a file the others never touch.
 
-Overriding the two built-in temporary directory fixtures to broadcast rank 0's path
-makes the whole suite safe to run in parallel, without tests having to opt in.
+io4dolfinx solves this per test, by broadcasting rank 0's path where it builds a
+filename (``MPI.COMM_WORLD.bcast(tmp_path, root=0)`` in its ``write_function``
+fixture). Overriding the two built-in temporary directory fixtures does the same thing
+once, so the whole suite is safe to run in parallel without tests having to opt in.
 """
 
 from pathlib import Path
@@ -18,14 +20,12 @@ import pytest
 
 
 def _shared_path(path):
-    """Broadcast rank 0's temporary directory to every rank."""
-    comm = MPI.COMM_WORLD
-    if comm.size == 1:
-        return path
-    shared = comm.bcast(str(path), root=0)
-    # rank 0 has already created the directory; wait for it before anyone writes
-    comm.Barrier()
-    return shared
+    """Broadcast rank 0's temporary directory to every rank.
+
+    ``bcast`` returns only once rank 0 has reached it, which is after pytest created
+    the directory on that rank, so no extra barrier is needed before writing.
+    """
+    return MPI.COMM_WORLD.bcast(path, root=0)
 
 
 @pytest.fixture
@@ -37,4 +37,4 @@ def tmp_path(tmp_path):
 @pytest.fixture
 def tmpdir(tmpdir):
     """pytest's `tmpdir`, identical on every MPI rank."""
-    return type(tmpdir)(_shared_path(tmpdir))
+    return type(tmpdir)(_shared_path(str(tmpdir)))

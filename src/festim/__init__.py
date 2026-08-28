@@ -41,6 +41,7 @@ from .exports.derived_quantity import DerivedQuantity
 from .exports.field import (
     CustomFieldExport,
     ExportBaseClass,
+    FieldExportBase,
     ReactionRateExport,
     SpeciesExport,
     TemperatureExport,

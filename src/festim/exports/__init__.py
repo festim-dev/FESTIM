@@ -5,6 +5,7 @@ from .derived_quantity import DerivedQuantity
 from .field import (
     CustomFieldExport,
     ExportBaseClass,
+    FieldExportBase,
     ReactionRateExport,
     SpeciesExport,
     TemperatureExport,
@@ -31,6 +32,7 @@ __all__ = [
     "CustomQuantity",
     "DerivedQuantity",
     "ExportBaseClass",
+    "FieldExportBase",
     "GasPressure",
     "MaximumSurface",
     "MaximumVolume",

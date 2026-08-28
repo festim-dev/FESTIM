@@ -115,3 +115,24 @@ specific ones; those times are added to the stepsize milestones so they are hit 
 .. code-block:: python
 
     F.SpeciesExport("results.bp", field=[H], subdomain=vol, times=[1, 10, 100])
+
+Deprecated export classes
+-------------------------
+
+Before formats were selectable, each format had its own class. These still work but
+emit a :class:`DeprecationWarning` and will be removed in a future release:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 40 60
+
+   * - Deprecated
+     - Use instead
+   * - ``F.VTXSpeciesExport(...)``
+     - ``F.SpeciesExport(..., format="vtx")``
+   * - ``F.VTXTemperatureExport(...)``
+     - ``F.TemperatureExport(..., format="vtx")``
+   * - ``F.XDMFExport(...)``
+     - ``F.SpeciesExport(..., format="xdmf")``
+   * - ``F.CustomFieldExport(..., checkpoint=True)``
+     - ``F.CustomFieldExport(..., format="checkpoint")``

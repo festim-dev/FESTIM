@@ -216,38 +216,33 @@ class HeatTransferProblem(problem.ProblemBase):
                     bc.value_fenics * self.test_function * self.ds(bc.subdomain.id)
                 )
 
-    def _export_functions(self, export):
-        """Resolve what a field export should write.
-
-        Args:
-            export: the export to resolve
-
-        Returns:
-            the functions to write, the name to store each one under, and the mesh
-            they live on
-        """
-        if isinstance(export, exports.TemperatureExport):
-            return [self.u], [self.u.name], self.u.function_space.mesh
-        raise NotImplementedError(
-            f"{type(export).__name__} is not implemented for heat transfer problems"
-        )
-
     def initialise_exports(self):
         """Defines the export writers of the model, if field is given as a string, find
         species object in self.species."""
 
         initialised_files = set()
         for export in self.exports:
-            if isinstance(export, exports.ExportBaseClass):
-                self._register_export_milestones(export)
-                functions, names, mesh = self._export_functions(export)
-                export.define_writer(
-                    functions,
-                    names,
-                    mesh,
-                    overwrite=export.filename not in initialised_files,
+            if not isinstance(export, exports.FieldExportBase):
+                continue
+            if isinstance(export, exports.TemperatureExport):
+                functions, names = [self.u], [self.u.name]
+            elif isinstance(export, exports.CustomFieldExport):
+                export.function = fem.Function(self.function_space)
+                export.set_dolfinx_expression(temperature=self.u, time=self.t)
+                functions, names = [export.function], [export.filename.stem]
+            else:
+                raise NotImplementedError(
+                    f"{type(export).__name__} is not implemented for heat transfer "
+                    "problems"
                 )
-                initialised_files.add(export.filename)
+            self._register_export_milestones(export)
+            export.define_writer(
+                functions,
+                names,
+                functions[0].function_space.mesh,
+                overwrite=export.filename not in initialised_files,
+            )
+            initialised_files.add(export.filename)
 
     def post_processing(self):
         """Post processes the model."""
@@ -275,11 +270,11 @@ class HeatTransferProblem(problem.ProblemBase):
                 # if filename given write export data to file
                 if export.filename is not None:
                     export.write(t=float(self.t))
-            if isinstance(export, exports.ExportBaseClass):
+            if isinstance(export, exports.FieldExportBase):
                 export.update()
                 export.write(float(self.t))
 
     def __del__(self):
         for export in self.exports:
-            if isinstance(export, exports.ExportBaseClass):
+            if isinstance(export, exports.FieldExportBase):
                 export.close()

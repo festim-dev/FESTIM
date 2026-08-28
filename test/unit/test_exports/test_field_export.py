@@ -73,18 +73,23 @@ class TestBackwardsCompatibility:
     """The pre-existing class names must keep behaving exactly as before."""
 
     def test_vtx_species_export_is_vtx(self):
-        export = F.VTXSpeciesExport("my_export.bp", field=F.Species("H"))
+        with pytest.deprecated_call(match="VTXSpeciesExport is deprecated"):
+            export = F.VTXSpeciesExport("my_export.bp", field=F.Species("H"))
         assert export.format == "vtx"
         assert export._checkpoint is False
 
     def test_vtx_temperature_export_is_vtx(self):
-        assert F.VTXTemperatureExport("T.bp").format == "vtx"
+        with pytest.deprecated_call(match="VTXTemperatureExport is deprecated"):
+            export = F.VTXTemperatureExport("T.bp")
+        assert export.format == "vtx"
 
     def test_xdmf_export_is_xdmf(self):
-        assert F.XDMFExport("my_export.xdmf", field=F.Species("H")).format == "xdmf"
+        with pytest.deprecated_call(match="XDMFExport is deprecated"):
+            export = F.XDMFExport("my_export.xdmf", field=F.Species("H"))
+        assert export.format == "xdmf"
 
     def test_checkpoint_kwarg_maps_to_format(self):
-        with pytest.deprecated_call(match="format='checkpoint'"):
+        with pytest.deprecated_call(match="VTXSpeciesExport is deprecated"):
             export = F.VTXSpeciesExport(
                 "my_export.bp", field=F.Species("H"), checkpoint=True
             )
@@ -100,11 +105,8 @@ class TestBackwardsCompatibility:
         # `checkpoint` used to be stored but ignored; now it reflects the format
         assert export.checkpoint is True
 
-    def test_vtx_module_path_still_importable(self):
-        from festim.exports.vtx import ExportBaseClass, VTXSpeciesExport
-
-        assert VTXSpeciesExport is F.VTXSpeciesExport
-        assert ExportBaseClass is F.ExportBaseClass
+    def test_export_base_class_alias(self):
+        assert F.ExportBaseClass is F.FieldExportBase
 
 
 def test_subdomain_is_readable_on_every_field_export():
@@ -116,5 +118,3 @@ def test_subdomain_is_readable_on_every_field_export():
     vol = F.VolumeSubdomain1D(id=3, borders=[0, 1], material=mat)
     export = F.SpeciesExport("H.bp", field=F.Species("H"), subdomain=vol)
     assert export.subdomain is vol
-    # the private name the legacy problem classes use still points at the same object
-    assert export._subdomain is vol

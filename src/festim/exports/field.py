@@ -48,7 +48,7 @@ def _resolve_checkpoint_kwarg(format: str, checkpoint: bool) -> str:
     return "checkpoint"
 
 
-class ExportBaseClass:
+class FieldExportBase:
     """Base class for exports of fields to a file.
 
     Args:
@@ -156,12 +156,12 @@ class ExportBaseClass:
             self.writer.close()
 
 
-class TemperatureExport(ExportBaseClass):
+class TemperatureExport(FieldExportBase):
     """Export the temperature field to a file.
 
     Args:
         filename: The name of the output file
-        format: The output format, see :class:`ExportBaseClass`. Defaults to ``"vtx"``.
+        format: The output format, see :class:`FieldExportBase`. Defaults to ``"vtx"``.
         backend: The io4dolfinx backend, for ``format="checkpoint"``.
         times: if provided, the field will be exported at these timesteps. Otherwise
             exports at all timesteps. Defaults to None.
@@ -182,7 +182,7 @@ class TemperatureExport(ExportBaseClass):
         super().__init__(filename, times=times, format=format, backend=backend)
 
 
-class SpeciesExport(ExportBaseClass):
+class SpeciesExport(FieldExportBase):
     """Export species concentration fields to a file.
 
     Args:
@@ -190,7 +190,7 @@ class SpeciesExport(ExportBaseClass):
         field: Set of species to export
         subdomain: A field can be defined on multiple domains. This arguments specifies
             what subdomains we export on. If `None` we export on all domains.
-        format: The output format, see :class:`ExportBaseClass`. Defaults to ``"vtx"``.
+        format: The output format, see :class:`FieldExportBase`. Defaults to ``"vtx"``.
         backend: The io4dolfinx backend, for ``format="checkpoint"``.
         times: if provided, the field will be exported at these timesteps. Otherwise
             exports at all timesteps. Defaults to None.
@@ -227,14 +227,6 @@ class SpeciesExport(ExportBaseClass):
         super().__init__(filename, times=times, format=format, backend=backend)
         self.field = field
         self.subdomain = subdomain
-
-    @property
-    def subdomain(self) -> VolumeSubdomain | None:
-        return self._subdomain
-
-    @subdomain.setter
-    def subdomain(self, value: VolumeSubdomain | None):
-        self._subdomain = value
 
     @property
     def _checkpoint(self) -> bool:
@@ -288,19 +280,19 @@ class SpeciesExport(ExportBaseClass):
         if legacy_output:
             return [field.post_processing_solution for field in self._field]
         else:
-            if self._subdomain is None:
+            if self.subdomain is None:
                 raise ValueError("Subdomain must be specified")
             else:
                 outfiles = []
                 for field in self._field:
-                    if self._subdomain in field.subdomains:
+                    if self.subdomain in field.subdomains:
                         outfiles.append(
-                            field.subdomain_to_post_processing_solution[self._subdomain]
+                            field.subdomain_to_post_processing_solution[self.subdomain]
                         )
                 return outfiles
 
 
-class CustomFieldExport(ExportBaseClass):
+class CustomFieldExport(FieldExportBase):
     """Export a custom field to a VTX file
 
     Args:
@@ -314,7 +306,7 @@ class CustomFieldExport(ExportBaseClass):
             exports at all timesteps. Defaults to None.
         subdomain: The volume subdomain on which the custom
             field is evaluated. Defaults to None.
-        format: The output format, see :class:`ExportBaseClass`. Defaults to ``"vtx"``.
+        format: The output format, see :class:`FieldExportBase`. Defaults to ``"vtx"``.
         backend: The io4dolfinx backend, for ``format="checkpoint"``.
         checkpoint: Deprecated, use ``format="checkpoint"``.
 
@@ -486,7 +478,7 @@ class ReactionRateExport(CustomFieldExport):
             exports at all timesteps. Defaults to None.
         subdomain: The volume subdomain on which the reaction
             rate is evaluated. Defaults to None.
-        format: The output format, see :class:`ExportBaseClass`. Defaults to ``"vtx"``.
+        format: The output format, see :class:`FieldExportBase`. Defaults to ``"vtx"``.
         backend: The io4dolfinx backend, for ``format="checkpoint"``.
         checkpoint: Deprecated, use ``format="checkpoint"``.
     """
@@ -588,8 +580,9 @@ class ReactionRateExport(CustomFieldExport):
 class VTXTemperatureExport(TemperatureExport):
     """Export the temperature field to a VTX (``.bp``) file.
 
-    Deprecated in favour of :class:`TemperatureExport`, which supports other formats.
-    Kept as-is for backwards compatibility.
+    .. deprecated::
+        Use :class:`TemperatureExport`, which supports other formats, instead. This
+        class will be removed in a future release.
     """
 
     def __init__(
@@ -597,20 +590,28 @@ class VTXTemperatureExport(TemperatureExport):
         filename: str | Path,
         times: list[float] | list[int] | None = None,
     ):
+        warnings.warn(
+            "VTXTemperatureExport is deprecated and will be removed in a future "
+            "release, use TemperatureExport(..., format='vtx') instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         super().__init__(filename, format="vtx", times=times)
 
 
 class VTXSpeciesExport(SpeciesExport):
     """Export species fields to a VTX (``.bp``) file.
 
-    Deprecated in favour of :class:`SpeciesExport`, which supports other formats.
-    Kept as-is for backwards compatibility.
+    .. deprecated::
+        Use :class:`SpeciesExport`, which supports other formats, instead. This class
+        will be removed in a future release.
 
     Args:
         filename: The name of the output file
         field: Set of species to export
         subdomain: The subdomain to export on
-        checkpoint: Deprecated, use ``SpeciesExport(..., format="checkpoint")``.
+        checkpoint: If True, write a checkpoint instead of a VTX file. Equivalent to
+            ``SpeciesExport(..., format="checkpoint")``.
         times: The timesteps to export at, or None for all timesteps
     """
 
@@ -622,10 +623,21 @@ class VTXSpeciesExport(SpeciesExport):
         checkpoint: bool = False,
         times: list[float] | list[int] | None = None,
     ):
+        warnings.warn(
+            "VTXSpeciesExport is deprecated and will be removed in a future release, "
+            "use SpeciesExport(..., format='vtx') instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         super().__init__(
             filename,
             field,
             subdomain=subdomain,
-            format=_resolve_checkpoint_kwarg("vtx", checkpoint),
+            format="checkpoint" if checkpoint else "vtx",
             times=times,
         )
+
+
+#: Deprecated alias, kept so existing scripts keep importing. Use
+#: :class:`FieldExportBase`.
+ExportBaseClass = FieldExportBase
