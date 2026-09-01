@@ -383,6 +383,60 @@ def test_initial_condition_discontinuous():
     assert np.allclose(prev_solution_spe2_right, intial_cond_value)
 
 
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        (lambda x: 1 + 2 * x[0], lambda x: 1 + 2 * x),
+        (lambda x, T: x[0] + T, lambda x: x + 300 + 10 * x),
+    ],
+)
+def test_initial_condition_discontinuous_space_dependent(value, expected):
+    """Test that a space (and temperature) dependent initial condition is applied on
+    the submesh of its volume only, in the discontinuous case."""
+
+    # BUILD
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+
+    vertices = np.concatenate((np.linspace(0, 0.5, 50), np.linspace(0.5, 1, 50)))
+    my_model.mesh = F.Mesh1D(vertices)
+
+    left_surf = F.SurfaceSubdomain1D(id=1, x=0)
+    right_surf = F.SurfaceSubdomain1D(id=2, x=1)
+
+    material = F.Material(D_0=1e-01, E_D=0, K_S_0=1, E_K_S=0)
+    vol1 = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=material)
+    vol2 = F.VolumeSubdomain1D(id=2, borders=[0.5, 1], material=material)
+    my_model.subdomains = [vol1, vol2, left_surf, right_surf]
+
+    spe = F.Species("H", mobile=True, subdomains=[vol1, vol2])
+    my_model.species = [spe]
+
+    my_model.interfaces = [
+        F.Interface(id=3, subdomains=[vol1, vol2], penalty_term=1000)
+    ]
+
+    # a temperature given as a function lives on the parent mesh, the initial
+    # condition on the submesh: the sub_T of the volume has to be used (issue #1007)
+    my_model.temperature = lambda x: 300 + 10 * x[0]
+
+    my_model.initial_conditions = [
+        F.InitialConcentration(value=value, species=spe, volume=vol1),
+    ]
+
+    my_model.settings = F.Settings(
+        atol=1e-10, rtol=1e-10, final_time=5, transient=True, stepsize=F.Stepsize(0.1)
+    )
+
+    # RUN
+    my_model.initialise()
+
+    # TEST
+    V_vol1, dofs_vol1 = vol1.u_n.function_space.sub(0).collapse()
+    x_vol1 = V_vol1.tabulate_dof_coordinates()[:, 0]
+
+    assert np.allclose(vol1.u_n.x.array[dofs_vol1], expected(x_vol1))
+
+
 def test_initial_condition_continuous_multimaterial():
     """Test the initial condition in multi-material continous case that the condition is
     only appilied in the correct volume subdomain."""

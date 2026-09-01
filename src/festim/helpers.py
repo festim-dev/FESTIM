@@ -425,11 +425,13 @@ def convergenceTest(snes, it, norms):
 
 def SnesMonitor(snes, iter, rnorm):
     global _prev_xnorm
-    if MPI.COMM_WORLD.rank == 0:
-        rtol, atol, stol, _max_its = snes.getTolerances()
-        x = snes.getSolution()
-        xnorm = x.norm()
+    # Vec.norm() is collective: every rank must call it, so it cannot sit behind
+    # a rank 0 guard. Only the logging below is rank 0 only.
+    rtol, atol, stol, _max_its = snes.getTolerances()
+    x = snes.getSolution()
+    xnorm = x.norm()
 
+    if MPI.COMM_WORLD.rank == 0:
         stepsize_rel = abs(xnorm - _prev_xnorm) / xnorm if iter > 0 else float("inf")
         if iter == 0:
             relative_residual = float("inf")
@@ -441,8 +443,8 @@ def SnesMonitor(snes, iter, rnorm):
             f"SNES {iter=} ; {rnorm=:.5e} ({atol=}) ; {relative_residual=:.5e} ({rtol=}) ; {stepsize_rel=:.5e} ({stol=:.5e})",  # noqa: E501
         )
 
-        # Update previous xnorm
-        _prev_xnorm = xnorm
+    # Update previous xnorm
+    _prev_xnorm = xnorm
 
 
 def KSPMonitor(ksp, iter, rnorm):
