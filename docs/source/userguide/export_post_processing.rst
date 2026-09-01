@@ -105,6 +105,15 @@ Read it back into another simulation with
     ]
 
 Pass ``backend="h5py"`` to write a plain ``.h5`` file instead of the ADIOS2 default.
+The same ``backend`` must then be given when reading it back::
+
+    F.read_function_from_file(
+        filename="state.h5", name="H", timestamp=10.0, backend="h5py"
+    )
+
+Only checkpoints can be read back this way. The visualisation formats store values
+interpolated onto the mesh nodes rather than the degrees of freedom, so
+:func:`festim.read_function_from_file` cannot restart a simulation from them.
 
 Exporting at chosen times
 -------------------------

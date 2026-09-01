@@ -7,6 +7,7 @@ import dolfinx
 import h5py
 import io4dolfinx
 import numpy as np
+import pytest
 
 import festim as F
 
@@ -488,18 +489,28 @@ def test_vtkhdf_multiblock_single_file(tmpdir):
         assert np.allclose(structure["times"][block], [0.0, 1.0, 2.0])
 
 
-def test_checkpoint_of_temperature(tmpdir):
-    """Temperature can be checkpointed and read back; previously species-only."""
+@pytest.mark.parametrize("backend", ["adios2", "h5py"])
+def test_checkpoint_of_temperature(tmpdir, backend):
+    """Temperature can be checkpointed and read back; previously species-only.
+
+    Runs on both checkpoint backends: the file an export writes has to be readable by
+    :func:`festim.read_function_from_file` given the same backend.
+    """
     my_model, _, _, _ = _discontinuous_model()
-    filename = str(tmpdir.join("temperature.bp"))
+    filename = str(tmpdir.join("temperature"))
     my_model.temperature = lambda x: 500 + 100 * x[0]
-    my_model.exports = [F.TemperatureExport(filename, format="checkpoint")]
+    my_model.exports = [
+        F.TemperatureExport(filename, format="checkpoint", backend=backend)
+    ]
     my_model.initialise()
     my_model.run()
     my_model.exports[0].close()
 
     read_back = F.read_function_from_file(
-        filename=filename, name="temperature", timestamp=2.0
+        filename=my_model.exports[0].filename,
+        name="temperature",
+        timestamp=2.0,
+        backend=backend,
     )
     expected = dolfinx.fem.Function(read_back.function_space)
     expected.interpolate(lambda x: 500 + 100 * x[0])
