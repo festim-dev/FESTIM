@@ -27,6 +27,11 @@ jobs:
       #   if: ${{ matrix.container_version == 'nightly' }}
         run: python3 -m pip install git+https://github.com/scientificcomputing/io4dolfinx.git --no-build-isolation
 
+      # the .vtkhdf writer goes through h5py and needs the MPI build to write from
+      # more than one process; surface it here rather than in a confusing test failure
+      - name: Report h5py MPI support
+        run: python3 -c "import h5py; print('h5py', h5py.__version__, 'mpi:', h5py.get_config().mpi)"
+
       - name: Run tests
         run: |
           python3 -m pytest test/ --cov festim --cov-report xml --cov-report term

@@ -12,6 +12,7 @@ dependencies:
   - tqdm
   - scifem>=0.2.8
   - io4dolfinx
+  - h5py =*=mpi_*
   - sphinx-design
   - sphinxcontrib-bibtex
   - sympy

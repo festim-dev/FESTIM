@@ -141,9 +141,10 @@ def test_create_value_fenics_initial_temperature(input_value, expected_type):
     assert isinstance(init_cond.expr_fenics, expected_type)
 
 
-def test_checkpointing_single_species(tmpdir):
+@pytest.mark.parametrize("backend, ext", [("adios2", ".bp"), ("h5py", ".h5")])
+def test_checkpointing_single_species(tmpdir, backend, ext):
     """Writes a P1 function to a file and reads it back in as initial condition for one
-    species."""
+    species. Covers both checkpoint backends."""
     # build initial condition
     mesh = dolfinx.mesh.create_unit_square(
         MPI.COMM_WORLD, nx=6, ny=6, cell_type=dolfinx.cpp.mesh.CellType.quadrilateral
@@ -157,10 +158,12 @@ def test_checkpointing_single_species(tmpdir):
 
     u_ref = dolfinx.fem.Function(V)
     u_ref.interpolate(f)
-    filename = tmpdir.join("initial_condition.bp")
+    filename = tmpdir.join(f"initial_condition{ext}")
 
-    io4dolfinx.write_mesh(filename, mesh)
-    io4dolfinx.write_function(filename, u_ref, name="my_function", time=0.2)
+    io4dolfinx.write_mesh(filename, mesh, backend=backend)
+    io4dolfinx.write_function(
+        filename, u_ref, name="my_function", time=0.2, backend=backend
+    )
 
     # create problem
     my_problem = F.HydrogenTransportProblem()
@@ -173,7 +176,7 @@ def test_checkpointing_single_species(tmpdir):
     my_problem.subdomains = [vol]
 
     function_initial_value = F.read_function_from_file(
-        filename=filename, name="my_function", timestamp=0.2, mesh=mesh
+        filename=filename, name="my_function", timestamp=0.2, mesh=mesh, backend=backend
     )
     my_problem.initial_conditions = [
         F.InitialConcentration(value=function_initial_value, species=H, volume=vol)
@@ -188,6 +191,18 @@ def test_checkpointing_single_species(tmpdir):
     # test that the initial condition is correct
     u_prev = my_problem.u_n.sub(0)
     np.testing.assert_allclose(u_ref.x.array, u_prev.x.array, atol=1e-14)
+
+
+def test_read_function_from_file_rejects_non_checkpoint_backend():
+    """Only the backends that can store a checkpoint are accepted.
+
+    The visualisation backends store nodal values and no dofmap, so io4dolfinx cannot
+    read a function back from them; catch that here rather than deep inside the backend.
+    """
+    with pytest.raises(ValueError, match="Unknown backend 'vtkhdf'"):
+        F.read_function_from_file(
+            filename="unused.vtkhdf", name="H", timestamp=0.0, backend="vtkhdf"
+        )
 
 
 def test_checkpointing_multiple_species(tmpdir):
