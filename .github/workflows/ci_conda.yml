@@ -22,7 +22,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v7
 
-    - uses: pyvista/setup-headless-display-action@v4
+    - uses: pyvista/setup-headless-display-action@v5
 
     - name: Set up Conda
       uses: conda-incubator/setup-miniconda@v4
