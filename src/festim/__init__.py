@@ -40,7 +40,6 @@ from .exports.custom_quantity import CustomQuantity
 from .exports.derived_quantity import DerivedQuantity
 from .exports.field import (
     CustomFieldExport,
-    ExportBaseClass,
     FieldExportBase,
     ReactionRateExport,
     SpeciesExport,

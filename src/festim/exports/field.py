@@ -636,8 +636,3 @@ class VTXSpeciesExport(SpeciesExport):
             format="checkpoint" if checkpoint else "vtx",
             times=times,
         )
-
-
-#: Deprecated alias, kept so existing scripts keep importing. Use
-#: :class:`FieldExportBase`.
-ExportBaseClass = FieldExportBase

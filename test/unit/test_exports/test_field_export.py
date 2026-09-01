@@ -105,9 +105,6 @@ class TestBackwardsCompatibility:
         # `checkpoint` used to be stored but ignored; now it reflects the format
         assert export.checkpoint is True
 
-    def test_export_base_class_alias(self):
-        assert F.ExportBaseClass is F.FieldExportBase
-
 
 def test_subdomain_is_readable_on_every_field_export():
     """`subdomain` is used to name blocks, so every field export must expose it."""
