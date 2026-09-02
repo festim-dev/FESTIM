@@ -235,6 +235,10 @@ class InitialTemperature(InitialConditionBase):
             )
 
 
+#: the io4dolfinx backends that can store a checkpoint, and the file each writes
+_CHECKPOINT_BACKENDS = {"adios2": ".bp", "h5py": ".h5"}
+
+
 def read_function_from_file(
     filename: str,
     name: str,
@@ -242,8 +246,17 @@ def read_function_from_file(
     family="P",
     order: int = 1,
     mesh: dolfinx.mesh.Mesh | None = None,
+    backend: str = "adios2",
 ) -> fem.Function:
-    """Read a function from a file.
+    """Read a function from a checkpoint file.
+
+    Reads a checkpoint written by an export with ``format="checkpoint"`` (or directly
+    by :func:`io4dolfinx.write_function`). The visualisation formats (``"vtx"``,
+    ``"vtkhdf"``, ``"xdmf"``) store values interpolated onto the mesh nodes rather than
+    the degrees of freedom, and cannot be read back with this function.
+
+    The function space the checkpoint is read into is built from `family` and `order`,
+    so these must match the space the function was written from.
 
     note::
         The function is read from a file using io4dolfinx. For more information
@@ -257,11 +270,24 @@ def read_function_from_file(
         family: the family of the function space
         order: the order of the function space
         mesh: Mesh to create input space on.
+        backend: the io4dolfinx backend the checkpoint was written with, ``"adios2"``
+            (``.bp``) or ``"h5py"`` (``.h5``). Must match the `backend` given to the
+            export that wrote the file.
 
     Returns:
         the function
+
+    Raises:
+        ValueError: if `backend` is not a backend that can store a checkpoint
     """
-    mesh_in = io4dolfinx.read_mesh(filename=filename, comm=MPI.COMM_WORLD)
+    if backend not in _CHECKPOINT_BACKENDS:
+        raise ValueError(
+            f"Unknown backend {backend!r}, expected one of "
+            f"{sorted(_CHECKPOINT_BACKENDS)}."
+        )
+    mesh_in = io4dolfinx.read_mesh(
+        filename=filename, comm=MPI.COMM_WORLD, backend=backend
+    )
     V_in = fem.functionspace(mesh_in, (family, order))
     u_in = fem.Function(V_in)
     io4dolfinx.read_function(
@@ -269,6 +295,7 @@ def read_function_from_file(
         u=u_in,
         name=name,
         time=timestamp,
+        backend=backend,
     )
     if mesh is None:
         return u_in

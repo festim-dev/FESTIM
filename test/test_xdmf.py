@@ -24,15 +24,16 @@ def test_write(tmp_path):
     species = F.Species("H")
     filename = os.path.join(tmp_path, "test.xdmf")
     my_export = F.XDMFExport(filename=filename, field=species)
-    my_export.define_writer(MPI.COMM_WORLD)
     domain = mesh.create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
     V = fem.functionspace(domain, ("Lagrange", 1))
     u = fem.Function(V)
 
     species.post_processing_solution = u
+    my_export.define_writer([u], [species.name], domain)
 
     for t in [0, 1, 2, 3]:
         my_export.write(t=t)
+    my_export.close()
 
     assert os.path.exists(filename)
 
