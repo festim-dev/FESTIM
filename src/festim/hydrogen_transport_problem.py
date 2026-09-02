@@ -1955,10 +1955,14 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             interface.mesh = mesh
             interface.mt = mt
 
-        integral_data = [
-            interface.compute_mapped_interior_facet_data(mesh)
-            for interface in self.interfaces
-        ]
+        # we only need one integral_data entry per _subdomain_ not per Interface object
+        # as you can have several InterfaceReaction objects on the same subdomain
+        integral_data, seen = [], set()
+        for interface in self.interfaces:
+            data = interface.compute_mapped_interior_facet_data(mesh)
+            if data[0] not in seen:
+                seen.add(data[0])
+                integral_data.append(data)
         dInterface = ufl.Measure("dS", domain=mesh, subdomain_data=integral_data)
 
         all_mobile_species = [spe for spe in self.species if spe.mobile]
