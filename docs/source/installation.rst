@@ -20,17 +20,20 @@ Option 1: Conda (Recommended)
 
 The easiest way to install FESTIM with all its dependencies (including dolfinx) is via Conda.
 
-First `install Anaconda <https://docs.continuum.io/anaconda/install>`_,
+First install a conda distribution, e.g.
+`Anaconda <https://docs.anaconda.com/anaconda/install/>`_ or
+`Miniforge <https://github.com/conda-forge/miniforge>`_.
 
 .. tip::
 
-    You can install Anaconda on most Linux distributions by entering::
+    You can install Miniforge on Linux and MacOS by entering::
 
-        curl -O https://repo.anaconda.com/archive/Anaconda3-2024.06-1-Linux-x86_64.sh
-        bash ./Anaconda3-2024.06-1-Linux-x86_64.sh
+        curl -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
+        bash Miniforge3-$(uname)-$(uname -m).sh
 
-    You can install other versions by replacing :code:`Anaconda3-2024.06-1-Linux-x86_64.sh` 
-    with another from `the official repository <https://repo.anaconda.com/archive/>`_.
+    See the `Miniforge <https://github.com/conda-forge/miniforge#install>`_ and
+    `Anaconda <https://docs.anaconda.com/anaconda/install/>`_ documentation for other
+    installation methods.
 
 Then run the following commands to create an environment and install FESTIM::
 
