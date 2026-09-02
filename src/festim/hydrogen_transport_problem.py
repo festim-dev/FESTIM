@@ -1746,7 +1746,12 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             mesh.topology.create_connectivity(tdim - 1, tdim)
             facet_to_cell = mesh.topology.connectivity(tdim - 1, tdim)
             facets = self.facet_meshtags.find(manifold.id)
-            n_interior = sum(len(facet_to_cell.links(f)) == 2 for f in facets)
+            # vectorised: the number of cells a facet connects to is the width of
+            # its slice in the adjacency list, and there can be tens of thousands
+            # of facets in a manifold
+            offsets = facet_to_cell.offsets
+            n_cells = offsets[facets + 1] - offsets[facets]
+            n_interior = int(np.count_nonzero(n_cells == 2))
 
             comm = mesh.comm
             total = comm.allreduce(len(facets), op=MPI.SUM)
