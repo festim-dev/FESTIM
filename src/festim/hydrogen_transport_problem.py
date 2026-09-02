@@ -1,6 +1,7 @@
 import warnings
 from collections.abc import Callable
 
+from mpi4py import MPI
 from petsc4py import PETSc
 
 import basix
