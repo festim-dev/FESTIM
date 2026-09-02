@@ -3,7 +3,7 @@ Installation
 ============
 
 
-Because the main dependency FEniCSx (dolfinx) cannot be installed natively on Windows, Windows users must use the `Windows Subsystem for Linux <https://learn.microsoft.com/en-us/windows/wsl/install>`_ (WSL). FEniCSx can be installed natively on MacOs and Linux.
+Windows users must use the `Windows Subsystem for Linux <https://learn.microsoft.com/en-us/windows/wsl/install>`_ (WSL), because one of FESTIM's dependencies, `scifem <https://github.com/scientificcomputing/scifem>`_, is not built for Windows on conda-forge. FESTIM can be installed natively on MacOS and Linux.
 
 .. tip::
     You can install `WSL <https://learn.microsoft.com/en-us/windows/wsl/install>`_ by running
