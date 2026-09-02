@@ -2057,13 +2057,11 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 f"not {self.mesh.coordinate_system}"
             )
         dx = self.subdomain_measure(subdomain)
-        dx_grad = dx
         # the self terms are integrated over subdomain's own mesh, so their coefficients
         # must live there too -- for a manifold that is its submesh, not the parent mesh
         dt = self.subdomain_dt(subdomain) if self.settings.transient else None
 
-        form = 0
-        form_grad = 0
+        self_form = 0
         form_coupling = 0
         # add diffusion and time derivative for each species
         for spe in self.species:
@@ -2074,24 +2072,20 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             v = spe.subdomain_to_test_function[subdomain]
 
             if self.settings.transient:
-                form += ((u - u_n) / dt) * v * dx
+                self_form += ((u - u_n) / dt) * v * dx
 
             if spe.mobile:
                 D = self.diffusion_coefficient(subdomain, spe)
                 match self.mesh.coordinate_system:
                     case CoordinateSystem.CARTESIAN:
-                        form_grad += ufl.dot(D * ufl.grad(u), ufl.grad(v)) * dx_grad
+                        self_form += ufl.dot(D * ufl.grad(u), ufl.grad(v)) * dx
                     case CoordinateSystem.CYLINDRICAL:
                         r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
-                        form_grad += (
-                            r * ufl.dot(D * ufl.grad(u), ufl.grad(v / r)) * dx_grad
-                        )
+                        self_form += r * ufl.dot(D * ufl.grad(u), ufl.grad(v / r)) * dx
                     case CoordinateSystem.SPHERICAL:
                         r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
-                        form_grad += (
-                            r**2
-                            * ufl.dot(D * ufl.grad(u), ufl.grad(v / r**2))
-                            * dx_grad
+                        self_form += (
+                            r**2 * ufl.dot(D * ufl.grad(u), ufl.grad(v / r**2)) * dx
                         )
                     case _:
                         raise ValueError(
@@ -2145,7 +2139,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     * self.coupling_measure(subdomain)
                 )
             else:
-                form -= source.value.fenics_object * v * dx
+                self_form -= source.value.fenics_object * v * dx
 
         # add advection
         for adv_term in self.advection_terms:
@@ -2159,10 +2153,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 vel = adv_term.velocity.fenics_object
                 # on a manifold the tangential gradient is orthogonal to the normal, so
                 # dot(grad(c), vel) already picks out the tangential part of vel
-                form_grad += ufl.inner(ufl.dot(ufl.grad(conc), vel), v) * dx_grad
+                self_form += ufl.inner(ufl.dot(ufl.grad(conc), vel), v) * dx
 
         # store the form(s) in the subdomain object
-        self_form = form + form_grad
         if is_manifold:
             subdomain.F = form_coupling
             # self_form is still the integer 0 if the manifold carries no equation of
