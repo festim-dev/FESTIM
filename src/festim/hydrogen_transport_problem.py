@@ -2864,6 +2864,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 # a manifold mirrors a constant temperature onto its own submesh, and
                 # that mirror has to follow the parent constant
                 for subdomain in self.manifold_subdomains:
+                    # NOTE: current limitation for manifolds, temperature on the manifold
+                    # has to be homogeneous (ie. fem.Constant)
                     subdomain.sub_T.value = float(self.temperature_fenics)
 
     def iterate(self):
