@@ -1992,8 +1992,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     raise NotImplementedError(
                         f"implicit species {reactant.name} is used by reactions on a "
                         "codim-1 subdomain and on another subdomain, which are "
-                        "integrated over different meshes. Declare one implicit "
-                        "species per subdomain."
+                        "integrated over different meshes. Declare a separate "
+                        "implicit species for each subdomain."
                     )
 
                 reactant.create_value_fenics(mesh=mesh, t=t)

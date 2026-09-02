@@ -497,7 +497,9 @@ def test_implicit_species_shared_across_meshes_raises():
         ),
     ]
 
-    with pytest.raises(NotImplementedError, match="one implicit species per subdomain"):
+    with pytest.raises(
+        NotImplementedError, match="a separate implicit species for each subdomain"
+    ):
         model.initialise()
 
 
