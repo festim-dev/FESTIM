@@ -28,6 +28,7 @@ class TotalSurface(SurfaceQuantity):
         ds: ufl.Measure,
         entity_maps=None,
         restriction: str | None = None,
+        subdomain_id: int | None = None,
     ):
         """Computes the total value of the field on the defined surface subdomain, and
         appends it to the data list.
@@ -38,11 +39,16 @@ class TotalSurface(SurfaceQuantity):
             entity_maps: entity maps relating parent mesh and submesh
             restriction: which side of an interior facet to read the field on, when
                 ``ds`` is an interior facet measure
+            subdomain_id: the id to index ``ds`` with, when it is not the surface's own.
+                One side of a manifold adjacent to more than two volume subdomains is
+                integrated under an id of its own
         """
+        if subdomain_id is None:
+            subdomain_id = self.surface.id
 
         self.value = assemble_scalar(
             fem.form(
-                restrict(u, restriction) * ds(self.surface.id), entity_maps=entity_maps
+                restrict(u, restriction) * ds(subdomain_id), entity_maps=entity_maps
             )
         )
         self.data.append(self.value)

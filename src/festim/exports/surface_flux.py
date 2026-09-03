@@ -51,6 +51,7 @@ class SurfaceFlux(SurfaceQuantity):
         ds: ufl.Measure,
         entity_maps=None,
         restriction: str | None = None,
+        subdomain_id: int | None = None,
     ):
         """Computes the value of the flux at the surface.
 
@@ -62,6 +63,9 @@ class SurfaceFlux(SurfaceQuantity):
                 ``ds`` is an interior facet measure. The whole integrand is restricted,
                 so the normal is the one pointing out of that side and the sign
                 convention matches an exterior surface.
+            subdomain_id: the id to index ``ds`` with, when it is not the surface's own.
+                One side of a manifold adjacent to more than two volume subdomains is
+                integrated under an id of its own
         """
 
         # obtain mesh normal from integration domain
@@ -69,10 +73,12 @@ class SurfaceFlux(SurfaceQuantity):
         n = ufl.FacetNormal(mesh)
 
         integrand = -self.D * ufl.dot(ufl.grad(u), n)
+        if subdomain_id is None:
+            subdomain_id = self.surface.id
 
         self.value = assemble_scalar(
             fem.form(
-                restrict(integrand, restriction) * ds(self.surface.id),
+                restrict(integrand, restriction) * ds(subdomain_id),
                 entity_maps=entity_maps,
             )
         )

@@ -2,7 +2,9 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 import dolfinx
+import numpy as np
 import ufl
+from dolfinx.cpp.fem import compute_integration_domains
 from scifem.mesh import compute_interface_data
 
 from festim.material import SolubilityLaw
@@ -65,6 +67,59 @@ def compute_ordered_interior_facet_data(
         )
 
     return (tag, integration_data.reshape(-1))
+
+
+def compute_one_sided_interior_facet_data(
+    cell_tags: "dolfinx.mesh.MeshTags",
+    facets,
+    subdomain: VolumeSubdomain,
+):
+    """Integration data for the facets of a manifold that touch ``subdomain``, ordered
+    so that ``"+"`` is always ``subdomain``.
+
+    :func:`compute_ordered_interior_facet_data` orders the two sides of facets that all
+    separate the *same* pair of subdomains. That is not enough for a manifold adjacent
+    to more than two volumes -- a grain-boundary network in a polycrystal where every
+    grain is its own subdomain -- whose facets separate a different pair from one grain
+    to the next. There, one integral per adjacent grain is used instead of one per
+    manifold: this selects the facets that grain lies on and puts it on ``"+"``, so
+    every coupling term is written against a single restriction.
+
+    A facet between grains ``i`` and ``j`` is returned by both calls, once with ``i`` on
+    ``"+"`` and once with ``j``, which is what lets each side carry its own exchange
+    law. A facet with the same subdomain on both sides is returned unswapped.
+
+    Args:
+        cell_tags: the cell meshtags of the parent mesh
+        facets: the facets of the manifold, as returned by ``MeshTags.find``
+        subdomain: the volume subdomain to place on the ``"+"`` restriction
+
+    Returns:
+        a flat array of ``(cell_plus, local_facet_plus, cell_minus, local_facet_minus)``
+        quadruples, the form accepted by ``ufl.Measure("dS", subdomain_data=...)``
+    """
+    topology = cell_tags.topology
+    topology.create_connectivity(topology.dim - 1, topology.dim)
+
+    # MeshTags.topology is already the C++ object compute_integration_domains wants
+    data = compute_integration_domains(
+        dolfinx.fem.IntegralType.interior_facet, topology, facets
+    ).reshape(-1, 4)
+
+    # cell index -> volume subdomain id. MeshTags are not necessarily ordered by cell,
+    # nor do they necessarily cover every cell, so indexing values directly would be
+    # wrong for a mesh whose cells are not all tagged in order
+    cell_map = topology.index_map(topology.dim)
+    lookup = np.full(cell_map.size_local + cell_map.num_ghosts, -1, dtype=np.int32)
+    lookup[cell_tags.indices] = cell_tags.values
+
+    sides = lookup[data[:, [0, 2]]]
+    on_plus, on_minus = sides[:, 0] == subdomain.id, sides[:, 1] == subdomain.id
+    data = data[on_plus | on_minus]
+    # only the facets that have subdomain on "-" alone need their sides swapped
+    swap = on_minus[on_plus | on_minus] & ~on_plus[on_plus | on_minus]
+    data[swap] = data[swap][:, [2, 3, 0, 1]]
+    return data.reshape(-1)
 
 
 class InterfaceMethod(Enum):
