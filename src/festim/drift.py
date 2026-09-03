@@ -11,6 +11,7 @@ Different physics differ only in what sets ``v``: a fluid carries the species al
 """
 
 import warnings
+from abc import ABC, abstractmethod
 
 import ufl
 from dolfinx import fem
@@ -22,7 +23,7 @@ from festim.species import Species
 from festim.subdomain import VolumeSubdomain
 
 
-class DriftTermBase:
+class DriftTermBase(ABC):
     """Base class for drift terms.
 
     Subclasses supply :meth:`drift_velocity`; everything else -- validation, the
@@ -114,6 +115,7 @@ class DriftTermBase:
         """The user-given coefficients of this term that may depend on time."""
         return []
 
+    @abstractmethod
     def drift_velocity(self, D, temperature):
         """The drift velocity of this term, as a ufl expression.
 
@@ -125,7 +127,6 @@ class DriftTermBase:
             the velocity, a vector-valued ufl expression. ``ufl.zero`` when the driving
             gradient vanishes, in which case the term is skipped.
         """
-        raise NotImplementedError
 
     def inert_reason(self) -> str:
         """Why this term's velocity came out identically zero, for the user.

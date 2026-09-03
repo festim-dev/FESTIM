@@ -163,6 +163,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
             my_model.initialise()
     """
 
+    drift_terms: list[_drift.DriftTermBase]
     _temperature_as_function: fem.Function
     _species_to_D_global: dict[_species.Species, fem.Function]
     _species_to_D_global_expr: dict[_species.Species, fem.Expression]

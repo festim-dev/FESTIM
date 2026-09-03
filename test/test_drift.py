@@ -325,9 +325,8 @@ def test_outflow_bc_species_setter(value):
         F.OutflowBC(subdomain=F.SurfaceSubdomain(id=1), species=value)
 
 
-def test_drift_velocity_is_not_implemented_on_the_base_class():
-    term = F.DriftTermBase(
-        subdomain=F.VolumeSubdomain(id=1, material="m"), species=F.Species("H")
-    )
-    with pytest.raises(NotImplementedError):
-        term.drift_velocity(D=None, temperature=None)
+def test_base_class_cannot_be_instantiated_without_a_drift_velocity():
+    with pytest.raises(TypeError, match="abstract"):
+        F.DriftTermBase(
+            subdomain=F.VolumeSubdomain(id=1, material="m"), species=F.Species("H")
+        )
