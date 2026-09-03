@@ -2432,54 +2432,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                             f"Unsupported coordinate system {self.mesh.coordinate_system}"  # noqa: E501
                         )
 
-        # reactions are expanded into particle sources (_unpacked_sources, see
-        # create_sources_from_reactions), so they are handled by the source loop
-
-        # add fluxes. These are always parent-mesh integrals: a flux on a manifold
-        # subdomain mixes the bulk and manifold fields, so it goes into form_coupling
-        for bc in self._unpacked_bcs:
-            if isinstance(bc, boundary_conditions.ParticleFluxBC):
-                # check that the bc is applied on a surface belonging to this subdomain
-                target, measure, restriction = self.flux_bc_target(bc)
-                if subdomain == target:
-                    v = bc.species.subdomain_to_test_function[subdomain]
-                    form_coupling -= (
-                        self.restrict(bc.value_fenics, restriction)
-                        * self.restrict(v, restriction)
-                        * measure
-                    )
-            if isinstance(bc, boundary_conditions.FixedConcentrationBC):
-                # as for fluxes, only the subdomain owning the surface gets the term,
-                # and its material is the one setting D there
-                if bc.enforce_weakly and subdomain == self.surface_to_volume.get(
-                    bc.subdomain
-                ):
-                    u = bc.species.subdomain_to_solution[subdomain]
-                    v = bc.species.subdomain_to_test_function[subdomain]
-                    D = subdomain.material.get_diffusion_coefficient(
-                        self.mesh.mesh, self.temperature_fenics, bc.species
-                    )
-                    form_coupling += bc.weak_formulation(u, v, self.ds, D)
-
-        # add volumetric sources
-        for source in self._unpacked_sources:
-            if source.volume != subdomain:
-                continue
-            v = source.species.subdomain_to_test_function[subdomain]
-            bulk = self.source_coupling_side(source) if is_manifold else None
-            if bulk is not None:
-                # a source on a manifold that reads a bulk concentration: the exchange
-                # half that feeds the manifold. It must be integrated on the parent
-                # mesh, and restricted to the side the bulk species lives on
-                restriction = self.restriction_of(subdomain, bulk)
-                form_coupling -= (
-                    self.restrict(source.value.fenics_object, restriction)
-                    * self.restrict(v, restriction)
-                    * self.coupling_measure(subdomain, bulk)
-                )
-            else:
-                self_form -= source.value.fenics_object * v * dx
-
         # add drift (advection, Soret, electromigration)
         for drift_term in self.drift_terms:
             if drift_term.subdomain != subdomain:
@@ -2507,13 +2459,58 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     mesh=self.mesh.mesh,
                 )
 
-        # let drift carry the species out where the user says it flows out
-        for bc in self.boundary_conditions:
-            if not isinstance(bc, boundary_conditions.OutflowBC):
+        # add fluxes. These are always parent-mesh integrals: a flux on a manifold
+        # subdomain mixes the bulk and manifold fields, so it goes into form_coupling
+        for bc in self._unpacked_bcs:
+            if isinstance(bc, boundary_conditions.ParticleFluxBC):
+                # check that the bc is applied on a surface belonging to this subdomain
+                target, measure, restriction = self.flux_bc_target(bc)
+                if subdomain == target:
+                    v = bc.species.subdomain_to_test_function[subdomain]
+                    form_coupling -= (
+                        self.restrict(bc.value_fenics, restriction)
+                        * self.restrict(v, restriction)
+                        * measure
+                    )
+            if isinstance(bc, boundary_conditions.FixedConcentrationBC):
+                # as for fluxes, only the subdomain owning the surface gets the term,
+                # and its material is the one setting D there
+                if bc.enforce_weakly and subdomain == self.surface_to_volume.get(
+                    bc.subdomain
+                ):
+                    u = bc.species.subdomain_to_solution[subdomain]
+                    v = bc.species.subdomain_to_test_function[subdomain]
+                    D = subdomain.material.get_diffusion_coefficient(
+                        self.mesh.mesh, self.temperature_fenics, bc.species
+                    )
+                    form_coupling += bc.weak_formulation(u, v, self.ds, D)
+
+            # let drift carry the species out where the user says it flows out
+            if isinstance(bc, boundary_conditions.OutflowBC):
+                outflow = self.outflow_form(bc, subdomain)
+                if outflow is not None:
+                    self_form += outflow
+
+        # add volumetric sources
+        # reactions are expanded into particle sources (_unpacked_sources, see
+        # create_sources_from_reactions), so they are handled by the source loop
+        for source in self._unpacked_sources:
+            if source.volume != subdomain:
                 continue
-            outflow = self.outflow_form(bc, subdomain)
-            if outflow is not None:
-                self_form += outflow
+            v = source.species.subdomain_to_test_function[subdomain]
+            bulk = self.source_coupling_side(source) if is_manifold else None
+            if bulk is not None:
+                # a source on a manifold that reads a bulk concentration: the exchange
+                # half that feeds the manifold. It must be integrated on the parent
+                # mesh, and restricted to the side the bulk species lives on
+                restriction = self.restriction_of(subdomain, bulk)
+                form_coupling -= (
+                    self.restrict(source.value.fenics_object, restriction)
+                    * self.restrict(v, restriction)
+                    * self.coupling_measure(subdomain, bulk)
+                )
+            else:
+                self_form -= source.value.fenics_object * v * dx
 
         # store the form(s) in the subdomain object
         if is_manifold:
