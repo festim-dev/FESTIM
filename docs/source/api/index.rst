@@ -27,6 +27,10 @@ API reference
     :members:
     :show-inheritance:
 
+.. automodule:: festim.drift
+    :members:
+    :show-inheritance:
+
 .. automodule:: festim.coupled_heat_hydrogen_problem
     :members:
     :show-inheritance:

@@ -34,7 +34,7 @@ from .tools import error_L2
 
 D_O, D_G, K_EX = 1.5, 0.7, 2.0
 BETA = 1.0 - D_O / K_EX
-OMEGA_ID, GAMMA_ID, RIGHT_ID = 1, 2, 3
+OMEGA_ID, GAMMA_ID, RIGHT_ID, GAMMA_ENDS_ID = 1, 2, 3, 4
 
 
 def rotation(alpha=0.6, gamma=0.4):
@@ -134,20 +134,32 @@ def run(n, dim=2, degree=1, velocity=None):
     ]
 
     advection = []
+    subdomains = [omega, gamma, right]
     if velocity is not None:
         vel = dolfinx.fem.Function(
             dolfinx.fem.functionspace(mesh, ("Lagrange", 1, (dim,)))
         )
         vel.interpolate(lambda x: np.tile(v_np, (x.shape[1], 1)).T)
         advection = [F.AdvectionTerm(velocity=vel, subdomain=gamma, species=H_gam)]
+        # the manufactured solution has zero *diffusive* flux on the whole of dGamma
+        # (dc/dxi_2 vanishes at xi_2 = 0, 1 and c does not vary along xi_3), which is
+        # the natural condition an outflow gives. Without it the divergence form would
+        # impose zero *total* flux there, which the exact solution does not satisfy
+        gamma_ends = F.SurfaceSubdomain(
+            id=GAMMA_ENDS_ID,
+            dim=dim - 2,
+            locator=lambda x: np.full_like(x[0], True, dtype=bool),
+        )
+        subdomains.append(gamma_ends)
+        bcs.append(F.OutflowBC(subdomain=gamma_ends, species=H_gam))
 
     model = F.HydrogenTransportProblemDiscontinuous(
         mesh=F.Mesh(mesh),
         species=[H_om, H_gam],
-        subdomains=[omega, gamma, right],
+        subdomains=subdomains,
         sources=sources,
         boundary_conditions=bcs,
-        advection_terms=advection,
+        drift_terms=advection,
         temperature=500,
         settings=F.Settings(atol=1e-12, rtol=1e-12, transient=False),
     )
