@@ -393,7 +393,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self.convert_reaction_rates_to_fenics_objects()
         self.create_sources_from_reactions()
         self.convert_source_input_values_to_fenics_objects()
-        self.convert_advection_term_to_fenics_objects()
+        self.convert_drift_terms_to_fenics_objects()
         self.create_flux_values_fenics()
         self.create_initial_conditions()
         self.create_formulation()
@@ -952,7 +952,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         for reaction in self.reactions:
             self._unpacked_sources += reaction.create_sources()
 
-    def convert_advection_term_to_fenics_objects(self):
+    def convert_drift_terms_to_fenics_objects(self):
         """For each drift term convert its user-given coefficients.
 
         Runs after ``define_temperature`` so that a coefficient given as a function of
@@ -1093,8 +1093,10 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 velocity = drift_term.drift_velocity(
                     D=D, temperature=self.temperature_fenics
                 )
-                if _drift.warn_if_no_effect(drift_term, species, velocity):
-                    continue
+                # a term whose velocity is identically zero is still assembled: it costs
+                # nothing (UFL folds the zero into the integrand it shares a measure
+                # with) and dropping it would change the user's model behind their back
+                _drift.warn_if_no_effect(drift_term, species, velocity)
                 self.formulation += _drift.drift_form(
                     concentration=species.solution,
                     test_function=species.test_function,
@@ -1529,7 +1531,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.convert_reaction_rates_to_fenics_objects()
         self.create_sources_from_reactions()
         self.convert_source_input_values_to_fenics_objects()
-        self.convert_advection_term_to_fenics_objects()
+        self.convert_drift_terms_to_fenics_objects()
         self.define_boundary_conditions()
         self.create_flux_values_fenics()
         self.create_initial_conditions()
@@ -1839,7 +1841,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     foreign_subdomain=self.source_coupling_side(source),
                 )
 
-    def convert_advection_term_to_fenics_objects(self):
+    def convert_drift_terms_to_fenics_objects(self):
         """As the base class, but on the function space of the term's own subdomain.
 
         Every coefficient of a submesh integral has to be built on that submesh -- FFCx
@@ -2488,6 +2490,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     D=self.diffusion_coefficient(subdomain, spe),
                     temperature=self.subdomain_temperature(subdomain),
                 )
+                # unlike the base class this one does skip a zero term, because
+                # self_form may have no other integral: a manifold that carries drift
+                # and nothing else would end up a form with no arguments, which
+                # compiles but cannot be assembled
                 if _drift.warn_if_no_effect(drift_term, spe, velocity):
                     continue
                 # on a manifold both grad(c) and grad(w) are tangential, so the form
@@ -3556,8 +3562,8 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                 velocity = drift_term.drift_velocity(
                     D=D, temperature=self.temperature_fenics
                 )
-                if _drift.warn_if_no_effect(drift_term, spe, velocity):
-                    continue
+                # assembled even when identically zero, as in the base class
+                _drift.warn_if_no_effect(drift_term, spe, velocity)
                 self.formulation += _drift.drift_form(
                     concentration=conc,
                     test_function=spe.test_function,

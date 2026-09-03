@@ -5,22 +5,11 @@ from festim.subdomain.surface_subdomain import SurfaceSubdomain
 class OutflowBC:
     r"""Lets a drift term carry the species out through a boundary.
 
-    Drift terms are assembled in divergence form, so the boundary term they leave
-    behind makes the flux conditions of the problem constrain the **total** flux. A
-    boundary with no condition on it is then a wall: nothing leaves, and the drift is
-    balanced by back-diffusion. That is what you want at an actual wall, and wrong at an
-    outlet, where whatever the flow reaches should be carried out of the domain.
-
-    This boundary condition adds
-
-    .. math::
-
-        + \int_{\partial\Omega} c\, (\mathbf{v} \cdot \mathbf{n})\, w
-
-    which cancels exactly that term, so the natural condition on this surface becomes
-    zero *diffusive* flux, :math:`D \nabla c \cdot \mathbf{n} = 0` -- the standard
-    "do-nothing" outflow condition of advection-diffusion. The species leaves at the
-    rate the drift carries it.
+    Adds :math:`+ \int_{\partial\Omega} c\, (\mathbf{v} \cdot \mathbf{n})\, w`,
+    cancelling the boundary term the divergence form leaves behind, so the natural
+    condition on this surface becomes zero *diffusive* flux -- the standard "do-nothing"
+    outflow of advection-diffusion. Without it an untagged outlet is a closed end and
+    the species backs up against it. See :ref:`outflow` in the user guide.
 
     It is a no-op on a surface where no drift term acts on ``species``.
 

@@ -60,8 +60,8 @@ def test_every_drift_term_shares_the_base_class():
 
 
 def test_uniform_temperature_gives_no_soret_velocity():
-    """grad of a spatially constant field is a ufl Zero, and a form built from it has
-    no integration domain to compile against, so the term has to be skipped."""
+    """grad of a spatially constant field is a ufl Zero, so the velocity is reported as
+    identically zero -- but the term is still assembled, and contributes nothing."""
     T = fem.Constant(test_mesh_1d.mesh, 500.0)
     D = fem.Constant(test_mesh_1d.mesh, 1.0)
     term = F.SoretTerm(
@@ -72,17 +72,27 @@ def test_uniform_temperature_gives_no_soret_velocity():
     term.convert_inputs(function_space=test_functionspace, temperature=T)
 
     assert is_zero_velocity(term.drift_velocity(D=D, temperature=T))
-    assert (
-        drift_form(
-            concentration=fem.Function(test_functionspace),
-            test_function=ufl.TestFunction(test_functionspace),
-            velocity=term.drift_velocity(D=D, temperature=T),
-            dx=ufl.Measure("dx", domain=test_mesh_1d.mesh),
-            coordinate_system=CoordinateSystem.CARTESIAN,
-            mesh=test_mesh_1d.mesh,
-        )
-        is None
+
+    c = fem.Function(test_functionspace)
+    c.x.array[:] = 1.5
+    v = ufl.TestFunction(test_functionspace)
+    dx = ufl.Measure("dx", domain=test_mesh_1d.mesh)
+    drift = drift_form(
+        concentration=c,
+        test_function=v,
+        velocity=term.drift_velocity(D=D, temperature=T),
+        dx=dx,
+        coordinate_system=CoordinateSystem.CARTESIAN,
+        mesh=test_mesh_1d.mesh,
     )
+    assert drift is not None
+
+    # the zero folds into the integrand it shares a measure with, so a formulation
+    # carrying the term assembles to exactly the one without it
+    diffusion = ufl.dot(ufl.grad(c), ufl.grad(v)) * dx
+    without = fem.assemble_vector(fem.form(diffusion))
+    with_drift = fem.assemble_vector(fem.form(diffusion + drift))
+    assert np.array_equal(without.array, with_drift.array)
 
 
 @pytest.mark.parametrize(

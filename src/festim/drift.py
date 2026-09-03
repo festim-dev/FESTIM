@@ -273,9 +273,15 @@ def is_zero_velocity(velocity) -> bool:
     """Whether a drift velocity is identically zero.
 
     ``ufl.grad`` of a spatially constant field is a ``Zero`` at construction, and that
-    propagates through the arithmetic of a drift velocity. Such a term contributes
-    nothing, and a form built from it has no integration domain to compile against, so
-    callers skip it.
+    propagates through the arithmetic of a drift velocity. This is a *structural* zero,
+    so it is zero at every time -- a velocity that merely happens to vanish at ``t=0``
+    is a ``Function`` and is never reported here.
+
+    Such a term contributes nothing to a form it is added to: UFL sums the integrands
+    sharing a measure, so the zero collapses before FFCx sees it. It is used to warn the
+    user, and to keep a form that would consist of *nothing but* zero integrands from
+    being built at all -- such a form compiles to one with no arguments, which cannot be
+    assembled.
     """
     return isinstance(velocity, ufl.constantvalue.Zero)
 
@@ -283,11 +289,14 @@ def is_zero_velocity(velocity) -> bool:
 def warn_if_no_effect(term: DriftTermBase, species: Species, velocity) -> bool:
     """Warn that ``term`` contributes nothing, and say why.
 
-    A drift term whose driving gradient vanishes is dropped rather than assembled --
-    a form built from an all-zero integrand has no integration domain for FFCx to
-    compile against. Dropping it is the right physics, but silently dropping it is not
-    helpful: writing the term is a statement of intent, so the usual cause is an input
-    that is uniform when the user meant it to vary.
+    Writing a drift term is a statement of intent, so a term whose driving gradient
+    vanishes is almost always an input that is uniform when the user meant it to vary.
+    The term is still assembled -- it costs nothing, and quietly discarding what the
+    user asked for is worse than carrying a term that contributes zero -- but it is
+    worth saying so.
+
+    Callers that would otherwise build a form out of nothing but this term use the
+    return value to skip it; see :func:`is_zero_velocity`.
 
     Args:
         term: the drift term
@@ -341,15 +350,11 @@ def drift_form(
         mesh: the mesh the term is assembled on
 
     Returns:
-        the ufl form to add to the problem's formulation, or ``None`` when the velocity
-        is identically zero
+        the ufl form to add to the problem's formulation
 
     Raises:
         NotImplementedError: for an unknown coordinate system
     """
-    if is_zero_velocity(velocity):
-        return None
-
     match coordinate_system:
         case CoordinateSystem.CARTESIAN:
             return -concentration * ufl.dot(velocity, ufl.grad(test_function)) * dx
