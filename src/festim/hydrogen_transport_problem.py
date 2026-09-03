@@ -1444,15 +1444,17 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 comm=self.mesh.mesh.comm,
             )
 
-        # a manifold may sit on the boundary of the domain (one adjacent volume) or on
-        # an interface (two), so it needs a multi-valued mapping of its own rather than
-        # the one-to-one surface_to_volume
+        # a manifold may sit on the boundary of the domain (one adjacent volume), on an
+        # interface (two), or thread a polycrystal of one subdomain per grain (as many
+        # as it touches), so it needs a multi-valued mapping of its own rather than the
+        # one-to-one surface_to_volume
         facet_to_cell = self.mesh.mesh.topology.connectivity(
             self.mesh.mesh.topology.dim - 1, self.mesh.mesh.topology.dim
         )
-        self._coupling_measures = {}
+        self.interior_facet_measure = None
         self._manifold_is_interior = {}
         self._manifold_export_measures = {}
+        self._manifold_side_ids = {}
         self.manifold_to_volumes = _subdomain.map_manifold_to_volume_subdomains(
             ft=self.facet_meshtags,
             ct=self.volume_meshtags,
@@ -1475,8 +1477,15 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             subdomain.transfer_meshtag(self.mesh.mesh, self.facet_meshtags)
 
         for interface in self.interfaces:
-            interface.mt = self.volume_meshtags
+            # ``mt`` is read as ``mt.find(interface.id)`` to get the facets the
+            # interface occupies, so it is the facet tags
+            interface.mt = self.facet_meshtags
+            interface.mesh = self.mesh.mesh
             interface.parent_mesh = self.mesh.mesh
+
+        # every interior-facet integrand of the parent mesh is known by now, and they
+        # all have to share one measure (see :meth:`build_interior_facet_measure`)
+        self.build_interior_facet_measure()
 
         self.create_species_from_traps()
         self.link_enclosures()
@@ -1795,7 +1804,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         A source involving only fields of a manifold subdomain is integrated over that
         manifold's submesh (:meth:`subdomain_measure`); one coupling the manifold to
-        the bulk is a facet integral of the parent mesh (:meth:`coupling_measure`).
+        the bulk is a facet integral of the parent mesh (:meth:`facet_measure`).
         """
         if self.is_manifold_self_source(source):
             return source.volume.submesh
@@ -1826,6 +1835,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     temperature=temperature,
                     up_to_ufl_expr=True,
                     subdomain=source.volume,
+                    foreign_subdomain=self.source_coupling_side(source),
                 )
 
     def convert_advection_term_to_fenics_objects(self):
@@ -1875,7 +1885,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         Terms coupling a manifold to the bulk cannot use this measure -- a bulk field
         cannot be resolved inside a codim-1 integral -- and use
-        :meth:`coupling_measure` instead.
+        :meth:`facet_measure` instead.
         """
         if subdomain.codim(self.mesh.vdim) == 1:
             return ufl.Measure("dx", domain=subdomain.submesh)
@@ -1921,55 +1931,155 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             self._manifold_is_interior[manifold] = interior > 0
         return self._manifold_is_interior[manifold]
 
-    def coupling_measure(self, manifold: _subdomain.VolumeSubdomain):
-        """The parent-mesh measure the terms coupling ``manifold`` to the bulk are
-        integrated over.
+    def facet_measure(self, manifold: _subdomain.VolumeSubdomain):
+        """The parent-mesh measure the facets of ``manifold`` are integrated in: the
+        terms coupling it to the bulk, and the derived quantities exported on it.
 
-        A manifold on the boundary of the mesh uses ``ds``; one inside the mesh uses
-        ``dS``. When it separates two different volume subdomains the integration
-        entities are ordered so that ``"+"`` is the first of them (see
-        :meth:`restriction_of`); when the same subdomain lies on both sides there is
-        nothing to order, because the bulk field is single-valued across the facet.
-        """
-        return self.unindexed_coupling_measure(manifold)(manifold.id)
+        A manifold on the boundary of the mesh is integrated with ``ds``, one inside
+        the mesh with the shared ``dS`` (see :meth:`build_interior_facet_measure`),
+        whose entities are ordered so that ``"+"`` is the first of the two volume
+        subdomains it separates (see :meth:`restriction_of`).
 
-    def unindexed_coupling_measure(self, manifold: _subdomain.VolumeSubdomain):
-        """As :meth:`coupling_measure`, but not yet restricted to the manifold's id.
-
-        Derived quantities index the measure they are handed by the id of the subdomain
-        they export, exactly as they do with the parent ``ds``, so they need the measure
-        itself rather than an integral over it.
+        The measure is **not** restricted to the manifold: index it with
+        ``manifold.id``, as the derived quantities do with the parent ``ds``. Left
+        unindexed in a form it integrates over everything the measure carries data
+        for -- every tagged facet of the mesh for ``ds``, every interior manifold and
+        interface for the shared ``dS``.
         """
         if not self.manifold_is_interior(manifold):
             return self.ds
+        return self.interior_facet_measure
 
-        # memoised: DOLFINx requires every integral of a compiled form to share the
-        # *same* subdomain_data object, not merely an equal one
-        if manifold not in self._coupling_measures:
+    def build_interior_facet_measure(self):
+        """Builds the single ``dS`` measure that every interior-facet integral of the
+        parent mesh shares, and stores it in ``interior_facet_measure``.
+
+        The coupling terms of an interior manifold and the continuity terms of an
+        :class:`festim.Interface` are both ``dS`` integrals of the parent mesh, and
+        both need integration data of their own so that ``"+"`` and ``"-"`` land on the
+        sides they are meant to. They cannot each carry their own measure: UFL collects
+        one ``subdomain_data`` entry per integral of a form, and ``dolfinx.fem.form``
+        asserts that they are all the *same* object before using the first of them for
+        every id. A measure per manifold therefore breaks as soon as one volume
+        subdomain touches two interior manifolds, or an interface and an interior
+        manifold -- both integrals end up in that subdomain's ``F``. So the data of
+        every interior-facet integral goes into one list, and the measure built from it
+        is handed to all of them, each indexing it by its own id.
+        """
+        self._allocate_manifold_side_ids()
+        integral_data = [
+            entry
+            for manifold in self.manifold_subdomains
+            if self.manifold_is_interior(manifold)
+            for entry in self._manifold_integration_data(manifold)
+        ]
+        integral_data += [
+            interface.compute_mapped_interior_facet_data(self.volume_meshtags)
+            for interface in self.interfaces
+        ]
+        self.interior_facet_measure = ufl.Measure(
+            "dS", domain=self.mesh.mesh, subdomain_data=integral_data
+        )
+
+    def _allocate_manifold_side_ids(self):
+        """Gives each side of a manifold adjacent to more than two volume subdomains an
+        integration id of its own, in ``_manifold_side_ids``.
+
+        Two sides fit in one integral: the facets are ordered once and the two coupling
+        terms are told apart by ``"+"`` and ``"-"``. Beyond two there is no such
+        ordering, because the facets of the manifold no longer separate the same pair of
+        subdomains all the way along -- a grain-boundary network runs between a
+        different pair of grains on either side of every triple junction. So each
+        adjacent volume gets one integral over the facets it touches, ordered so that it
+        is on ``"+"`` (see
+        :func:`festim.subdomain.compute_one_sided_interior_facet_data`), and a facet
+        shared by two grains is integrated once per grain.
+
+        The ids are allocated above every id the user has declared, so that they cannot
+        collide with another manifold, an interface or a surface in the shared ``dS``
+        measure.
+        """
+        self._manifold_side_ids = {}
+        declared = {v.id for v in self.volume_subdomains}
+        declared |= {s.id for s in self.surface_subdomains}
+        declared |= {i.id for i in self.interfaces}
+        next_id = max(declared, default=0) + 1
+        for manifold in self.manifold_subdomains:
             volumes = self.manifold_to_volumes[manifold]
-            if len(volumes) == 2:
-                integral_data = _subdomain.compute_ordered_interior_facet_data(
+            if len(volumes) <= 2:
+                continue
+            self._manifold_side_ids[manifold] = {}
+            for volume in volumes:
+                self._manifold_side_ids[manifold][volume] = next_id
+                next_id += 1
+
+    def _manifold_integration_data(self, manifold: _subdomain.VolumeSubdomain):
+        """The ``(id, entities)`` pairs putting the coupling terms of an interior
+        ``manifold`` on the facets it occupies.
+
+        One pair, tagged with the manifold's own id, while it is adjacent to at most two
+        volume subdomains. When it separates two of them the entities are ordered so
+        that ``"+"`` is the first (see :meth:`restriction_of`); when the same subdomain
+        lies on both sides there is nothing to order, because the bulk field is
+        single-valued across the facet.
+
+        Beyond two adjacent subdomains there is one pair *per side*, tagged with the ids
+        allocated by :meth:`_allocate_manifold_side_ids`.
+        """
+        volumes = self.manifold_to_volumes[manifold]
+        if len(volumes) > 2:
+            facets = self.facet_meshtags.find(manifold.id)
+            return [
+                (
+                    self._manifold_side_ids[manifold][volume],
+                    _subdomain.compute_one_sided_interior_facet_data(
+                        self.volume_meshtags, facets, volume
+                    ),
+                )
+                for volume in volumes
+            ]
+        if len(volumes) == 2:
+            return [
+                _subdomain.compute_ordered_interior_facet_data(
                     self.volume_meshtags,
                     self.facet_meshtags,
                     manifold.id,
                     volumes[0],
                     volumes[1],
                 )
-            else:
-                # one subdomain on both sides: either restriction reads the same value,
-                # so the entities are taken in whatever order DOLFINx gives them
-                integral_data = (
-                    manifold.id,
-                    compute_integration_domains(
-                        dolfinx.fem.IntegralType.interior_facet,
-                        self.mesh.mesh.topology._cpp_object,
-                        self.facet_meshtags.find(manifold.id),
-                    ),
-                )
-            self._coupling_measures[manifold] = ufl.Measure(
-                "dS", domain=self.mesh.mesh, subdomain_data=[integral_data]
+            ]
+        # one subdomain on both sides: either restriction reads the same value, so the
+        # entities are taken in whatever order DOLFINx gives them
+        return [
+            (
+                manifold.id,
+                compute_integration_domains(
+                    dolfinx.fem.IntegralType.interior_facet,
+                    self.mesh.mesh.topology._cpp_object,
+                    self.facet_meshtags.find(manifold.id),
+                ),
             )
-        return self._coupling_measures[manifold]
+        ]
+
+    def coupling_measure_id(
+        self, manifold: _subdomain.VolumeSubdomain, volume: _subdomain.VolumeSubdomain
+    ) -> int:
+        """The id the terms coupling ``manifold`` to ``volume`` index the measure of
+        :meth:`facet_measure` with.
+
+        The manifold's own id while it is adjacent to at most two volume subdomains --
+        one integral carries both sides, told apart by their restriction. Beyond that
+        each side has an integral of its own (see :meth:`_allocate_manifold_side_ids`).
+        """
+        side_ids = self._manifold_side_ids.get(manifold)
+        return manifold.id if side_ids is None else side_ids[volume]
+
+    def coupling_measure(
+        self, manifold: _subdomain.VolumeSubdomain, volume: _subdomain.VolumeSubdomain
+    ):
+        """The measure, indexed, that the terms coupling ``manifold`` to ``volume`` are
+        integrated over. Pair it with :meth:`restriction_of`."""
+        return self.facet_measure(manifold)(self.coupling_measure_id(manifold, volume))
 
     def restriction_of(
         self, manifold: _subdomain.VolumeSubdomain, volume: _subdomain.VolumeSubdomain
@@ -1979,12 +2089,15 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         ``None`` when the manifold is on the boundary of the mesh, where the coupling is
         an exterior-facet integral and nothing needs restricting. ``"+"`` when the same
         subdomain lies on both sides: the bulk field is continuous across the facet, so
-        both restrictions read the same value and the exchange is applied once.
+        both restrictions read the same value and the exchange is applied once. ``"+"``
+        again when the manifold is adjacent to more than two subdomains, where each side
+        has an integral of its own on which it is the ``"+"`` one -- so this must always
+        be read together with :meth:`coupling_measure_id`.
         """
         if not self.manifold_is_interior(manifold):
             return None
         volumes = self.manifold_to_volumes[manifold]
-        if len(volumes) == 1:
+        if len(volumes) != 2:
             return "+"
         return "+" if volume is volumes[0] else "-"
 
@@ -2075,7 +2188,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             target = self.coupling_side(bc.subdomain, bc.species)
             return (
                 target,
-                self.coupling_measure(bc.subdomain),
+                self.coupling_measure(bc.subdomain, target),
                 self.restriction_of(bc.subdomain, target),
             )
         return self.surface_to_volume[bc.subdomain], self.ds(bc.subdomain.id), None
@@ -2224,6 +2337,24 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             return False
         return not self.foreign_species(source, source.volume)
 
+    def source_coupling_side(self, source) -> _subdomain.VolumeSubdomain | None:
+        """The bulk subdomain a coupling source on a manifold reads, or ``None`` if
+        ``source`` is not one half of a codimensional coupling.
+
+        Which side of the manifold the term belongs to is decided by the bulk species
+        the source names (see :meth:`coupling_side`), and the expression has to read
+        that species' solution *there*. It cannot work that out for itself: a bulk
+        species defined on several subdomains -- because it is continuous across an
+        interface, say -- has a solution on each of them.
+        """
+        if source.volume not in self.manifold_to_volumes:
+            return None
+        foreign = self.foreign_species(source, source.volume)
+        if not foreign:
+            return None
+        # foreign_species has already checked that they all resolve to the same side
+        return self.coupling_side(source.volume, foreign[0])
+
     def diffusion_coefficient(self, subdomain: _subdomain.VolumeSubdomain, species):
         """The diffusion coefficient of ``species`` for the gradient terms of
         ``subdomain``, defined on the mesh those terms are integrated over."""
@@ -2245,7 +2376,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         ``subdomain`` -- are integrated over :meth:`subdomain_measure`, which for a
         manifold subdomain is its own submesh. *Coupling* terms, which mix a manifold
         field with a bulk field, cannot live there (a bulk function cannot be resolved
-        inside a codim-1 integral) and use :meth:`coupling_measure` on the parent mesh.
+        inside a codim-1 integral) and use :meth:`facet_measure` on the parent mesh.
 
         For a regular volume subdomain both measures are on the parent mesh and the
         whole formulation ends up in ``subdomain.F``. For a manifold subdomain they are
@@ -2332,17 +2463,16 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             if source.volume != subdomain:
                 continue
             v = source.species.subdomain_to_test_function[subdomain]
-            foreign = self.foreign_species(source, subdomain) if is_manifold else []
-            if foreign:
+            bulk = self.source_coupling_side(source) if is_manifold else None
+            if bulk is not None:
                 # a source on a manifold that reads a bulk concentration: the exchange
                 # half that feeds the manifold. It must be integrated on the parent
                 # mesh, and restricted to the side the bulk species lives on
-                bulk = self.coupling_side(subdomain, foreign[0])
                 restriction = self.restriction_of(subdomain, bulk)
                 form_coupling -= (
                     self.restrict(source.value.fenics_object, restriction)
                     * self.restrict(v, restriction)
-                    * self.coupling_measure(subdomain)
+                    * self.coupling_measure(subdomain, bulk)
                 )
             else:
                 self_form -= source.value.fenics_object * v * dx
@@ -2648,6 +2778,41 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         gas_species.F = form
 
+    def interface_species(self, interface: _subdomain.Interface):
+        """The mobile species whose continuity ``interface`` enforces.
+
+        An interface condition relates the two solutions of one species across the
+        facets, so it applies to a species that has a solution on both of its volume
+        subdomains. In a model with codim-1 subdomains most species do not: a
+        manifold's own species lives on a subdomain that is not a volume of any
+        interface, and a bulk species may be confined to one side of a manifold. Those
+        are simply not part of this interface's condition.
+
+        A species present on exactly one of the two sides is the ambiguous case. It is
+        either deliberately absent from the neighbouring material or a subdomain
+        missing from its ``subdomains``, and only the user can tell which, so it is
+        skipped with a warning rather than silently.
+        """
+        subdomain_0, subdomain_1 = interface.subdomains
+        coupled = []
+        for species in self.species:
+            if not species.mobile:
+                continue
+            present = [s for s in (subdomain_0, subdomain_1) if s in species.subdomains]
+            if len(present) == 2:
+                coupled.append(species)
+            elif present:
+                missing = subdomain_1 if present[0] is subdomain_0 else subdomain_0
+                warnings.warn(
+                    f"species {species.name} lives on volume subdomain "
+                    f"{present[0].id} but not on {missing.id}, the other side of "
+                    f"interface {interface.id}, so the interface condition is not "
+                    "applied to it. Add the missing subdomain to its `subdomains` if "
+                    "it was meant to be continuous across that interface.",
+                    stacklevel=2,
+                )
+        return coupled
+
     def create_formulation(self):
         """Takes all the formulations for each subdomain and adds the interface
         conditions.
@@ -2655,24 +2820,15 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         Finally compute the jacobian matrix and store it in the ``J`` attribute,
         adds the ``entity_maps`` to the forms and store them in the ``forms`` attribute
         """
-        mesh = self.mesh.mesh
-        mt = self.facet_meshtags
+        # the interfaces were wired and their integration data folded into the shared
+        # dS measure in initialise(), so that an interface and an interior manifold
+        # bounding the same volume subdomain still agree on their subdomain data
+        dInterface = self.interior_facet_measure
 
-        for interface in self.interfaces:
-            interface.mesh = mesh
-            interface.mt = mt
-
-        integral_data = [
-            interface.compute_mapped_interior_facet_data(self.volume_meshtags)
-            for interface in self.interfaces
-        ]
-        dInterface = ufl.Measure("dS", domain=mesh, subdomain_data=integral_data)
-
-        all_mobile_species = [spe for spe in self.species if spe.mobile]
         for interface in self.interfaces:
             F_0, F_1 = interface.get_formulation(
                 dInterface,
-                species=all_mobile_species,
+                species=self.interface_species(interface),
                 temperature=self.temperature_fenics,
             )
             subdomain_0, subdomain_1 = interface.subdomains
@@ -2921,10 +3077,12 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
           ``export.field`` lives on, integrated on that manifold's submesh.
 
         Returns:
-            ``(volume, mesh, measure, restriction, entity_maps)`` where ``volume`` is
-            the subdomain whose solution and material the quantity reads, and ``mesh``
-            the one the integral is taken on -- the parent mesh except on the boundary
-            of a manifold.
+            ``(volume, mesh, measure, subdomain_id, restriction, entity_maps)`` where
+            ``volume`` is the subdomain whose solution and material the quantity reads,
+            ``mesh`` the one the integral is taken on -- the parent mesh except on the
+            boundary of a manifold -- and ``subdomain_id`` the id to index ``measure``
+            with, which is the surface's own except on a side of a manifold adjacent to
+            more than two volume subdomains (see :meth:`coupling_measure_id`).
 
         Raises:
             ValueError: if the volume subdomain given as a surface is not a manifold, or
@@ -2954,7 +3112,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             return (
                 volume,
                 parent,
-                self.unindexed_coupling_measure(surface),
+                self.facet_measure(surface),
+                self.coupling_measure_id(surface, volume),
                 self.restriction_of(surface, volume),
                 entity_maps,
             )
@@ -2966,11 +3125,19 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 manifold,
                 manifold.submesh,
                 self._manifold_boundary_measure(surface, manifold),
+                surface.id,
                 None,
                 None,
             )
 
-        return self.surface_to_volume[surface], parent, self.ds, None, entity_maps
+        return (
+            self.surface_to_volume[surface],
+            parent,
+            self.ds,
+            surface.id,
+            None,
+            entity_maps,
+        )
 
     def _export_context(
         self, export
@@ -3142,7 +3309,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     export,
                     exports.SurfaceFlux | exports.TotalSurface | exports.AverageSurface,
                 ):
-                    export_vol, _, measure, restriction, entity_maps = (
+                    export_vol, _, measure, subdomain_id, restriction, entity_maps = (
                         self.export_surface_context(export)
                     )
                     submesh_function = (
@@ -3154,6 +3321,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         ds=measure,
                         entity_maps=entity_maps,
                         restriction=restriction,
+                        subdomain_id=subdomain_id,
                     )
                 else:
                     export.compute()

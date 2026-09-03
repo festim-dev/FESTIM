@@ -110,9 +110,12 @@ directly wherever a surface is expected, for instance as the ``subdomain`` of a
 :class:`festim.ParticleFluxBC` — there is no need to declare a separate
 :class:`festim.SurfaceSubdomain` on the same facets.
 
-A manifold may sit on the outer boundary of the domain, or *between* two volume
-subdomains — a grain boundary, or an interface layer with its own trapping — in which
-case it exchanges with both sides.
+A manifold may sit on the outer boundary of the domain, or *inside* it — a grain
+boundary, or an interface layer with its own trapping — in which case it exchanges with
+every volume subdomain it touches. That is one subdomain when the manifold is buried in
+a single material, two when it separates a pair of them, and as many as there are grains
+for a boundary network threading a polycrystal in which every grain is its own
+subdomain.
 
 Coupling to the bulk
 --------------------
@@ -154,13 +157,13 @@ concentrations, even though they live on different meshes::
     H/m² (an adsorbed layer, source :math:`J`), or a line density H/m (a grain
     boundary). Keeping the problem dimensionally consistent is up to you.
 
-Manifolds between two subdomains
---------------------------------
+Manifolds between several subdomains
+------------------------------------
 
-When a manifold separates two volume subdomains, declare **one exchange per side** —
-one :class:`festim.ParticleFluxBC` and one :class:`festim.ParticleSource` each. Both
-name the same manifold as their subdomain; FESTIM works out which side each belongs to
-from the bulk species it reads, so nothing else has to be specified::
+When a manifold separates volume subdomains, declare **one exchange per side** — one
+:class:`festim.ParticleFluxBC` and one :class:`festim.ParticleSource` each. Both name
+the same manifold as their subdomain; FESTIM works out which side each belongs to from
+the bulk species it reads, so nothing else has to be specified::
 
     for bulk_species, k in ((H_left, k_left), (H_right, k_right)):
         J = lambda c_man, c_bulk: k * (c_bulk - c_man)
@@ -172,9 +175,23 @@ from the bulk species it reads, so nothing else has to be specified::
             volume=gamma, species=H_manifold, value=J,
             species_dependent_value={"c_bulk": bulk_species, "c_man": H_manifold}))
 
-A single source may not read the bulk concentrations of *both* sides at once: an
+A single source may not read the bulk concentrations of *several* sides at once: an
 interior manifold is integrated over interior facets, where each term has to be
-restricted to one side. Split such a source in two, as above.
+restricted to one side. Split such a source, as above.
+
+The same pattern scales past two subdomains, which is what a grain-boundary network in a
+polycrystal needs: declare the whole network as **one** manifold subdomain — so that it
+carries a single connected field and hydrogen crosses triple junctions with no junction
+condition to write — give each grain its own :class:`festim.VolumeSubdomain` and species,
+and loop the two objects above over the grains::
+
+    for grain_species, k in zip(grain_species_list, rates):
+        ...  # one ParticleFluxBC and one ParticleSource per grain, as above
+
+The exchange law is a property of the (manifold, grain) pair: it applies to every facet
+of the network that grain touches. Rates may differ from one grain to the next, so a
+boundary that blocks one grain while conducting into another is written by giving that
+grain a small rate.
 
 .. note::
 
@@ -307,11 +324,12 @@ gives the outlet flux of the pipe example:
 Limitations
 -----------
 
-* Only codimension 1 is supported (``dim`` must be the mesh dimension minus one), and a
-  manifold must be adjacent to one volume subdomain (on the boundary of the domain) or
-  two (on an interface). A codimension-2 subdomain carrying its own equation is not
-  supported: a bulk field has no well-defined trace on a line in 3D or a point in 2D,
-  so the exchange with it would not be well posed.
+* Only codimension 1 is supported (``dim`` must be the mesh dimension minus one). A
+  codimension-2 subdomain carrying its own equation is not supported: a bulk field has
+  no well-defined trace on a line in 3D or a point in 2D, so the exchange with it would
+  not be well posed.
+* A manifold must lie wholly inside the mesh or wholly on its boundary, and a manifold
+  on the boundary of the mesh is adjacent to a single volume subdomain.
 * Boundary conditions on the boundary of a manifold are limited to
   :class:`festim.FixedConcentrationBC`.
 * Exports on and around a manifold are limited to the integral-based derived quantities

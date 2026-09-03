@@ -1,4 +1,8 @@
-from .interface import Interface, compute_ordered_interior_facet_data
+from .interface import (
+    Interface,
+    compute_one_sided_interior_facet_data,
+    compute_ordered_interior_facet_data,
+)
 from .surface_subdomain import SurfaceSubdomain, SurfaceSubdomain1D
 from .volume_subdomain import (
     VolumeSubdomain,
@@ -14,6 +18,7 @@ __all__ = [
     "SurfaceSubdomain1D",
     "VolumeSubdomain",
     "VolumeSubdomain1D",
+    "compute_one_sided_interior_facet_data",
     "compute_ordered_interior_facet_data",
     "map_manifold_to_volume_subdomains",
     "map_surface_to_volume_subdomains",

@@ -374,8 +374,10 @@ def map_manifold_to_volume_subdomains(
     comm=None,
 ) -> dict[VolumeSubdomain, list[VolumeSubdomain]]:
     """Maps each codim-1 (manifold) volume subdomain to the volume subdomains it is
-    adjacent to: one for a manifold on the boundary of the domain, two for one sitting
-    on an interior interface.
+    adjacent to: one for a manifold on the boundary of the domain or buried inside a
+    single subdomain, two for one sitting on an interface, and as many as there are
+    grains for a boundary network threading a polycrystal in which every grain is its
+    own subdomain.
 
     Args:
         ft: the facet meshtags of the parent mesh
@@ -390,7 +392,7 @@ def map_manifold_to_volume_subdomains(
         sorted by id
 
     Raises:
-        ValueError: if a manifold is adjacent to no volume, or to more than two
+        ValueError: if a manifold is adjacent to no volume subdomain at all
     """
     unique_pairs = _facet_cell_tag_pairs(ft, ct, facet_to_cell, comm)
     bulk = [v for v in volume_subdomains if v not in manifold_subdomains]
@@ -399,11 +401,9 @@ def map_manifold_to_volume_subdomains(
     )
 
     for manifold in manifold_subdomains:
-        volumes = adjacency.get(manifold, [])
-        if not 1 <= len(volumes) <= 2:
+        if not adjacency.get(manifold, []):
             raise ValueError(
-                f"codim-1 volume subdomain {manifold.id} is adjacent to "
-                f"{len(volumes)} volume subdomains; expected 1 (on the boundary of the "
-                "domain) or 2 (on an interface)"
+                f"codim-1 volume subdomain {manifold.id} is not adjacent to any volume "
+                "subdomain; its facets must bound at least one of them"
             )
     return adjacency
