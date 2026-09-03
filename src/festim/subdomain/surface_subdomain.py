@@ -7,9 +7,20 @@ import numpy as np
 class SurfaceSubdomain:
     """Surface subdomain class.
 
+    A surface subdomain is a portion of the boundary of a volume subdomain, where
+    boundary conditions and surface exports live.
+
     Args:
         id: the id of the surface subdomain
         locator: a callable function that locates the boundary facets of the subdomain
+        dim: the topological dimension of the surface. Defaults to ``None``, meaning the
+            facet dimension of the mesh -- the boundary of an ordinary (codim-0) volume
+            subdomain. Set it to ``mesh_dim - 2`` to bound a *manifold* volume subdomain
+            (``VolumeSubdomain(dim=mesh_dim - 1)``): the endpoints of a line in a 2D
+            mesh, the rim of a surface in a 3D mesh. Such a surface carries no meshtag
+            -- its entities are located directly on the manifold's submesh, and which
+            manifold that is follows from the species of the boundary condition using
+            it.
 
     Examples:
 
@@ -31,12 +42,53 @@ class SurfaceSubdomain:
     id: int
     locator: Callable
 
-    def __init__(self, id: int, locator: Callable | None = None):
+    def __init__(
+        self, id: int, locator: Callable | None = None, dim: int | None = None
+    ):
         self.id = id
         self.locator = locator
+        self.dim = dim
+
+    @property
+    def dim(self):
+        return self._dim
+
+    @dim.setter
+    def dim(self, value):
+        if value is not None and not isinstance(value, int | np.integer):
+            raise TypeError(f"dim must be an integer or None, not {type(value)}")
+        if value is not None and value < 0:
+            raise ValueError(f"dim must be positive, got {value}")
+        self._dim = None if value is None else int(value)
+
+    def codim(self, mesh_dim: int) -> int:
+        """The codimension of the surface in a mesh of dimension ``mesh_dim``.
+
+        Args:
+            mesh_dim: the topological dimension of the parent mesh
+
+        Returns:
+            1 for the boundary of an ordinary volume subdomain, 2 for the boundary of a
+            manifold volume subdomain
+
+        Raises:
+            ValueError: if the resulting codimension is not 1 or 2
+        """
+        codim = 1 if self.dim is None else mesh_dim - self.dim
+        if codim not in (1, 2):
+            raise ValueError(
+                f"surface subdomain {self.id} has dim={self.dim} in a mesh of "
+                f"dimension {mesh_dim}, ie. codimension {codim}. Only 1 and 2 are "
+                "supported."
+            )
+        return codim
 
     def locate_boundary_facet_indices(self, mesh: dolfinx.mesh.Mesh) -> np.ndarray:
-        """Locate boundary facets of the subdomain in the mesh.
+        """Locate the boundary entities of the subdomain in ``mesh``.
+
+        ``mesh`` is the parent mesh for an ordinary surface, and the submesh of the
+        manifold it bounds for a codim-2 one -- in both cases the entities searched are
+        the facets of the mesh they are located in.
 
         Args:
             mesh: a dolfinx mesh object
@@ -45,7 +97,7 @@ class SurfaceSubdomain:
             ValueError: if no locator function is provided
 
         Returns:
-            the list of entities (facets) that belong to the subdomain
+            the list of entities that belong to the subdomain
         """
         if self.locator is None:
             raise ValueError(

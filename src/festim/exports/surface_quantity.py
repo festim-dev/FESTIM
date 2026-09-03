@@ -3,6 +3,7 @@ from abc import abstractmethod
 from festim.exports.derived_quantity import DerivedQuantity
 from festim.species import Species
 from festim.subdomain.surface_subdomain import SurfaceSubdomain
+from festim.subdomain.volume_subdomain import VolumeSubdomain
 
 
 class SurfaceQuantity(DerivedQuantity):
@@ -10,7 +11,10 @@ class SurfaceQuantity(DerivedQuantity):
 
     Args:
         field: species for which the surface flux is computed
-        surface: surface subdomain
+        surface: surface subdomain. A codim-1 ``VolumeSubdomain`` (a manifold) may be
+            given instead, to compute the quantity on the facets it occupies -- for a
+            *bulk* species, since a manifold's own species has no flux across it. A
+            codim-2 ``SurfaceSubdomain`` computes it on the boundary of a manifold.
         filename: name of the file to which the surface flux is exported
 
     Attributes:
@@ -22,7 +26,7 @@ class SurfaceQuantity(DerivedQuantity):
     """
 
     field: Species
-    surface: SurfaceSubdomain
+    surface: SurfaceSubdomain | VolumeSubdomain
     filename: str | None
 
     t: list[float]
@@ -31,7 +35,7 @@ class SurfaceQuantity(DerivedQuantity):
     def __init__(
         self,
         field: Species | str,
-        surface: SurfaceSubdomain | int,
+        surface: SurfaceSubdomain | VolumeSubdomain | int,
         filename: str | None = None,
     ) -> None:
         super().__init__(filename=filename)
@@ -53,8 +57,17 @@ class SurfaceQuantity(DerivedQuantity):
 
     @surface.setter
     def surface(self, value):
-        if not isinstance(value, int | SurfaceSubdomain) or isinstance(value, bool):
-            raise TypeError("surface should be an int or F.SurfaceSubdomain")
+        # a manifold is a codim-1 VolumeSubdomain and is passed directly wherever a
+        # surface is expected. Checking whether it really is codim 1 needs the mesh,
+        # so it's checked at initialisation: via export_surface_context in
+        # HydrogenTransportProblemDiscontinuous, and rejected outright in
+        # HydrogenTransportProblem and its children since they don't support codim
+        accepted = int | SurfaceSubdomain | VolumeSubdomain
+        if not isinstance(value, accepted) or isinstance(value, bool):
+            raise TypeError(
+                "surface should be an int, F.SurfaceSubdomain or a codim-1 "
+                "F.VolumeSubdomain"
+            )
 
         self._surface = value
 
