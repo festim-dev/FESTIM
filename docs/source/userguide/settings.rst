@@ -4,4 +4,6 @@
 Settings
 ========
 
-WIP
+.. warning::
+
+    🔨 This page is under construction. 🔨
