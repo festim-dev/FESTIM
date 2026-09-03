@@ -177,6 +177,32 @@ def test_three_grains_allocate_one_measure_id_per_side():
     assert [model.restriction_of(network, g) for g in grains] == ["+"] * 3
 
 
+def on_t_junction(x):
+    """The T-shaped network: the line y=0.5 plus the branch x=0.5 below it."""
+    return np.isclose(x[1], 0.5) | (np.isclose(x[0], 0.5) & (x[1] <= 0.5 + 1e-14))
+
+
+class TNetwork(F.VolumeSubdomain):
+    """The T as one codim-1 subdomain, selected by facet midpoint.
+
+    ``locate_entities`` marks a facet when *all its vertices* satisfy the locator, so
+    passing :func:`on_t_junction` directly would also catch the diagonal joining a
+    vertex of the vertical branch to a vertex of the horizontal line -- a facet on
+    neither, hanging off the junction.
+    """
+
+    def locate_subdomain_entities(self, mesh):
+        tdim = mesh.topology.dim
+        mesh.topology.create_connectivity(tdim - 1, 0)
+        facet_to_vertex = mesh.topology.connectivity(tdim - 1, 0)
+        candidates = dolfinx.mesh.locate_entities(mesh, tdim - 1, on_t_junction)
+        x = mesh.geometry.x
+        midpoints = np.array(
+            [x[facet_to_vertex.links(f)].mean(axis=0) for f in candidates]
+        )
+        return candidates[on_t_junction(midpoints.T)].astype(np.int32)
+
+
 def t_junction(n=24, rates=(1.0, 1.0, 1.0)):
     """Three grains meeting at a triple junction, with the whole network -- the line
     y=0.5 and the branch x=0.5 below it -- declared as one connected subdomain.
@@ -201,13 +227,10 @@ def t_junction(n=24, rates=(1.0, 1.0, 1.0)):
         locator=lambda x: (x[1] <= 0.5 + 1e-14) & (x[0] >= 0.5 - 1e-14),
     )
     grains = [top, bottom_left, bottom_right]
-    network = F.VolumeSubdomain(
+    network = TNetwork(
         id=NETWORK_ID,
         material=F.Material(D_0=D_GAMMA, E_D=0.0),
         dim=1,
-        locator=lambda x: (
-            np.isclose(x[1], 0.5) | (np.isclose(x[0], 0.5) & (x[1] <= 0.5 + 1e-14))
-        ),
     )
     charged = F.SurfaceSubdomain(
         id=4, locator=lambda x: np.isclose(x[1], 0.0) & (x[0] <= 0.5 + 1e-14)
@@ -259,6 +282,18 @@ def test_triple_junction_feeds_every_grain_through_one_network():
 
     assert model.manifold_to_volumes[network] == grains
     assert model.manifold_is_interior(network)
+
+    # the network is exactly the T and nothing else: 1.0 across plus 0.5 down. A
+    # locator passed straight to locate_entities also picks up the diagonal joining
+    # the two branches near the junction, which is a facet on neither of them
+    sub = network.submesh
+    sub.topology.create_connectivity(1, 0)
+    cell_to_vertex = sub.topology.connectivity(1, 0)
+    length = sum(
+        float(np.linalg.norm(np.diff(sub.geometry.x[cell_to_vertex.links(c)], axis=0)))
+        for c in range(sub.topology.index_map(1).size_local)
+    )
+    assert np.isclose(length, 1.5)
 
     model.run()
 

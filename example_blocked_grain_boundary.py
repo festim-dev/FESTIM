@@ -51,6 +51,37 @@ TOP, BOTTOM_LEFT, BOTTOM_RIGHT = 1, 2, 3
 NETWORK_ID, CHARGED_ID = 100, 200
 
 
+def on_network(x):
+    """The T: the line y=0.5, plus the branch x=0.5 below it."""
+    return np.isclose(x[1], 0.5) | (np.isclose(x[0], 0.5) & (x[1] <= 0.5 + 1e-14))
+
+
+class Network(F.VolumeSubdomain):
+    """The whole T as one codim-1 subdomain.
+
+    ``locate_subdomain_entities`` is overridden rather than passing ``on_network`` as a
+    plain ``locator``: ``locate_entities`` marks a facet when *all its vertices* satisfy
+    the locator, so near the junction it also catches the diagonal running from a vertex
+    of the vertical branch to a vertex of the horizontal line -- a facet lying on
+    neither. That stray diagonal shows up in ParaView as a little fork, and looks like
+    extra triple junctions. Testing the facet midpoint instead selects the T exactly.
+    """
+
+    def __init__(self, id, material, dim):
+        super().__init__(id=id, material=material, dim=dim)
+
+    def locate_subdomain_entities(self, mesh):
+        tdim = mesh.topology.dim
+        mesh.topology.create_connectivity(tdim - 1, 0)
+        facet_to_vertex = mesh.topology.connectivity(tdim - 1, 0)
+        candidates = dolfinx.mesh.locate_entities(mesh, tdim - 1, on_network)
+        x = mesh.geometry.x
+        midpoints = np.array(
+            [x[facet_to_vertex.links(f)].mean(axis=0) for f in candidates]
+        )
+        return candidates[on_network(midpoints.T)].astype(np.int32)
+
+
 def build(rates):
     """The three grains, the network, and one exchange per grain.
 
@@ -78,13 +109,10 @@ def build(rates):
     ]
     # the whole network is ONE codim-1 subdomain, so it carries a single connected
     # field and hydrogen crosses the triple junction with no junction condition to write
-    network = F.VolumeSubdomain(
+    network = Network(
         id=NETWORK_ID,
         material=F.Material(D_0=D_GB, E_D=0.0),
         dim=mesh.topology.dim - 1,
-        locator=lambda x: (
-            np.isclose(x[1], 0.5) | (np.isclose(x[0], 0.5) & (x[1] <= 0.5 + 1e-14))
-        ),
     )
     charged = F.SurfaceSubdomain(
         id=CHARGED_ID,
