@@ -32,9 +32,14 @@ jobs:
       - name: Report h5py MPI support
         run: python3 -c "import h5py; print('h5py', h5py.__version__, 'mpi:', h5py.get_config().mpi)"
 
+      - name: Install xvfb and GL libraries
+        run: |
+          apt-get update
+          apt-get install -y xvfb libgl1 libglx-mesa0 libxrender1 libxcursor1 libxinerama1
+
       - name: Run tests
         run: |
-          python3 -m pytest test/ --cov festim --cov-report xml --cov-report term
+          xvfb-run -a python3 -m pytest test/ --cov festim --cov-report xml --cov-report term
 
       - name: Install curl
         run: |
