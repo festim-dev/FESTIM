@@ -3233,6 +3233,14 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
                 export.D = D
 
+                if self.drift_terms and isinstance(export, exports.SurfaceFlux):
+                    export.drift_velocity = self.drift_velocity_in(
+                        field=export.field,
+                        volume=volume,
+                        temperature=temperature,
+                        mesh=mesh,
+                    )
+
             # the extrema exports read the solution on the submesh of the volume
             # subdomain their location belongs to, so give them that volume and the
             # meshtags of the parent mesh, then check the species is defined there
@@ -3259,13 +3267,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         f"Cannot compute {export.title}: species "
                         f"{export.field.name} is not defined in the volume subdomain "
                         f"{export.volume.id} that {location} belongs to"
-                    )
-                if self.drift_terms and isinstance(export, exports.SurfaceFlux):
-                    export.drift_velocity = self.drift_velocity_in(
-                        field=export.field,
-                        volume=volume,
-                        temperature=temperature,
-                        mesh=mesh,
                     )
 
             # reset the data and time for SurfaceQuantity and VolumeQuantity
