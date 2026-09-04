@@ -118,7 +118,7 @@ def test_MMS_1_species_1_trap_with_advection():
             F.ParticleSource(value=f, volume=test_vol_sub, species=test_mobile),
             F.ParticleSource(value=g, volume=test_vol_sub, species=test_trapped),
         ],
-        advection_terms=[
+        drift_terms=[
             F.AdvectionTerm(velocity=u, subdomain=test_vol_sub, species=test_mobile)
         ],
         settings=F.Settings(
@@ -270,7 +270,7 @@ def test_multi_material_with_advection():
         F.FixedConcentrationBC(bottom_surface, value=0.0, species=H),
     ]
 
-    my_model.advection_terms = [
+    my_model.drift_terms = [
         F.AdvectionTerm(velocity=u, species=[H], subdomain=bottom_domain)
     ]
 

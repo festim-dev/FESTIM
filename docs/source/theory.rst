@@ -35,16 +35,44 @@ The temporal evolution of :math:`c_\mathrm{m}` and :math:`c_{\mathrm{t}, i}` are
 where :math:`S_j=S_j(x,y,z,t)\,[\mathrm{m}^{-3}\,\mathrm{s}^{-1}]` is a source :math:`j` of mobile hydrogen. In FESTIM, source terms can be space and time dependent. These are used to simulate plasma implantation in materials, tritium generation from neutron interactions, etc. 
 These equations can be solved in cartesian coordinates but also in cylindrical and spherical coordinates. This is useful, for instance, when simulating hydrogen transport in a pipe or in a pebble. FESTIM can solve steady-state hydrogen transport problems.
 
-Soret effect
-^^^^^^^^^^^^
-FESTIM can include the Soret effect :cite:`Pendergrass1976,Longhurst1985` (also called thermophoresis, temperature-assisted diffusion, or even thermodiffusion) to hydrogen transport. The flux of hydrogen :math:`J` is then written as:
+Drift terms
+^^^^^^^^^^^
+Hydrogen can be carried by something other than its own concentration gradient. FESTIM writes all of these as a **drift velocity** added to the flux:
+
+.. math::
+    :label: eq_drift
+
+    J = -D \nabla c_\mathrm{m} + c_\mathrm{m} \mathbf{v}
+
+The transport equation :eq:`eq_mobile_conc` becomes :math:`\partial c_\mathrm{m} / \partial t = -\nabla \cdot J + \dots`, so a drift term is assembled in **divergence form**, :math:`\nabla \cdot (c_\mathrm{m} \mathbf{v})`. One consequence matters in practice: the boundary term this leaves behind is the natural boundary condition, so a flux boundary condition constrains the *total* flux, drift included, and a boundary with no condition on it is genuinely no-flux.
+
+What sets :math:`\mathbf{v}` depends on the physics.
+
+**Advection** (:class:`festim.AdvectionTerm`) takes the velocity directly, for hydrogen carried by a moving fluid.
+
+.. note::
+    Before FESTIM 2.2, :class:`festim.AdvectionTerm` was assembled as :math:`\mathbf{v} \cdot \nabla c_\mathrm{m}`. That form agrees with the divergence form wherever :math:`\nabla \cdot \mathbf{v} = 0` — as it is for an incompressible flow — but it puts no flux through a boundary that carries no condition, so nothing was carried out through an outlet. Models with a non-solenoidal velocity, or with an untagged boundary the flow crosses, will give different results.
+
+**Soret effect** (:class:`festim.SoretTerm`) :cite:`Pendergrass1976,Longhurst1985`, also called thermophoresis, temperature-assisted diffusion, or thermodiffusion, drives hydrogen along a temperature gradient:
 
 .. math::
     :label: eq_Soret
 
     J = -D \nabla c_\mathrm{m} - D\frac{Q^* c_\mathrm{m}}{k_B T^2} \nabla T
 
-where :math:`Q^*\,[\mathrm{eV}]` is the Soret coefficient (also called heat of transport) and :math:`k_B` is the Boltzmann constant.
+where :math:`Q^*\,[\mathrm{eV}]` is the Soret coefficient (also called heat of transport) and :math:`k_B` is the Boltzmann constant. For a positive :math:`Q^*` hydrogen accumulates at the cold end; at equilibrium :math:`c_\mathrm{m} \propto \exp(Q^*/k_B T)`.
+
+**Electromigration** (:class:`festim.ElectromigrationTerm`) drives a charged species along an electric potential gradient, the drift term of the Nernst-Planck equation:
+
+.. math::
+    :label: eq_electromigration
+
+    J = -D \nabla c_\mathrm{m} - \frac{z D c_\mathrm{m}}{k_B T} \nabla \varphi
+
+where :math:`z` is the charge number and :math:`\varphi\,[\mathrm{V}]` the electric potential. Because :math:`k_B` is in eV/K it carries the elementary charge, so no separate Faraday constant appears. At equilibrium :math:`c_\mathrm{m} \propto \exp(-z\varphi/k_B T)`, the Boltzmann distribution.
+
+.. note::
+    FESTIM does not stabilise the advection-diffusion form. At a large cell Péclet number :math:`|\mathbf{v}| h / D` the solution will oscillate; refine the mesh where the drift dominates.
 
 Conservation of chemical potential at interfaces
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -245,13 +273,15 @@ Since the main driver of for the diffusion is the value :math:`c_{\mathrm{m}}`, 
 Neumann BC
 ^^^^^^^^^^^^
 
-One can also impose hydrogen fluxes or heat fluxes at boundaries (Neumann). Note: we will assume for simplicity that the Soret effect is not included and :math:`J = -D\nabla c_\mathrm{m}`:
+One can also impose hydrogen fluxes or heat fluxes at boundaries (Neumann). The condition is on the total flux :math:`J` of Equation :eq:`eq_drift`; writing it out for the case of no drift term, where :math:`J = -D\nabla c_\mathrm{m}`:
 
 .. math::
     :label: eq_NeumannBC_c
-    
+
     J \cdot \mathrm{\textbf{n}} = -D\nabla c_\mathrm{m} \cdot \mathrm{\textbf{n}}
     =f(x,y,z,t)~\text{on}~\delta\Omega
+
+With a drift term the same condition constrains :math:`(-D\nabla c_\mathrm{m} + c_\mathrm{m}\mathbf{v}) \cdot \mathrm{\textbf{n}}` instead, and :class:`festim.SurfaceFlux` reports that same total. A boundary with no condition on it is therefore a wall. Where the drift should instead carry the species out of the domain, :class:`festim.OutflowBC` cancels the drift part, leaving :math:`-D\nabla c_\mathrm{m} \cdot \mathrm{\textbf{n}} = 0`.
 
 .. math::
     :label: eq_NeumannBC_T

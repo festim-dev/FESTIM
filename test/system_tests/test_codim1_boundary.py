@@ -75,7 +75,7 @@ def advection_diffusion_along_gamma(n, length=1.0, height=1.0, D=1.0, v_x=1.0):
             F.FixedConcentrationBC(subdomain=outlet, value=0.0, species=c_gamma),
             F.FixedConcentrationBC(subdomain=outer, value=0.0, species=c_wall),
         ],
-        advection_terms=[
+        drift_terms=[
             F.AdvectionTerm(
                 velocity=velocity(mesh, v_x), subdomain=gamma, species=c_gamma
             )
@@ -140,6 +140,9 @@ def test_pipe_inlet_concentration():
     inlet = F.SurfaceSubdomain(
         id=INLET_ID, dim=0, locator=lambda x: np.isclose(x[0], 0)
     )
+    outlet = F.SurfaceSubdomain(
+        id=OUTLET_ID, dim=0, locator=lambda x: np.isclose(x[0], length)
+    )
     outer = F.SurfaceSubdomain(id=OUTER_ID, locator=lambda x: np.isclose(x[1], 0.0))
 
     c_wall = F.Species("c_wall", subdomains=[wall])
@@ -148,7 +151,7 @@ def test_pipe_inlet_concentration():
     model = F.HydrogenTransportProblemDiscontinuous(
         mesh=F.Mesh(mesh),
         species=[c_wall, c_inf],
-        subdomains=[wall, fluid, inlet, outer],
+        subdomains=[wall, fluid, inlet, outlet, outer],
         sources=[
             F.ParticleSource(
                 value=lambda c_f, c_w: -k * (c_f - c_w),
@@ -166,8 +169,11 @@ def test_pipe_inlet_concentration():
             ),
             F.FixedConcentrationBC(subdomain=inlet, value=c_in, species=c_inf),
             F.FixedConcentrationBC(subdomain=outer, value=0.0, species=c_wall),
+            # the fluid leaves at the far end. Without this the divergence form makes
+            # the outlet a closed end, and the fluid backs up instead of draining
+            F.OutflowBC(subdomain=outlet, species=c_inf),
         ],
-        advection_terms=[
+        drift_terms=[
             F.AdvectionTerm(
                 velocity=velocity(mesh, v_x), subdomain=fluid, species=c_inf
             )
