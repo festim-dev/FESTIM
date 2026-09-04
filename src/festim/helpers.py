@@ -14,9 +14,14 @@ if TYPE_CHECKING:
 
 
 def as_fenics_constant(
-    value: float | int | fem.Constant, mesh: dolfinx.mesh.Mesh
+    value: float | int | np.ndarray | list | tuple | fem.Constant,
+    mesh: dolfinx.mesh.Mesh,
 ) -> fem.Constant:
     """Converts a value to a dolfinx.Constant.
+
+    Array-like values become tensor-valued constants, which is how an anisotropic
+    material property is supplied: a ``(dim, dim)`` nested list or array gives a
+    constant that multiplies a gradient as a matrix rather than as a scalar.
 
     Args:
         value: the value to convert
@@ -26,15 +31,22 @@ def as_fenics_constant(
         The converted value
 
     Raises:
-        TypeError: if the value is not a float, an int or a dolfinx.Constant
+        TypeError: if the value is not a float, an int, an array-like or a
+            dolfinx.Constant
     """
+    if isinstance(value, bool):
+        raise TypeError(f"Value must not be a bool, not {type(value)}")
     if isinstance(value, float | int):
         return fem.Constant(mesh, dolfinx.default_scalar_type(float(value)))
     elif isinstance(value, fem.Constant):
         return value
+    elif isinstance(value, np.ndarray | list | tuple):
+        array = np.asarray(value, dtype=dolfinx.default_scalar_type)
+        return fem.Constant(mesh, array)
     else:
         raise TypeError(
-            f"Value must be a float, an int or a dolfinx.Constant, not {type(value)}"
+            "Value must be a float, an int, an array-like or a dolfinx.Constant, "
+            f"not {type(value)}"
         )
 
 

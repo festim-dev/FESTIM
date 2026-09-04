@@ -1,8 +1,12 @@
+from mpi4py import MPI
+
+import dolfinx
 import numpy as np
 import pytest
 from dolfinx import fem
 
 import festim as F
+from festim.helpers import as_fenics_constant
 
 test_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
 
@@ -206,9 +210,13 @@ def test_raises_TypeError_when_E_D_is_not_correct_type():
     ],
 )
 def test_raises_TypeError_when_D_is_not_correct_type(input_value):
-    """Test that a TypeError is raised when D is not an fem.Function."""
+    """Test that a TypeError is raised when D is not one of the accepted types.
 
-    with pytest.raises(TypeError, match=r"D must be of type fem.Function"):
+    A scalar is deliberately still rejected: a constant diffusivity goes in as
+    ``D_0``/``E_D``. ``D`` takes a ready-made field or an anisotropic tensor.
+    """
+
+    with pytest.raises(TypeError, match=r"D must be"):
         F.Material(D=input_value)
 
 
@@ -246,3 +254,46 @@ def test_error_raised_when_D_and_D_0_both_None():
         match=r"D_0 and D cannot both be None. Please set one of them.",
     ):
         F.Material()
+
+
+class TestAnisotropicDiffusion:
+    """``D_0`` (or ``D``) given as a matrix, for a material that conducts
+    differently along different directions."""
+
+    def test_matrix_D_0_is_reported_anisotropic(self):
+        mat = F.Material(D_0=[[2.0, 0.5], [0.5, 1.0]], E_D=0.1)
+        assert mat.is_anisotropic()
+        assert not F.Material(D_0=2.0, E_D=0.1).is_anisotropic()
+
+    def test_matrix_D_0_keeps_arrhenius(self):
+        """``D_0 exp(-E_D / kT)``, with the exponential scaling every entry."""
+        mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 4, 4)
+        D_0 = np.array([[2.0, 0.5], [0.5, 1.0]])
+        E_D, T = 0.2, 400.0
+        mat = F.Material(D_0=D_0.tolist(), E_D=E_D)
+        D = mat.get_diffusion_coefficient(mesh, as_fenics_constant(T, mesh))
+        assert D.ufl_shape == (2, 2)
+
+        # evaluate the expression to check the factor really is applied
+        V = fem.functionspace(mesh, ("DG", 0, (2, 2)))
+        f = fem.Function(V)
+        f.interpolate(fem.Expression(D, V.element.interpolation_points))
+        expected = D_0 * np.exp(-E_D / (F.k_B * T))
+        assert np.allclose(f.x.array.reshape(-1, 2, 2)[0], expected)
+
+    def test_matrix_given_as_D(self):
+        mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 4, 4)
+        mat = F.Material(D=[[3.0, 0.0], [0.0, 1.0]])
+        assert mat.is_anisotropic()
+        assert mat.get_diffusion_coefficient(mesh).ufl_shape == (2, 2)
+
+    def test_D_and_D_0_still_mutually_exclusive(self):
+        """The check must survive a matrix, whose truth value is ambiguous."""
+        with pytest.raises(ValueError, match="cannot be set at the same time"):
+            F.Material(
+                D_0=[[1.0, 0.0], [0.0, 1.0]], E_D=0.0, D=[[1.0, 0.0], [0.0, 1.0]]
+            )
+
+    def test_rejects_a_type_it_cannot_use(self):
+        with pytest.raises(TypeError, match="D must be"):
+            F.Material(D="not a tensor")
