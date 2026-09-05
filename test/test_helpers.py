@@ -512,3 +512,34 @@ def test_convert_input_value_time_and_species_dependent():
     species.solution.x.array[:] = 4.0
     result.interpolate(expr)
     assert np.allclose(result.x.array, 5.0 * 4.0)
+
+
+def test_convergence_test_uses_relative_step_norm():
+    """Test that the SNES step criterion scales stol by the solution norm."""
+
+    class MockSNES:
+        class ConvergedReason:
+            DIVERGED_MAX_IT = -5
+            CONVERGED_FNORM_ABS = 2
+            CONVERGED_FNORM_RELATIVE = 3
+            CONVERGED_SNORM_RELATIVE = 4
+            ITERATING = 0
+
+        def getTolerances(self):
+            return 1e-8, 1e-12, 1e-4, 50
+
+    snes = MockSNES()
+
+    initial_reason = F.helpers.convergenceTest(
+        snes,
+        it=0,
+        norms=(100.0, 1.0, 1.0),
+    )
+    assert initial_reason == snes.ConvergedReason.ITERATING
+
+    reason = F.helpers.convergenceTest(
+        snes,
+        it=1,
+        norms=(100.0, 5e-3, 1.0),
+    )
+    assert reason == snes.ConvergedReason.CONVERGED_SNORM_RELATIVE
