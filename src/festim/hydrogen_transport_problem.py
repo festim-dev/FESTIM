@@ -3241,6 +3241,34 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         mesh=mesh,
                     )
 
+            # the extrema exports read the solution on the submesh of the volume
+            # subdomain their location belongs to, so give them that volume and the
+            # meshtags of the parent mesh, then check the species is defined there
+            is_extremum = isinstance(
+                export,
+                exports.MaximumVolume
+                | exports.MinimumVolume
+                | exports.MaximumSurface
+                | exports.MinimumSurface,
+            )
+            if is_extremum:
+                if isinstance(export, exports.SurfaceQuantity):
+                    export.facet_meshtags = self.facet_meshtags
+                    export.volume = self.surface_to_volume[export.surface]
+                    location = f"surface {export.surface.id}"
+                else:
+                    export.volume_meshtags = self.volume_meshtags
+                    location = f"volume {export.volume.id}"
+
+                # a field that is not a Species (a bare name) is skipped: it fails
+                # earlier, for unrelated reasons
+                if isinstance(export.field, _species.Species) and not export.is_submesh:
+                    raise ValueError(
+                        f"Cannot compute {export.title}: species "
+                        f"{export.field.name} is not defined in the volume subdomain "
+                        f"{export.volume.id} that {location} belongs to"
+                    )
+
             # reset the data and time for SurfaceQuantity and VolumeQuantity
             if isinstance(export, exports.DerivedQuantity):
                 export.t = []
