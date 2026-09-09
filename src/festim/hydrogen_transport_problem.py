@@ -755,31 +755,51 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 for a given species
         """
         assert isinstance(species, _species.Species)
-        # create global D function
-        D = fem.Function(self.V_DG_1)
 
         # if diffusion coeffient has been given as a function, use that
-        if self.volume_subdomains[0].material.D:
+        if self.volume_subdomains[0].material.D is not None:
             if len(self.volume_subdomains) > 1:
                 raise NotImplementedError(
                     "Giving the diffusion coefficient as a function is currently "
                     "only supported for a single volume subdomain case"
                 )
-            return self.volume_subdomains[0].material.D, None
+            D = self.volume_subdomains[0].material.D
+            if isinstance(D, np.ndarray | list | tuple):
+                D = as_fenics_constant(D, self.mesh.mesh)
+            return D, None
 
-        D_0 = fem.Function(self.V_DG_0)
+        # an anisotropic material needs tensor-valued spaces to hold D_0 and D
+        anisotropic = any(
+            vol.material.is_anisotropic(species) for vol in self.volume_subdomains
+        )
+        if anisotropic:
+            dim = self.mesh.mesh.geometry.dim
+            V_0 = fem.functionspace(self.mesh.mesh, ("DG", 0, (dim, dim)))
+            V_1 = fem.functionspace(self.mesh.mesh, ("DG", 1, (dim, dim)))
+        else:
+            V_0, V_1 = self.V_DG_0, self.V_DG_1
+
+        # create global D function
+        D = fem.Function(V_1)
+        D_0 = fem.Function(V_0)
         E_D = fem.Function(self.V_DG_0)
         for vol in self.volume_subdomains:
             cell_indices = self.volume_meshtags.find(vol.id)
 
             # replace values of D_0 and E_D by values from the material
-            D_0.x.array[cell_indices] = vol.material.get_D_0(species=species)
+            if anisotropic:
+                block = np.asarray(vol.material.get_D_0(species=species)).reshape(-1)
+                dofs = V_0.dofmap.list[cell_indices].reshape(-1)
+                for component, entry in enumerate(block):
+                    D_0.x.array[block.size * dofs + component] = entry
+            else:
+                D_0.x.array[cell_indices] = vol.material.get_D_0(species=species)
             E_D.x.array[cell_indices] = vol.material.get_E_D(species=species)
 
         expr = D_0 * ufl.exp(
             -E_D / as_fenics_constant(k_B, self.mesh.mesh) / self.temperature_fenics
         )
-        D_expr = fem.Expression(expr, self.V_DG_1.element.interpolation_points)
+        D_expr = fem.Expression(expr, V_1.element.interpolation_points)
         D.interpolate(D_expr)
         return D, D_expr
 

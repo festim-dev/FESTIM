@@ -1,5 +1,6 @@
 from enum import Enum
 
+import numpy as np
 import ufl
 from dolfinx import fem
 
@@ -110,7 +111,7 @@ class Material:
         self.solubility_law = solubility_law
         self.D = D
 
-        if self.D_0 and self.D:
+        if self.D_0 is not None and self.D is not None:
             raise ValueError(
                 "D_0 and D cannot be set at the same time. Please set only one of them."
             )
@@ -140,10 +141,50 @@ class Material:
     def D(self, value):
         if value is None:
             self._D = None
-        elif isinstance(value, fem.Function):
+        elif isinstance(
+            value, fem.Function | fem.Constant | ufl.core.expr.Expr
+        ) or self._is_square_matrix(value):
+            # array-like values are held as given and turned into a tensor constant
+            # in get_diffusion_coefficient, which is the first point a mesh is known
             self._D = value
         else:
-            raise TypeError("D must be of type fem.Function")
+            raise TypeError(
+                "D must be a fem.Function, a fem.Constant, a ufl expression or an "
+                f"array-like (for an anisotropic tensor), not {type(value)}"
+            )
+
+    @staticmethod
+    def _is_square_matrix(value) -> bool:
+        """Whether ``value`` is an array-like that could be a diffusivity tensor.
+
+        Square and two-dimensional: a flat list is a typo, not an anisotropic
+        material, and must keep raising the error it always did.
+        """
+        if not isinstance(value, np.ndarray | list | tuple):
+            return False
+        array = np.asarray(value)
+        return array.ndim == 2 and array.shape[0] == array.shape[1]
+
+    @classmethod
+    def _is_tensor(cls, value) -> bool:
+        if isinstance(value, np.ndarray | list | tuple):
+            return cls._is_square_matrix(value)
+        shape = getattr(value, "ufl_shape", None)
+        return bool(shape) and len(shape) == 2
+
+    def is_anisotropic(self, species=None) -> bool:
+        """Whether this material's diffusivity is a tensor rather than a scalar.
+
+        Anything reading ``D`` as a scalar -- a surface flux, a Nitsche penalty --
+        has to ask, because for a tensor the same expression has to be written
+        with the matrix product instead.
+        """
+        if self.D is not None:
+            return self._is_tensor(self.D)
+        try:
+            return self._is_tensor(self.get_D_0(species=species))
+        except (ValueError, TypeError):
+            return False
 
     def get_D_0(self, species=None):
         """Returns the pre-exponential factor of the diffusion coefficient.
@@ -157,7 +198,7 @@ class Material:
             float: the pre-exponential factor of the diffusion coefficient
         """
 
-        if isinstance(self.D_0, float | int):
+        if isinstance(self.D_0, float | int) or self._is_square_matrix(self.D_0):
             return self.D_0
 
         elif isinstance(self.D_0, dict):
@@ -281,11 +322,20 @@ class Material:
 
         # return D_0 * ufl.exp(-E_D / k_B / temperature)
 
-        if self.D:
-            assert isinstance(self.D, fem.Function)
+        if self.D is not None:
+            if isinstance(self.D, np.ndarray | list | tuple):
+                return as_fenics_constant(self.D, mesh)
             return self.D
 
-        if isinstance(self.D_0, float | int) and isinstance(self.E_D, float | int):
+        if (
+            isinstance(self.D_0, float | int) or self._is_square_matrix(self.D_0)
+        ) and isinstance(self.E_D, float | int):
+            # an array-like D_0 becomes a tensor constant, so the returned
+            # coefficient multiplies grad(u) as a matrix and the material is
+            # anisotropic. E_D stays a scalar: one activation energy shared by
+            # every direction. For per-direction activation energies, build the
+            # tensor yourself and pass it as ``D`` -- a ufl expression built from
+            # the problem's temperature stays temperature dependent.
             D_0 = as_fenics_constant(self.D_0, mesh)
             E_D = as_fenics_constant(self.E_D, mesh)
 

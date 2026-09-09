@@ -76,7 +76,9 @@ class SurfaceFlux(SurfaceQuantity):
         mesh = ds.ufl_domain()
         n = ufl.FacetNormal(mesh)
 
-        integrand = -self.D * ufl.dot(ufl.grad(u), n)
+        # written as a matrix product so an anisotropic D works: for a scalar
+        # D this is the same expression as -D * dot(grad(u), n)
+        integrand = -ufl.dot(self.D * ufl.grad(u), n)
         if subdomain_id is None:
             subdomain_id = self.surface.id
 
