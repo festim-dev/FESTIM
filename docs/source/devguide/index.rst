@@ -146,7 +146,7 @@ catching regressions and bugs early.
 See `Atlassian's CI guide <https://www.atlassian.com/continuous-delivery/continuous-integration>`_
 for a general introduction to CI.
 
-All tests live in the `test folder <https://github.com/festim-dev/FESTIM/tree/fenicsx/test>`_
+All tests live in the `test folder <https://github.com/festim-dev/FESTIM/tree/main/test>`_
 at the root of the repository.
 
 .. note::
@@ -269,7 +269,7 @@ Keeping it accurate, clear, and up to date is as important as keeping the code c
 
 The docs are written in
 `reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
-and live in the `docs folder <https://github.com/festim-dev/FESTIM/tree/fenicsx/docs>`_.
+and live in the `docs folder <https://github.com/festim-dev/FESTIM/tree/main/docs>`_.
 They are built with `Sphinx <https://www.sphinx-doc.org/en/master/>`_ and hosted on
 `Read the Docs <https://readthedocs.org/>`_, which rebuilds automatically on every
 commit and pull request.

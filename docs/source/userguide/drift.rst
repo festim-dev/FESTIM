@@ -25,13 +25,9 @@ Thermodiffusion along a temperature gradient, with the heat of transport
         F.SoretTerm(species=mobile_H, Q_star=0.2, subdomain=my_volume)
     ]
 
-For a positive :math:`Q^*`, hydrogen accumulates at the cold end.
-
 The term needs a temperature that varies in space, so give it as a function of ``x`` or
-couple a :class:`festim.CoupledTransientHeatTransferHydrogenTransport`. A uniform
-temperature makes :math:`\nabla T` zero and the term does nothing — FESTIM warns when
-that happens. Note that ``temperature=lambda t: ...`` is uniform in *space* however much
-it varies in time.
+couple an instance of :class:`festim.CoupledTransientHeatTransferHydrogenTransport`. A uniform
+temperature gradient, and then the Soret has no effect. FESTIM warns when this happens. 
 
 Electromigration
 ----------------
@@ -50,17 +46,15 @@ number :math:`z`:
         )
     ]
 
-The potential is prescribed: FESTIM does not solve for it. Give it as a float, a
-callable of ``x``, ``t`` and/or ``T``, or a fenics object -- the same input conventions
-as everywhere else in FESTIM. As with the Soret term, a spatially uniform potential
-makes the term do nothing, and FESTIM warns.
+FESTIM does not solve for the potential, so it must be passed in as an existing field. Give it as a float, a
+callable of ``x``, ``t`` and/or ``T``, or a fenics object. As with the Soret term, a spatially uniform potential
+makes the term do nothing, and FESTIM sends a warning.
 
 Advection
 ---------
 
 Hydrogen carried by a moving fluid, with the velocity given directly as a
-``dolfinx.fem.Function`` on a vector function space. See the note on
-:ref:`the divergence form <conservative_form>` below -- this changed in FESTIM 2.2:
+``dolfinx.fem.Function`` on a vector function space. 
 
 .. code-block:: python
 
@@ -75,13 +69,18 @@ The divergence form
 
 Every drift term is assembled as :math:`\nabla \cdot (c\mathbf{v})`. There is no option
 to assemble :math:`\mathbf{v} \cdot \nabla c` instead: the two differ by
-:math:`c \nabla \cdot \mathbf{v}`, and only the divergence form conserves the species.
+:math:`c \nabla \cdot \mathbf{v}`. Only the divergence form conserves the species.
 
-A consequence worth knowing: the boundary term the divergence form leaves behind is the
-natural boundary condition, so **flux boundary conditions now constrain the total flux**,
-drift included, and a boundary with no condition on it is a wall — zero total flux, with
-the drift balanced by back-diffusion. That is right at a wall and wrong at an outlet;
-see :ref:`outflow` below.
+The boundary term the divergence form leaves behind is the
+natural boundary condition, so **flux boundary conditions constrain the total flux**,
+drift included, and a boundary with no condition on it behaves like an impermeable wall (zero total flux, with
+the drift balanced by back-diffusion). If the boundary is intended to be an outlet, the `OutflowBC` is needed
+(see :ref:`outflow`).
+
+.. note::
+
+    FESTIM does not stabilise the advection-diffusion form. When drift dominates, i.e. when the cell Péclet number :math:`\mathrm{Pe} = |\mathbf{v}| h / D` becomes large, the solution can oscillate. Refine the mesh where the drift dominates to mitigate this issue.
+
 
 .. warning::
 
@@ -93,7 +92,7 @@ see :ref:`outflow` below.
     * every boundary the flow crosses carries a boundary condition.
 
     If the flow leaves through a boundary you did not tag, that boundary is now a closed
-    end and the species backs up against it. Add an :class:`festim.OutflowBC` there.
+    end and the species backs up against it. Add a :class:`festim.OutflowBC` there.
 
 .. _outflow:
 
@@ -101,8 +100,7 @@ Letting the species out
 -----------------------
 
 :class:`festim.OutflowBC` marks a surface the flow leaves through. It cancels the drift
-boundary term, so the natural condition there becomes zero *diffusive* flux — the
-standard "do-nothing" outflow of advection-diffusion — and the species is carried out at
+boundary term, so the natural condition there becomes zero *diffusive* flux, and the species is carried out at
 the rate the drift delivers it:
 
 .. code-block:: python
@@ -112,19 +110,13 @@ the rate the drift delivers it:
         F.OutflowBC(subdomain=outlet, species=H),
     ]
 
-On a codimensional problem the surface may be the boundary of a manifold — the outlet of
-a 1D fluid running along a pipe wall, which is the case it exists for.
+On a codimensional problem the surface may be the boundary of a manifold, e.g. the outlet of
+a 1D fluid running along a pipe wall.
 
-It is a no-op on a surface where no drift acts on the species.
+:class:`festim.OutflowBC` does nothing on a surface where no drift acts on the species.
 
 Surface fluxes
 --------------
 
 :class:`festim.SurfaceFlux` reports the total flux
 :math:`(-D \nabla c + c\mathbf{v}) \cdot \mathbf{n}`, so drift contributes to it.
-
-.. warning::
-
-    FESTIM does not stabilise the advection-diffusion form. Where the drift dominates
-    diffusion -- a large cell Péclet number :math:`|\mathbf{v}| h / D` -- the solution
-    oscillates. Refine the mesh there.

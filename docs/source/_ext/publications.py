@@ -1,6 +1,4 @@
 import json
-import os
-import re
 import time
 from pathlib import Path
 
@@ -68,7 +66,7 @@ TYPE_LABELS_SINGULAR = {
 
 def load_cache():
     if CACHE_PATH.exists():
-        with open(CACHE_PATH, "r") as f:
+        with open(CACHE_PATH) as f:
             return json.load(f)
     return {}
 
@@ -572,7 +570,7 @@ class PublicationsDirective(Directive):
         if not DATA_PATH.exists():
             raise ExtensionError(f"[publications] Data file not found: {DATA_PATH}")
 
-        with open(DATA_PATH, "r") as f:
+        with open(DATA_PATH) as f:
             entries = yaml.safe_load(f) or []
 
         cache = load_cache()

@@ -521,7 +521,7 @@ def convergenceTest(snes, it, norms):
         return snes.ConvergedReason.CONVERGED_FNORM_ABS
     elif f / _residual0 < rtol:
         return snes.ConvergedReason.CONVERGED_FNORM_RELATIVE
-    elif gnorm < stol and it > 0:
+    elif gnorm < stol * _xnorm and it > 0:
         return snes.ConvergedReason.CONVERGED_SNORM_RELATIVE
     else:
         return snes.ConvergedReason.ITERATING

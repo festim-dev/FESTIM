@@ -30,7 +30,6 @@ from dolfinx.fem.assemble import (
 )
 from dolfinx.fem.bcs import bcs_by_block as _bcs_by_block
 from dolfinx.fem.petsc import _extract_function_spaces, apply_lifting, assign, set_bc
-from packaging.version import Version
 
 __all__ = [
     "custom_assemble_jacobian",

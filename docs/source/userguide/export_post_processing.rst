@@ -2,10 +2,6 @@
 Post-processing
 ===============
 
-.. warning::
-
-    🔨 This page is under construction. 🔨
-
 Exporting fields
 ----------------
 
@@ -97,12 +93,19 @@ Read it back into another simulation with
     my_other_model.initial_conditions = [
         F.InitialConcentration(
             value=F.read_function_from_file(
-                filename="state.bp", name="H", timestamp=10.0
+                filename="state.bp",
+                name="H",
+                timestamp=10.0,
+                mesh=my_other_model.mesh.mesh,
             ),
             species=H,
             volume=vol,
         )
     ]
+
+The ``mesh`` argument interpolates the field onto the mesh of the new simulation, which
+need not be the mesh the checkpoint was written on. See :ref:`Initial conditions
+<initial_conditions_guide>` for more details.
 
 Pass ``backend="h5py"`` to write a plain ``.h5`` file instead of the ADIOS2 default.
 The same ``backend`` must then be given when reading it back::
