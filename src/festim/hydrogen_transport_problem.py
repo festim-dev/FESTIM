@@ -2734,6 +2734,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         P_n = gas_species.prev_solution
         q = gas_species.test_function
         kT = enclosure.thermal_energy
+        volume = enclosure.volume.fenics_object
 
         # see define_enclosure_function_spaces: a scalar term of this 0D equation is
         # spread over a region and divided by the measure of that region
@@ -2750,20 +2751,34 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         form = 0
 
         if self.settings.transient:
-            form += as_integral((P - P_n) / self.dt)
+            # what is conserved is the number of particles P*V/(k*T), not the pressure:
+            # an enclosure whose volume or temperature changes over a timestep must not
+            # gain or lose particles by doing so. The balance
+            # d/dt(P*V/(k*T)) = sum(rates) is written here multiplied by k*T/V, which
+            # keeps the residual at the scale of a pressure and leaves every other term
+            # below unchanged. The factor is exactly 1 for a fixed volume and
+            # temperature.
+            previous_scale = (
+                enclosure.previous_volume
+                * kT
+                / (volume * enclosure.previous_thermal_energy)
+            )
+            form += as_integral((P - previous_scale * P_n) / self.dt)
 
         for surface, area in enclosure.surfaces.items():
             for rate in self.gas_production_rates(surface, gas_species):
                 # rate is per unit area, so the physical area of the surface turns it
                 # into particles per second. This integral is already over the surface
                 # and must not be normalised.
-                form -= kT / enclosure.volume * area * rate * q * self.ds(surface.id)
+                form -= (
+                    kT / volume * area.fenics_object * rate * q * self.ds(surface.id)
+                )
 
         for opening in enclosure.openings:
             if not opening.applies_to(gas_species):
                 continue
             flow_rate = opening.molar_flow_rate(gas_species, enclosure)
-            form -= as_integral(kT / enclosure.volume * flow_rate)
+            form -= as_integral(kT / volume * flow_rate)
 
         # The pressure is only determined if it appears in its own balance. In a
         # transient problem the time derivative always puts it there. In steady state it
@@ -3472,6 +3487,11 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             subdomain.u_n.x.array[:] = subdomain.u.x.array[:]
         for gas_species in self.gas_species:
             gas_species.prev_solution.x.array[:] = gas_species.solution.x.array[:]
+        for enclosure in self.enclosures:
+            # the particle balance of the next step compares P*V/(k*T) with its value
+            # at the end of this one, so the volume and temperature move with the
+            # pressure
+            enclosure.update_previous_values()
 
         # adapt stepsize
         if self.settings.stepsize.adaptive:

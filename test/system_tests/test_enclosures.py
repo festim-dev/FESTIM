@@ -139,6 +139,99 @@ def test_time_dependent_pumping_speed():
     assert H2.value == pytest.approx(expected, rel=1e-8)
 
 
+def test_compression_and_heating_conserve_particles():
+    """An enclosure with no surfaces and no openings exchanges nothing, so what stays
+    constant is its number of particles P*V/(k*T), not its pressure.
+
+    Changing the volume and the temperature therefore changes the pressure, exactly:
+    P(t) = P0 * V0 * T(t) / (V(t) * T0). Backward Euler reproduces this to machine
+    precision, because the discrete balance equates the particle count of consecutive
+    timesteps. A scheme that differentiated the pressure alone would keep P at P0 here
+    and quietly create or destroy particles.
+    """
+    P0, V0, T0 = 1e5, 1e-3, 500.0
+    dt, final_time = 0.5, 5.0
+
+    def volume(t):
+        return V0 * (1 + 0.1 * t)
+
+    def temperature(t):
+        return T0 * (1 + 0.05 * t)
+
+    H2 = F.GasSpecies(name="H2", initial_pressure=P0)
+    enclosure = F.Enclosure(volume=volume, species=[H2], temperature=temperature)
+    my_model, *_ = make_model(enclosures=[enclosure], final_time=final_time, dt=dt)
+    my_model.initialise()
+
+    initial_particles = P0 * V0 / (F.k_B_SI * T0)
+    while my_model.t.value < final_time:
+        my_model.iterate()
+        t = float(my_model.t)
+        expected = P0 * V0 * temperature(t) / (volume(t) * T0)
+        assert H2.value == pytest.approx(expected, rel=1e-9)
+        particles = H2.value * volume(t) / (F.k_B_SI * temperature(t))
+        assert particles == pytest.approx(initial_particles, rel=1e-9)
+
+    # the enclosure did expand faster than it was heated, otherwise the test is vacuous
+    assert H2.value < 0.9 * P0
+
+
+def test_time_dependent_volume_and_area_with_surface_reaction():
+    """The volume and the contact area are re-evaluated at every timestep.
+
+    With no recombination (``k_r0 = 0``) the gas only loses molecules, at a rate
+    ``A(t) * k_d * P`` whatever the solid does, so the backward-Euler recursion is
+    exact and independent of the transport problem:
+
+        P = (V_n / V) * P_n / (1 + k*T*A*k_d*dt/V)
+
+    Both factors move: dropping the ``V_n / V`` of the particle balance, or freezing
+    either the volume or the area at its initial value, changes the answer by several
+    percent, far above the tolerance asserted here.
+    """
+    P0, T = 1e5, 500.0
+    k_d0 = 1e16
+    dt, final_time = 5.0, 100.0
+
+    def volume(t):
+        return 1e-3 * (1 + 0.05 * t)
+
+    def area(t):
+        return 0.25 * (1 + 0.1 * t)
+
+    my_model, _volume, _left, right, H = make_model(final_time=final_time, dt=dt)
+    H2 = F.GasSpecies(name="H2", initial_pressure=P0)
+    my_model.enclosures = [
+        F.Enclosure(volume=volume, species=[H2], temperature=T, surfaces={right: area})
+    ]
+    my_model.boundary_conditions = [
+        F.SurfaceReactionBC(
+            reactant=[H, H],
+            gas_pressure=H2,
+            k_r0=0.0,
+            E_kr=0.0,
+            k_d0=k_d0,
+            E_kd=0.0,
+            subdomain=right,
+        )
+    ]
+    my_model.initialise()
+    my_model.run()
+
+    expected = P0
+    previous_volume = volume(0.0)
+    for step in range(1, round(final_time / dt) + 1):
+        t = step * dt
+        current_volume = volume(t)
+        expected *= previous_volume / current_volume
+        expected /= 1 + F.k_B_SI * T * area(t) * k_d0 * dt / current_volume
+        previous_volume = current_volume
+
+    assert H2.value == pytest.approx(expected, rel=1e-8)
+    # the pressure must actually have moved, otherwise the test is vacuous
+    assert H2.value < 0.5 * P0
+
+
 def test_enclosure_connection_two_boxes():
     """Two connected enclosures equalise: their difference decays as
     exp(-C*(1/V1 + 1/V2)*t) and the volume-weighted mean is conserved.

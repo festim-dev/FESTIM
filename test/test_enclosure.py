@@ -74,6 +74,50 @@ class TestConstruction:
         with pytest.raises(ValueError, match="not available before initialise"):
             _ = make_gas_species().value
 
+    @pytest.mark.parametrize(
+        "kwargs, value",
+        [
+            ({"volume": lambda t: 1e-3 * (1 + t)}, "volume"),
+            ({"temperature": lambda t: 500.0 + t}, "temperature"),
+        ],
+    )
+    def test_scalar_parameters_can_be_callables_of_time(self, kwargs, value):
+        enclosure = make_enclosure(**kwargs)
+        assert getattr(enclosure, value).explicit_time_dependent
+
+    def test_areas_can_be_callables_of_time(self):
+        right = F.SurfaceSubdomain1D(id=2, x=1.0)
+        enclosure = make_enclosure(surfaces={right: lambda t: 1e-4 * (1 + t)})
+        assert enclosure.surfaces[right].explicit_time_dependent
+
+    def test_constant_parameters_are_not_time_dependent(self):
+        enclosure = make_enclosure()
+        assert not enclosure.volume.explicit_time_dependent
+        assert not enclosure.temperature.explicit_time_dependent
+
+    @pytest.mark.parametrize("argument", ["x", "T"])
+    @pytest.mark.parametrize("parameter", ["volume", "temperature"])
+    def test_scalar_parameters_can_only_depend_on_time(self, parameter, argument):
+        """An enclosure is a 0D volume: its parameters are uniform in space, and its
+        temperature is its own, not that of the transport problem."""
+        callable_of = {"x": lambda x: 1e-3, "T": lambda T: 1e-3}[argument]
+        with pytest.raises(ValueError, match="only be a callable of time"):
+            make_enclosure(**{parameter: callable_of})
+
+    def test_areas_can_only_depend_on_time(self):
+        right = F.SurfaceSubdomain1D(id=2, x=1.0)
+        with pytest.raises(ValueError, match="only be a callable of time"):
+            make_enclosure(surfaces={right: lambda x: 1e-4})
+
+    @pytest.mark.parametrize("parameter", ["volume", "temperature"])
+    def test_wrong_scalar_parameter_type_raises(self, parameter):
+        with pytest.raises(TypeError, match="must be a number, a callable of time"):
+            make_enclosure(**{parameter: "1e-3"})
+
+    def test_negative_temperature_raises(self):
+        with pytest.raises(ValueError, match="temperature must be positive"):
+            make_enclosure(temperature=-500.0)
+
 
 class TestEnclosureConnection:
     def test_needs_exactly_two_species(self):
@@ -310,6 +354,81 @@ class TestValidation:
         )
         with pytest.raises(NotImplementedError, match="cartesian"):
             my_model.initialise()
+
+
+@requires_dolfinx_011
+class TestTimeDependentGeometry:
+    def test_current_and_previous_values_are_one_timestep_apart(self):
+        """The balance is written on the number of particles, so it needs the volume
+        and the temperature of the previous timestep as well as the current ones."""
+        H2 = make_gas_species(initial_pressure=1e5)
+        enclosure = make_enclosure(
+            species=[H2],
+            volume=lambda t: 1e-3 * (1 + t),
+            temperature=lambda t: 500.0 * (1 + t),
+        )
+        my_model, *_ = make_model(enclosures=[enclosure])
+        my_model.initialise()
+
+        assert float(enclosure.volume.fenics_object) == pytest.approx(1e-3)
+        assert float(enclosure.previous_volume) == pytest.approx(1e-3)
+
+        my_model.t.value = 1.0
+        my_model.update_time_dependent_values()
+
+        # the current values follow time; the previous ones stay behind until the
+        # timestep is over
+        assert float(enclosure.volume.fenics_object) == pytest.approx(2e-3)
+        assert float(enclosure.previous_volume) == pytest.approx(1e-3)
+        assert float(enclosure.temperature.fenics_object) == pytest.approx(1000.0)
+        assert float(enclosure._prev_temperature) == pytest.approx(500.0)
+
+        enclosure.update_previous_values()
+        assert float(enclosure.previous_volume) == pytest.approx(2e-3)
+        assert float(enclosure._prev_temperature) == pytest.approx(1000.0)
+
+    def test_area_is_updated_during_the_time_loop(self):
+        def area(t):
+            return 1e-4 * (1 + t)
+
+        H2 = make_gas_species(initial_pressure=1e5)
+        my_model, _volume, _left, right = make_model()
+        enclosure = make_enclosure(species=[H2], surfaces={right: area})
+        my_model.enclosures = [enclosure]
+        my_model.initialise()
+        assert float(enclosure.surfaces[right].fenics_object) == pytest.approx(1e-4)
+
+        my_model.t.value = 3.0
+        my_model.update_time_dependent_values()
+        assert float(enclosure.surfaces[right].fenics_object) == pytest.approx(4e-4)
+
+    def test_volume_must_be_positive_at_the_initial_time(self):
+        """A number is checked when it is given, but a callable can only be checked as
+        it is evaluated."""
+        enclosure = make_enclosure(volume=lambda t: 1e-3 * (t - 1))
+        my_model, *_ = make_model(enclosures=[enclosure])
+        with pytest.raises(ValueError, match="volume must be positive"):
+            my_model.initialise()
+
+    def test_volume_must_stay_positive_during_the_time_loop(self):
+        enclosure = make_enclosure(volume=lambda t: 1e-3 * (1 - t))
+        my_model, *_ = make_model(enclosures=[enclosure])
+        my_model.initialise()
+        my_model.t.value = 1.0
+        with pytest.raises(ValueError, match="volume must be positive"):
+            my_model.update_time_dependent_values()
+
+    def test_area_must_stay_positive_during_the_time_loop(self):
+        H2 = make_gas_species(initial_pressure=1e5)
+        my_model, _volume, _left, right = make_model()
+        enclosure = make_enclosure(
+            species=[H2], surfaces={right: lambda t: 1e-4 * (1 - t)}
+        )
+        my_model.enclosures = [enclosure]
+        my_model.initialise()
+        my_model.t.value = 2.0
+        with pytest.raises(ValueError, match="area of surface 2 must be positive"):
+            my_model.update_time_dependent_values()
 
 
 @requires_dolfinx_011
