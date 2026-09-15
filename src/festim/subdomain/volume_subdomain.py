@@ -39,9 +39,10 @@ class VolumeSubdomain:
             its submesh. ``None`` for a codim-0 subdomain
         dim: the topological dimension of the subdomain. Defaults to ``None``, meaning
             the dimension of the mesh. Set it to ``mesh_dim - 1`` to solve a transport
-            equation on a manifold embedded in the mesh (a line in a 2D mesh, a surface
-            in a 3D mesh). Such a subdomain is tagged in the *facet* meshtags, and can
-            be used wherever a surface is expected (eg. ``ParticleFluxBC``).
+            equation on a manifold embedded in the mesh (a point in a 1D mesh, a line
+            in a 2D mesh, a surface in a 3D mesh). A point carries storage and reactions
+            but no tangential transport. Such a subdomain is tagged in *facet* meshtags,
+            and can be used wherever a surface is expected (eg. ``ParticleFluxBC``).
     """
 
     id: int
@@ -83,8 +84,8 @@ class VolumeSubdomain:
     def dim(self, value):
         if value is not None and not isinstance(value, int | np.integer):
             raise TypeError(f"dim must be an integer or None, not {type(value)}")
-        if value is not None and value < 1:
-            raise ValueError(f"dim must be strictly positive, got {value}")
+        if value is not None and value < 0:
+            raise ValueError(f"dim must be non-negative, got {value}")
         self._dim = None if value is None else int(value)
 
     def codim(self, mesh_dim: int) -> int:

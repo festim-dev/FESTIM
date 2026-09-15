@@ -18,14 +18,14 @@ def unit_square(n=8):
 
 @pytest.mark.parametrize(
     "dim, mesh_dim, expected",
-    [(None, 2, 0), (2, 2, 0), (1, 2, 1), (2, 3, 1), (3, 3, 0)],
+    [(None, 2, 0), (2, 2, 0), (1, 2, 1), (2, 3, 1), (3, 3, 0), (0, 1, 1)],
 )
 def test_codim(dim, mesh_dim, expected):
     subdomain = F.VolumeSubdomain(id=1, material=F.Material(D_0=1, E_D=0), dim=dim)
     assert subdomain.codim(mesh_dim) == expected
 
 
-@pytest.mark.parametrize("dim, mesh_dim", [(1, 3), (1, 4), (3, 2)])
+@pytest.mark.parametrize("dim, mesh_dim", [(1, 3), (1, 4), (3, 2), (0, 2)])
 def test_codim_out_of_range_raises(dim, mesh_dim):
     """Only codimensions 0 and 1 are supported."""
     subdomain = F.VolumeSubdomain(id=1, material=F.Material(D_0=1, E_D=0), dim=dim)
@@ -39,9 +39,9 @@ def test_dim_type_validation(dim):
         F.VolumeSubdomain(id=1, material=F.Material(D_0=1, E_D=0), dim=dim)
 
 
-@pytest.mark.parametrize("dim", [0, -1])
-def test_dim_must_be_positive(dim):
-    with pytest.raises(ValueError, match="strictly positive"):
+@pytest.mark.parametrize("dim", [-1, -2])
+def test_dim_must_be_non_negative(dim):
+    with pytest.raises(ValueError, match="non-negative"):
         F.VolumeSubdomain(id=1, material=F.Material(D_0=1, E_D=0), dim=dim)
 
 

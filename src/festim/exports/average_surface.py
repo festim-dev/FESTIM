@@ -47,13 +47,16 @@ class AverageSurface(SurfaceQuantity):
         if subdomain_id is None:
             subdomain_id = self.surface.id
 
+        weight = self.coordinate_system.integration_weight(ds.ufl_domain())
         self.value = assemble_scalar(
             fem.form(
-                restrict(u, restriction) * ds(subdomain_id), entity_maps=entity_maps
+                restrict(weight * u, restriction) * ds(subdomain_id),
+                entity_maps=entity_maps,
             )
         ) / assemble_scalar(
             fem.form(
-                restrict(1, restriction) * ds(subdomain_id), entity_maps=entity_maps
+                restrict(weight, restriction) * ds(subdomain_id),
+                entity_maps=entity_maps,
             )
         )
         self.data.append(self.value)

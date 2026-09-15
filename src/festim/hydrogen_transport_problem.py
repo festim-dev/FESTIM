@@ -1567,7 +1567,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 element_CG = basix.ufl.element(
                     basix.ElementFamily.P,
                     subdomain.submesh.basix_cell(),
-                    1,  # could expose?
+                    0 if subdomain.submesh.topology.dim == 0 else 1,
                     basix.LagrangeVariant.equispaced,
                 )
                 V = dolfinx.fem.functionspace(subdomain.submesh, element_CG)
@@ -1718,7 +1718,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             else:
                 V = condition.species.subdomain_to_function_space[condition.volume]
 
-                if isinstance(self.temperature_fenics, fem.Function):
+                if condition.volume in self.manifold_subdomains or isinstance(
+                    self.temperature_fenics, fem.Function
+                ):
                     temperature = condition.volume.sub_T
                 else:
                     temperature = self.temperature_fenics
@@ -1768,6 +1770,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 unique_species.append(species)
         nb_species = len(unique_species)
 
+        # A radial surface is a point in a 1D mesh. Basix only supports P0 there.
+        if subdomain.submesh.topology.dim == 0:
+            element_degree = 0
         element_CG = basix.ufl.element(
             basix.ElementFamily.P,
             subdomain.submesh.basix_cell(),
@@ -1780,7 +1785,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         u_n = dolfinx.fem.Function(V)
 
         self.subdomain_to_V_CG1[subdomain] = dolfinx.fem.functionspace(
-            subdomain.submesh, ("CG", 1)
+            subdomain.submesh, ("CG", 0 if subdomain.submesh.topology.dim == 0 else 1)
         )
 
         # store attributes in the subdomain object
@@ -1859,7 +1864,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 V = spe.subdomain_to_function_space[drift_term.subdomain]
                 drift_term.convert_inputs(
                     function_space=V,
-                    t=self.t,
+                    t=self.subdomain_time(drift_term.subdomain),
                     temperature=self.subdomain_temperature(drift_term.subdomain),
                 )
 
@@ -2281,11 +2286,16 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         cannot tabulate a parent-mesh coefficient on submesh cells.
         """
         for reaction in self.reactions:
+            manifold = reaction.volume in self.manifold_subdomains
             for rate in reaction.rate_coefficients:
                 if rate.input_value is not None:
                     rate.convert_input_value(
-                        function_space=getattr(self, "function_space", None),
-                        t=self.t,
+                        function_space=(
+                            reaction.volume.u.function_space
+                            if manifold
+                            else getattr(self, "function_space", None)
+                        ),
+                        t=self.subdomain_time(reaction.volume),
                         temperature=self.subdomain_temperature(reaction.volume),
                         subdomain=reaction.volume,
                         up_to_ufl_expr=True,
@@ -2396,12 +2406,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             subdomain (F.VolumeSubdomain): a subdomain of the geometry
         """
         is_manifold = subdomain.codim(self.mesh.vdim) == 1
-        if is_manifold and self.mesh.coordinate_system != CoordinateSystem.CARTESIAN:
-            raise NotImplementedError(
-                "codimensional subdomains are only supported in cartesian coordinates, "
-                f"not {self.mesh.coordinate_system}"
-            )
         dx = self.subdomain_measure(subdomain)
+        integration_mesh = subdomain.submesh if is_manifold else self.mesh.mesh
         # the self terms are integrated over subdomain's own mesh, so their coefficients
         # must live there too -- for a manifold that is its submesh, not the parent mesh
         dt = self.subdomain_dt(subdomain) if self.settings.transient else None
@@ -2419,16 +2425,16 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             if self.settings.transient:
                 self_form += ((u - u_n) / dt) * v * dx
 
-            if spe.mobile:
+            if spe.mobile and subdomain.submesh.topology.dim > 0:
                 D = self.diffusion_coefficient(subdomain, spe)
                 match self.mesh.coordinate_system:
                     case CoordinateSystem.CARTESIAN:
                         self_form += ufl.dot(D * ufl.grad(u), ufl.grad(v)) * dx
                     case CoordinateSystem.CYLINDRICAL:
-                        r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
+                        r = ufl.SpatialCoordinate(integration_mesh)[0]
                         self_form += r * ufl.dot(D * ufl.grad(u), ufl.grad(v / r)) * dx
                     case CoordinateSystem.SPHERICAL:
-                        r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
+                        r = ufl.SpatialCoordinate(integration_mesh)[0]
                         self_form += (
                             r**2 * ufl.dot(D * ufl.grad(u), ufl.grad(v / r**2)) * dx
                         )
@@ -2440,6 +2446,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         # add drift (advection, Soret, electromigration)
         for drift_term in self.drift_terms:
             if drift_term.subdomain != subdomain:
+                continue
+            if subdomain.submesh.topology.dim == 0:
+                # A point has no tangential direction in which a species can drift.
                 continue
 
             for spe in drift_term.species:
@@ -2461,7 +2470,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     velocity=velocity,
                     dx=dx,
                     coordinate_system=self.mesh.coordinate_system,
-                    mesh=self.mesh.mesh,
+                    mesh=integration_mesh,
                 )
 
         # add fluxes. These are always parent-mesh integrals: a flux on a manifold
@@ -2522,7 +2531,11 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             subdomain.F = form_coupling
             # self_form is still the integer 0 if the manifold carries no equation of
             # its own, in which case there is nothing to assemble over the submesh
-            subdomain.F_submesh = self_form if isinstance(self_form, ufl.Form) else None
+            subdomain.F_submesh = (
+                self_form
+                if isinstance(self_form, ufl.Form) and self_form.arguments()
+                else None
+            )
         else:
             subdomain.F = self_form + form_coupling
             subdomain.F_submesh = None
@@ -2888,12 +2901,14 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     continue
                 J.append([ufl.derivative(form, unknown) for unknown in all_unknowns])
             J_groups.append(J)
-        if len(groups) > 1:
+        if self.manifold_subdomains:
             # a block differentiated with respect to an unknown it does not depend on
             # would otherwise send DOLFINx looking for an entity map between two
-            # sibling submeshes, which does not exist
+            # sibling submeshes, which does not exist. A steady point manifold can
+            # have only coupling terms, so this also applies to a single group.
             J_groups = [prune_empty_blocks(J) for J in J_groups]
 
+        if len(groups) > 1:
             # the padded rows must still carry their function spaces: the blocked
             # matrix and the PETSc index sets are both built from this group alone, and
             # an all-None row leaves them with nothing to deduce the block from
@@ -3201,6 +3216,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         # filename: the first one to claim it truncates, the rest append as new blocks
         initialised_files = set()
         for export in self.exports:
+            if isinstance(export, exports.VolumeQuantity | exports.SurfaceQuantity):
+                export.coordinate_system = self.mesh.coordinate_system
             if isinstance(export, exports.FieldExportBase):
                 self._register_export_milestones(export)
                 functions, names, mesh = self._export_context(export)
@@ -3442,8 +3459,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 # a manifold mirrors a constant temperature onto its own submesh, and
                 # that mirror has to follow the parent constant
                 for subdomain in self.manifold_subdomains:
-                    # NOTE: current limitation for manifolds, temperature on the manifold
-                    # has to be homogeneous (ie. fem.Constant)
                     subdomain.sub_T.value = float(self.temperature_fenics)
 
     def iterate(self):
