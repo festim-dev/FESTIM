@@ -71,7 +71,31 @@ Installing the FEniCSx docker container and then installing FESTIM with pip insi
     pip install festim
 
 
-Option 3: From Source
+Option 3: Pip (Experimental)
+----------------------------
+
+An experimental wheel index provides the compiled FEniCSx, PETSc, and scifem
+dependencies needed by FESTIM. It supports Python 3.12 and newer on Linux x86_64
+and aarch64.
+
+Create and activate a Python 3.12 virtual environment, then run::
+
+    python3.12 -m venv festim-env
+    source festim-env/bin/activate
+    python -m pip install --upgrade pip
+    python -m pip install mpich
+    python -m pip install --pre --extra-index-url https://shimwell.github.io/wheels \
+        "fenics-dolfinx[petsc4py]" petsc
+    python -m pip install --no-deps --index-url https://shimwell.github.io/wheels scifem
+    python -m pip install festim
+
+The first custom-index command selects the pre-release FEniCSx and PETSc wheels.
+The next command installs the newest scifem wheel available from that index without
+selecting a source distribution from PyPI. FESTIM itself and its remaining dependencies
+are installed from PyPI by the final command.
+
+
+Option 4: From Source
 ---------------------
 
 When none of the above methods are possible, users can build FEniCSx from source and then install FESTIM and all dependencies manually. Please refer to the `FEniCSx documentation <https://docs.fenicsproject.org/>`_ for complete instructions on building dolfinx from source.
