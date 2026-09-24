@@ -29,6 +29,7 @@ Here you define with:
 * ``final_time``: the final time of a transient simulation
 * ``stepsize``: the stepsize of a transient simulation, as a :class:`festim.Stepsize` or a number (see :ref:`Stepsize <stepsize_guide>`)
 * ``element_degree``: the degree of the finite elements used for the concentrations (default: 1)
+* ``export_time_atol`` and ``export_time_rtol``: the absolute and relative tolerances used to decide whether the current time matches one of the ``times`` requested by an export (default: ``0`` and ``1e-5``, see :ref:`Exporting at chosen times`)
 
 For a transient simulation, ``final_time`` and ``stepsize`` are required:
 
