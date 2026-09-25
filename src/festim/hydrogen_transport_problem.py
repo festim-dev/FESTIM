@@ -2886,7 +2886,21 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 if form is None or (group is all_forms and i in padded):
                     J.append([None] * len(all_unknowns))
                     continue
-                J.append([ufl.derivative(form, unknown) for unknown in all_unknowns])
+                # Differentiate only with respect to the unknowns this residual
+                # actually contains: any other block is identically zero. Building
+                # and then expanding every block costs O(n_subdomains**2) symbolic
+                # work, which dominates initialise() for problems with many
+                # subdomains (e.g. one subdomain per grain). The diagonal block is
+                # always kept because it carries the block's function spaces.
+                present = set(ufl.algorithms.extract_coefficients(form))
+                J.append(
+                    [
+                        ufl.derivative(form, unknown)
+                        if unknown in present or (group is all_forms and j == i)
+                        else None
+                        for j, unknown in enumerate(all_unknowns)
+                    ]
+                )
             J_groups.append(J)
         if len(groups) > 1:
             # a block differentiated with respect to an unknown it does not depend on
