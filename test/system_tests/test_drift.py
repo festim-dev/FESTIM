@@ -270,6 +270,71 @@ def test_outflow_bc_decides_what_an_unlabelled_boundary_means(outflow):
     assert np.max(np.abs(computed - exact)) < 1e-4, (computed[-1], exact[-1])
 
 
+@pytest.mark.parametrize("switch_on", [False, True])
+def test_outflow_bc_in_a_transient_run(switch_on):
+    r"""The outlet case of the test above, run as a transient from ``c = 0``.
+
+    Same closed form: with :class:`festim.OutflowBC` the profile relaxes to ``c = 1``.
+    Every outlet mode decays faster than ``exp(-v^2 t / 4D) = exp(-t)``, so ``t = 10``
+    leaves nothing above the tolerance.
+
+    ``switch_on`` starts the drift at ``t = 1`` instead of ``t = 0``. The outflow term
+    is built from the drift term's velocity, which is what lets the BC report
+    ``time_dependent = False``; if the boundary term kept the stale ``v = 0`` the
+    outlet would act as a wall and the profile would head for ``e^(2x)`` instead.
+    The profile alone cannot tell a drift that switched on from one that never did,
+    since pure diffusion also relaxes to ``c = 1``, so the test also checks that the
+    outlet carries the advective flux ``v c = v``.
+
+    Regression test for https://github.com/festim-dev/FESTIM/issues/1267, where a
+    transient run with an :class:`festim.OutflowBC` crashed on the first time step.
+    """
+    length, D_0, v_x, n = 1.0, 1.0, 2.0, 50
+
+    material = F.Material(D_0=D_0, E_D=0.0)
+    volume = F.VolumeSubdomain1D(id=1, borders=[0.0, length], material=material)
+    left = F.SurfaceSubdomain1D(id=1, x=0.0)
+    right = F.SurfaceSubdomain1D(id=2, x=length)
+    H = F.Species("H", mobile=True)
+
+    festim_mesh = F.Mesh1D(np.linspace(0.0, length, n + 1))
+    moving = _velocity(festim_mesh.mesh, lambda x: np.vstack([np.full_like(x[0], v_x)]))
+    if switch_on:
+        still = _velocity(festim_mesh.mesh, lambda x: np.vstack([np.zeros_like(x[0])]))
+        velocity = lambda t: moving if float(t) >= 1.0 else still  # noqa: E731
+    else:
+        velocity = moving
+
+    outlet_flux = F.SurfaceFlux(field=H, surface=right)
+
+    model = F.HydrogenTransportProblem(
+        mesh=festim_mesh,
+        subdomains=[volume, left, right],
+        species=[H],
+        temperature=500.0,
+        boundary_conditions=[
+            F.FixedConcentrationBC(subdomain=left, value=1.0, species=H),
+            F.OutflowBC(subdomain=right, species=H),
+        ],
+        drift_terms=[F.AdvectionTerm(velocity=velocity, subdomain=volume, species=H)],
+        exports=[outlet_flux],
+        settings=F.Settings(
+            atol=1e-12,
+            rtol=1e-12,
+            transient=True,
+            final_time=10.0,
+            stepsize=F.Stepsize(0.5),
+        ),
+    )
+    model.initialise()
+    model.run()
+
+    _, computed = _profile(H)
+
+    assert np.max(np.abs(computed - 1.0)) < 1e-8, computed[-1]
+    assert np.isclose(outlet_flux.data[-1], v_x, rtol=1e-8), outlet_flux.data[-1]
+
+
 def test_outflow_bc_is_a_no_op_without_drift():
     """It cancels a drift boundary term, so with no drift there is nothing to cancel."""
     length, n = 1.0, 50
