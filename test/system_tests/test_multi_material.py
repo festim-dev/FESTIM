@@ -552,3 +552,72 @@ def test_extrema_export_on_a_volume_without_the_species(make_export, location):
         ),
     ):
         my_model.initialise()
+
+
+def test_jacobian_skips_blocks_of_absent_unknowns(monkeypatch):
+    """A residual row is only differentiated with respect to the unknowns it
+    contains, so the Jacobian block of two subdomains that do not touch is never
+    built. With three materials in a chain A | B | C, rows A and C contain two
+    unknowns and row B contains three: 7 derivatives rather than 9, and the A-C and
+    C-A blocks are None."""
+    interface_1, interface_2 = 0.5, 0.7
+    vertices = np.concatenate(
+        [
+            np.linspace(0, interface_1, num=20),
+            np.linspace(interface_1, interface_2, num=20),
+            np.linspace(interface_2, 1, num=20),
+        ]
+    )
+    left = F.VolumeSubdomain1D(
+        3,
+        borders=[vertices[0], interface_1],
+        material=F.Material(D_0=1, E_D=0, K_S_0=2.0, E_K_S=0),
+    )
+    middle = F.VolumeSubdomain1D(
+        4,
+        borders=[interface_1, interface_2],
+        material=F.Material(D_0=2, E_D=0, K_S_0=4.0, E_K_S=0),
+    )
+    right = F.VolumeSubdomain1D(
+        5,
+        borders=[interface_2, vertices[-1]],
+        material=F.Material(D_0=3, E_D=0, K_S_0=6.0, E_K_S=0),
+    )
+    left_surface = F.SurfaceSubdomain1D(id=1, x=vertices[0])
+    right_surface = F.SurfaceSubdomain1D(id=2, x=vertices[-1])
+
+    H = F.Species("H", subdomains=[left, middle, right])
+    my_model = F.HydrogenTransportProblemDiscontinuous(
+        mesh=F.Mesh1D(vertices),
+        subdomains=[left, middle, right, left_surface, right_surface],
+        species=[H],
+        interfaces=[F.Interface(6, (left, middle)), F.Interface(7, (middle, right))],
+        boundary_conditions=[
+            F.DirichletBC(left_surface, value=1.0, species=H),
+            F.DirichletBC(right_surface, value=0.0, species=H),
+        ],
+        temperature=500,
+        settings=F.Settings(atol=1e-10, rtol=1e-10, transient=False),
+    )
+
+    differentiated = []
+    real_derivative = ufl.derivative
+
+    def spy(form, coefficient, *args, **kwargs):
+        differentiated.append((form, coefficient))
+        return real_derivative(form, coefficient, *args, **kwargs)
+
+    monkeypatch.setattr(ufl, "derivative", spy)
+    my_model.initialise()
+
+    domains = my_model.volume_subdomains
+    row_of = {id(sd.F): i for i, sd in enumerate(domains)}
+    col_of = {id(sd.u): j for j, sd in enumerate(domains)}
+    pairs = {
+        (row_of[id(form)], col_of[id(u)])
+        for form, u in differentiated
+        if id(form) in row_of and id(u) in col_of
+    }
+    assert pairs == {(0, 0), (0, 1), (1, 0), (1, 1), (1, 2), (2, 1), (2, 2)}
+    assert my_model.J[0][2] is None and my_model.J[2][0] is None
+    assert my_model.J[0][1] is not None and my_model.J[1][2] is not None
