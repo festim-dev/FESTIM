@@ -13,6 +13,30 @@ if TYPE_CHECKING:
     from festim.subdomain.volume_subdomain import VolumeSubdomain
 
 
+def spatial_coordinate(mesh):
+    """Coordinates on an integration mesh, including a zero-dimensional submesh.
+
+    FFCx 0.11 cannot compile SpatialCoordinate on a vertex cell (its coordinate
+    table is identically one). A P0 coefficient stores the exact coordinates at
+    each point, also when a point subdomain contains several disconnected points.
+    """
+    domain = mesh if isinstance(mesh, ufl.Mesh) else mesh.ufl_domain()
+    # UFL exposed this as a method before the release bundled with DOLFINx 0.11.
+    tdim = domain.topological_dimension
+    if callable(tdim):
+        tdim = tdim()
+    if tdim > 0:
+        return ufl.SpatialCoordinate(domain)
+    if isinstance(mesh, ufl.Mesh):
+        mesh = dolfinx.mesh.Mesh(domain.ufl_cargo(), domain)
+    gdim = mesh.geometry.dim
+    V = fem.functionspace(mesh, ("P", 0, (gdim,)))
+    coordinate = fem.Function(V)
+    coordinate.interpolate(lambda x: x[:gdim])
+    coordinate.x.scatter_forward()
+    return coordinate
+
+
 def as_fenics_constant(
     value: float | int | fem.Constant, mesh: dolfinx.mesh.Mesh
 ) -> fem.Constant:
@@ -71,15 +95,12 @@ def as_mapped_function(
     kwargs = {}
     if "t" in arguments:
         kwargs["t"] = t
-    if "x" in arguments:
-        x = ufl.SpatialCoordinate(function_space.mesh)
-        kwargs["x"] = x
     if "T" in arguments:
         kwargs["T"] = temperature
     if "x" in arguments:
         # the spatial coordinate must come from the mesh the integral is assembled
         # over, which is not always the mesh the unknown lives on
-        kwargs["x"] = ufl.SpatialCoordinate(mesh or function_space.mesh)
+        kwargs["x"] = spatial_coordinate(mesh or function_space.mesh)
 
     for name, species in (species_dependent_value or {}).items():
         # only pass the species the callable actually declares, as done above for

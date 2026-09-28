@@ -317,9 +317,53 @@ gives the outlet flux of the pipe example:
 
 .. note::
 
-    :class:`festim.SurfaceFlux` computes the **diffusive** flux only. On a manifold
-    carrying an :class:`festim.AdvectionTerm` the advective part is not included, and
-    FESTIM warns.
+    :class:`festim.SurfaceFlux` computes the total flux, including diffusion and
+    any drift acting on the species, such as :class:`festim.AdvectionTerm`.
+
+Coordinate systems
+------------------
+
+Codimensional coupling supports the same coordinate systems as
+:class:`festim.HydrogenTransportProblemDiscontinuous`:
+
+* Cartesian: points in 1D, lines in 2D, and surfaces in 3D.
+* Cylindrical: points in a 1D radial mesh or lines in a 2D axisymmetric
+  :math:`(r,z)` mesh. The first coordinate is the radius.
+* Spherical: points in a 1D radial mesh, representing concentric spherical surfaces.
+
+Set ``coordinate_system`` on the mesh as usual. For a radial model, declare a
+surface carrying its own concentration with ``dim=0``:
+
+.. code-block:: python
+
+    mesh = F.Mesh1D(np.linspace(1.0, 2.0, 101), coordinate_system="spherical")
+    bulk = F.VolumeSubdomain1D(id=1, borders=[1.0, 2.0], material=material)
+    gamma = F.VolumeSubdomain(
+        id=2, dim=0, material=material,
+        locator=lambda x: np.isclose(x[0], 2.0),
+    )
+
+A point subdomain has one concentration degree of freedom per point. It supports
+transient storage, sources, reactions and exchange with the adjacent bulk, but has
+no tangential diffusion or drift and no boundary of its own. A line in an
+axisymmetric mesh supports tangential transport, including the radial metric.
+
+Exchange laws remain flux densities: use the same equal-and-opposite
+``ParticleFluxBC`` and ``ParticleSource`` pair as above, without multiplying either
+value by an area. The radial metric cancels against the rescaled test function in
+these terms, just as it does in the storage and local source terms.
+
+Integral exports in the discontinuous problem include the physical measure:
+:math:`2\pi r` in cylindrical coordinates and :math:`4\pi r^2` in spherical
+coordinates. These factors apply to both totals and the numerator and denominator
+of averages, on bulk subdomains, manifolds and their boundaries. Cylindrical 1D
+totals are per unit axial length; full angular coverage is assumed. For example,
+``TotalVolume(field=c_gamma, volume=gamma)`` on the spherical point at radius
+:math:`R` reports :math:`4\pi R^2 c_\Gamma`.
+
+As in the standard radial formulation, the rescaled gradient terms contain
+``1/r`` or ``1/r**2``. An isolated manifold at ``r=0`` has zero physical measure
+and cannot represent a finite-area exchange surface.
 
 Limitations
 -----------
@@ -331,14 +375,13 @@ Limitations
 * A manifold must lie wholly inside the mesh or wholly on its boundary, and a manifold
   on the boundary of the mesh is adjacent to a single volume subdomain.
 * Boundary conditions on the boundary of a manifold are limited to
-  :class:`festim.FixedConcentrationBC`.
+  :class:`festim.FixedConcentrationBC` and :class:`festim.OutflowBC`.
 * Exports on and around a manifold are limited to the integral-based derived quantities
   (:class:`festim.SurfaceFlux`, :class:`festim.TotalSurface`,
   :class:`festim.AverageSurface`, :class:`festim.TotalVolume`,
   :class:`festim.AverageVolume`) and :class:`festim.VTXSpeciesExport`. The minimum and
   maximum quantities and :class:`festim.CustomQuantity` are not available in
   :class:`festim.HydrogenTransportProblemDiscontinuous` at all, manifold or not.
-* Cartesian coordinates only.
 
 ----------
 Materials

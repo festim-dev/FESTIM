@@ -1,3 +1,4 @@
+import warnings
 from collections.abc import Callable
 
 import basix
@@ -68,7 +69,9 @@ class AdvectionTerm(DriftTermBase):
             raise TypeError(err_message)
 
     def convert_inputs(self, function_space, t=None, temperature=None):
-        self.velocity.convert_input_value(function_space=function_space, t=t)
+        self.velocity.convert_input_value(
+            function_space=function_space, t=t, subdomain=self.subdomain
+        )
 
     def time_dependent_inputs(self):
         return [self.velocity]
@@ -106,12 +109,14 @@ class VelocityField(Value):
         self,
         function_space: fem.FunctionSpace,
         t: fem.Constant | None = None,
+        subdomain: VolumeSubdomain | None = None,
     ):
         """Converts a user given value to a relevent fenics object.
 
         Args:
             function_space: the function space of the fenics object
             t: the time, optional
+            subdomain: the volume subdomain, used to identify warnings
         """
 
         if isinstance(self.input_value, fem.Function):
@@ -138,10 +143,17 @@ class VelocityField(Value):
         # NOTE: the shape is the *geometric* dimension, not the topological one: on a
         # codim-1 subdomain the mesh is a manifold (eg. a line in 2D) whose cells are
         # 1D but whose points, and therefore velocities and gradients, are ambient
+        if function_space.mesh.topology.dim == 0:
+            subdomain_id = getattr(subdomain, "id", subdomain)
+            warnings.warn(
+                "Advection velocity is ignored on volume subdomain "
+                f"{subdomain_id} with dimension zero.",
+                stacklevel=2,
+            )
         v_cg = basix.ufl.element(
             "Lagrange",
             function_space.mesh.topology.cell_name(),
-            1,
+            0 if function_space.mesh.topology.dim == 0 else 1,
             shape=(function_space.mesh.geometry.dim,),
         )
         self.vector_function_space = fem.functionspace(function_space.mesh, v_cg)
