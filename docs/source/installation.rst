@@ -85,14 +85,15 @@ Create and activate a Python 3.12 virtual environment, then run::
     python -m pip install --upgrade pip
     python -m pip install mpich
     python -m pip install --extra-index-url https://shimwell.github.io/wheels "fenics-dolfinx[petsc4py]"
-    python -m pip install --no-deps --index-url https://shimwell.github.io/wheels scifem
-    python -m pip install festim
+    python -m pip install --no-deps --index-url https://shimwell.github.io/wheels scifem adios2
+    python -m pip install festim pynacl
 
 The first custom-index command installs the FEniCSx wheels, which are development
 versions, and PETSc and petsc4py come in through the ``petsc4py`` extra.
-The next command installs the newest scifem wheel available from that index without
-selecting a source distribution from PyPI. FESTIM itself and its remaining dependencies
-are installed from PyPI by the final command.
+The next command installs the newest scifem and MPI-enabled ADIOS2 wheels available
+from that index, without selecting a source distribution of scifem or the serial ADIOS2
+wheel from PyPI. FESTIM itself, its remaining dependencies and pynacl, which the ADIOS2
+wheel needs, are installed from PyPI by the final command.
 
 
 Option 4: From Source
