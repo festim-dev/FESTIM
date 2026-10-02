@@ -2554,13 +2554,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         if not self.enclosures:
             return
 
-        if self.mesh.coordinate_system != CoordinateSystem.CARTESIAN:
-            raise NotImplementedError(
-                "Enclosures are only supported for cartesian coordinate systems, not "
-                f"{self.mesh.coordinate_system!s}. The surface integrals of the "
-                "pressure balance would need the appropriate metric factors."
-            )
-
         mesh_dim = self.mesh.mesh.topology.dim
         all_gas_species = self.gas_species
 
@@ -2588,17 +2581,19 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         "of the model"
                     )
             # The flux through a surface is per unit area, so turning it into a number
-            # of particles per second needs the physical area of that surface. Only a 3D
-            # mesh measures that area itself: in 1D a surface is a point and in 2D a
-            # line, so the missing extent has to come from the user.
-            if enclosure.surfaces and not enclosure.areas_given and mesh_dim < 3:
-                missing = (
-                    "area (m2) of the surface"
-                    if mesh_dim == 1
-                    else ("out-of-plane depth (m) of the model")
-                )
+            # of particles per second needs the physical area of that surface. The mesh
+            # and the metric factor of the coordinate system measure it fully in 3D
+            # cartesian, 2D cylindrical (axisymmetric) and 1D spherical models. In the
+            # other cases an extent is missing and has to come from the user.
+            missing = {
+                (CoordinateSystem.CARTESIAN, 1): "area (m2) of the surface",
+                (CoordinateSystem.CARTESIAN, 2): "out-of-plane depth (m) of the model",
+                (CoordinateSystem.CYLINDRICAL, 1): "axial length (m) of the cylinder",
+            }.get((self.mesh.coordinate_system, mesh_dim))
+            if enclosure.surfaces and not enclosure.areas_given and missing:
                 raise ValueError(
-                    f"{enclosure} is attached to surfaces on a {mesh_dim}D mesh, so "
+                    f"{enclosure} is attached to surfaces on a {mesh_dim}D "
+                    f"{self.mesh.coordinate_system!s} mesh, so "
                     "the areas of those surfaces cannot be taken from the mesh and "
                     "must be given: pass surfaces as a dict mapping each surface to "
                     f"the {missing}, eg. surfaces={{my_surface: 1e-4}}."
@@ -2770,12 +2765,24 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         if self.settings.transient:
             form += as_integral((P - P_n) / self.dt)
 
+        # metric factor of the coordinate system (2 pi r in cylindrical, 4 pi r^2 in
+        # spherical), so that the surface integral measures a physical area
+        weight = self.mesh.coordinate_system.integration_weight(self.mesh.mesh)
+
         for surface, area in enclosure.surfaces.items():
             for rate in self.gas_production_rates(surface, gas_species):
                 # rate is per unit area, so the physical area of the surface turns it
                 # into particles per second. This integral is already over the surface
                 # and must not be normalised.
-                form -= kT / enclosure.volume * area * rate * q * self.ds(surface.id)
+                form -= (
+                    kT
+                    / enclosure.volume
+                    * area
+                    * weight
+                    * rate
+                    * q
+                    * self.ds(surface.id)
+                )
 
         for opening in enclosure.openings:
             if not opening.applies_to(gas_species):
