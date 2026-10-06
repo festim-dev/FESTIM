@@ -128,10 +128,10 @@ specific ones; those times are added to the stepsize milestones so they are hit 
 
     F.SpeciesExport("results.bp", field=[H], subdomain=vol, times=[1, 10, 100])
 
-The current time counts as one of the requested times when the two agree within
-the ``export_time_rtol`` (relative, default ``1e-5``) or ``export_time_atol``
-(absolute, default ``0``) tolerances of :class:`festim.Settings`. The relative
-tolerance scales with the current time. At :math:`t = 10^{8}` s the default window
+The current time counts as one of the requested times when the two differ by at most
+``export_time_atol + export_time_rtol * t``, where ``t`` is the current time and the
+tolerances are set in :class:`festim.Settings` (defaults ``0`` and ``1e-5``). The
+relative part grows with the current time. At :math:`t = 10^{8}` s the default window
 is :math:`10^{3}` s wide, so an export can fire several steps before the time it was
 asked for. For long simulations, use an absolute tolerance instead:
 
