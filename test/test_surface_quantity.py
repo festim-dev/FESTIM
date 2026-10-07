@@ -43,6 +43,7 @@ def test_surface_flux_export_compute():
         surface=dummy_surface,
     )
     my_export.D = D
+    my_export.coordinate_system = my_mesh.coordinate_system
 
     # RUN
     my_export.compute(my_species.solution, ds=ds)

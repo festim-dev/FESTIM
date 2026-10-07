@@ -1,4 +1,5 @@
 from mpi4py import MPI
+from petsc4py import PETSc
 
 import dolfinx
 import numpy as np
@@ -12,6 +13,9 @@ from .tools import error_L2
 
 
 def test_petsc_options():
+    if not PETSc.Sys().hasExternalPackage("mumps"):
+        pytest.skip("MUMPS is required to test MUMPS-specific PETSc options")
+
     my_model = F.HydrogenTransportProblem(
         petsc_options={
             "ksp_type": "preonly",

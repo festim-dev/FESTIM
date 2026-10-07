@@ -4,6 +4,7 @@ from scifem import assemble_scalar
 
 from festim.exports.surface_quantity import SurfaceQuantity
 from festim.helpers import restrict
+from festim.mesh import CoordinateSystem
 from festim.species import Species
 from festim.subdomain.surface_subdomain import SurfaceSubdomain
 from festim.subdomain.volume_subdomain import VolumeSubdomain
@@ -31,6 +32,7 @@ class SurfaceFlux(SurfaceQuantity):
     field: Species
     surface: SurfaceSubdomain | VolumeSubdomain
     filename: str
+    coordinate_system: CoordinateSystem
 
     title: str
     value: float
@@ -76,6 +78,8 @@ class SurfaceFlux(SurfaceQuantity):
         mesh = ds.ufl_domain()
         n = ufl.FacetNormal(mesh)
 
+        weight = self.coordinate_system.integration_weight(mesh)
+
         # written as a matrix product so an anisotropic D works: for a scalar
         # D this is the same expression as -D * dot(grad(u), n)
         integrand = -ufl.dot(self.D * ufl.grad(u), n)
@@ -84,6 +88,10 @@ class SurfaceFlux(SurfaceQuantity):
 
         if self.drift_velocity is not None:
             integrand += u * ufl.dot(self.drift_velocity, n)
+
+        # the weight carries the metric of the coordinate system, so it multiplies the
+        # whole flux density, drift included
+        integrand *= weight
 
         self.value = assemble_scalar(
             fem.form(

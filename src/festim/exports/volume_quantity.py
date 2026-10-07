@@ -1,6 +1,7 @@
 from abc import abstractmethod
 
 from festim.exports.derived_quantity import DerivedQuantity
+from festim.mesh import CoordinateSystem
 from festim.species import Species
 from festim.subdomain.volume_subdomain import VolumeSubdomain
 
@@ -27,6 +28,7 @@ class VolumeQuantity(DerivedQuantity):
 
     t: list[float]
     data: list[float]
+    coordinate_system = CoordinateSystem.CARTESIAN
 
     def __init__(
         self,
