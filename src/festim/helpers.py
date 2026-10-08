@@ -37,10 +37,26 @@ def spatial_coordinate(mesh):
     return coordinate
 
 
+def _as_numeric_array(value):
+    """Convert numeric entries without evaluating symbolic coefficients."""
+    array = np.asarray(value)
+    if any(isinstance(entry, ufl.core.expr.Expr) for entry in array.flat):
+        raise TypeError(
+            "Symbolic array entries cannot be converted to fem.Constant; "
+            "use ufl.as_matrix to construct a symbolic tensor"
+        )
+    return np.asarray(array, dtype=dolfinx.default_scalar_type)
+
+
 def as_fenics_constant(
-    value: float | int | fem.Constant, mesh: dolfinx.mesh.Mesh
+    value: float | int | np.ndarray | list | tuple | fem.Constant,
+    mesh: dolfinx.mesh.Mesh,
 ) -> fem.Constant:
     """Converts a value to a dolfinx.Constant.
+
+    Array-like values become tensor-valued ``fem.Constant`` objects. A
+    ``(dim, dim)`` nested list or array supplies a material property that
+    multiplies a gradient as a matrix rather than as a scalar.
 
     Args:
         value: the value to convert
@@ -50,15 +66,21 @@ def as_fenics_constant(
         The converted value
 
     Raises:
-        TypeError: if the value is not a float, an int or a dolfinx.Constant
+        TypeError: if the value is not a float, an int, a numeric array-like or a
+            dolfinx.Constant, or if an array contains symbolic entries
     """
+    if isinstance(value, bool):
+        raise TypeError("Boolean values are not supported")
     if isinstance(value, float | int):
         return fem.Constant(mesh, dolfinx.default_scalar_type(float(value)))
     elif isinstance(value, fem.Constant):
         return value
+    elif isinstance(value, np.ndarray | list | tuple):
+        return fem.Constant(mesh, _as_numeric_array(value))
     else:
         raise TypeError(
-            f"Value must be a float, an int or a dolfinx.Constant, not {type(value)}"
+            "Value must be a float, an int, an array-like or a dolfinx.Constant, "
+            f"not {type(value)}"
         )
 
 

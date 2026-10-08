@@ -44,6 +44,7 @@ from festim.enclosure.openings import EnclosureConnection
 from festim.helpers import (
     KSPMonitor,
     SnesMonitor,
+    _as_numeric_array,
     as_fenics_constant,
     convergenceTest,
     is_it_time_to_export,
@@ -760,32 +761,63 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 for a given species
         """
         assert isinstance(species, _species.Species)
-        # create global D function
-        D = fem.Function(self.V_DG_1)
 
         # if diffusion coeffient has been given as a function, use that
-        if self.volume_subdomains[0].material.D:
+        if self.volume_subdomains[0].material.D is not None:
             if len(self.volume_subdomains) > 1:
                 raise NotImplementedError(
                     "Giving the diffusion coefficient as a function is currently "
                     "only supported for a single volume subdomain case"
                 )
-            return self.volume_subdomains[0].material.D, None
+            D = self.volume_subdomains[0].material.D
+            if isinstance(D, np.ndarray | list | tuple):
+                D = as_fenics_constant(D, self.mesh.mesh)
+            return D, None
 
-        D_0 = fem.Function(self.V_DG_0)
+        # a tensor-valued diffusivity needs tensor-valued spaces to hold D_0 and D
+        tensor_valued = any(
+            vol.material.is_tensor_valued(species) for vol in self.volume_subdomains
+        )
+        if tensor_valued:
+            dim = self.mesh.mesh.geometry.dim
+            V_0 = fem.functionspace(self.mesh.mesh, ("DG", 0, (dim, dim)))
+            V_1 = fem.functionspace(self.mesh.mesh, ("DG", 1, (dim, dim)))
+        else:
+            V_0, V_1 = self.V_DG_0, self.V_DG_1
+
+        # create global D function
+        D = fem.Function(V_1)
+        D_0 = fem.Function(V_0)
         E_D = fem.Function(self.V_DG_0)
         for vol in self.volume_subdomains:
             cell_indices = self.volume_meshtags.find(vol.id)
 
             # replace values of D_0 and E_D by values from the material
-            D_0.x.array[cell_indices] = vol.material.get_D_0(species=species)
+            if tensor_valued:
+                prefactor = _as_numeric_array(vol.material.get_D_0(species=species))
+                if prefactor.ndim == 0:
+                    prefactor = prefactor * np.eye(dim)
+                if prefactor.shape != (dim, dim):
+                    raise ValueError(
+                        f"D_0 tensor must have shape {(dim, dim)} to match the "
+                        f"mesh geometry dimension, not {prefactor.shape}"
+                    )
+                dofs = V_0.dofmap.list[cell_indices].reshape(-1)
+                # Use the space's block size even when a material supplied a scalar.
+                values = D_0.x.array.reshape(-1, V_0.dofmap.index_map_bs)
+                values[dofs] = prefactor.reshape(-1)
+            else:
+                D_0.x.array[cell_indices] = vol.material.get_D_0(species=species)
             E_D.x.array[cell_indices] = vol.material.get_E_D(species=species)
 
+        D_0.x.scatter_forward()
+        E_D.x.scatter_forward()
         expr = D_0 * ufl.exp(
             -E_D / as_fenics_constant(k_B, self.mesh.mesh) / self.temperature_fenics
         )
-        D_expr = fem.Expression(expr, self.V_DG_1.element.interpolation_points)
+        D_expr = fem.Expression(expr, V_1.element.interpolation_points)
         D.interpolate(D_expr)
+        D.x.scatter_forward()
         return D, D_expr
 
     def define_function_spaces(self, element_degree: int = 1):
@@ -1201,14 +1233,18 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
         self.update_post_processing_solutions()
 
-        if self.temperature_time_dependent:
-            # update global D if temperature time dependent or internal
-            # variables time dependent
-            # TODO: honestly, we probably don't need to do this at all
-            # SurfaceFlux quantities should use ufl.Expr for D instead of a fem.Function
-
-            for spe, D_global in self._species_to_D_global.items():
-                D_global.interpolate(self._species_to_D_global_expr[spe])
+        # Supplied temperature coefficients may be updated externally, including by
+        # a coupled heat solver. Refresh cached Arrhenius fields before exporting.
+        if self.temperature_time_dependent or isinstance(
+            self.temperature, fem.Constant | fem.Function
+        ):
+            for spe, D_expr in self._species_to_D_global_expr.items():
+                # Direct D inputs are already live coefficients, with no expression
+                # to interpolate. UFL tensors evaluate their dependencies themselves.
+                if D_expr is not None:
+                    D_global = self._species_to_D_global[spe]
+                    D_global.interpolate(D_expr)
+                    D_global.x.scatter_forward()
 
         for export in self.exports:
             # skip if it isn't time to export

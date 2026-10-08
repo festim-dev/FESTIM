@@ -203,8 +203,11 @@ class DirichletBCBase:
 
         # the penalty scales with D/h, like the consistency term it has to dominate,
         # which makes ``penalty`` a dimensionless parameter independent of the material
-        # and of the mesh size
-        return -D * ufl.inner(n, ufl.grad(u)) + alpha * D / h * (u - self.value_fenics)
+        # and of the mesh size. For an anisotropic D the scalar that sets that scale is
+        # the normal component n.D.n -- the conductance the boundary actually sees --
+        # and both expressions reduce to the scalar ones when D is a scalar
+        D_n = ufl.dot(n, D * n)
+        return -ufl.dot(D * ufl.grad(u), n) + alpha * D_n / h * (u - self.value_fenics)
 
     def weak_formulation(
         self,
@@ -239,7 +242,7 @@ class DirichletBCBase:
         form = self.numerical_flux(u, D, mesh) * v * ds_bc
 
         # symmetry term, making the bilinear form symmetric (and the L2 error optimal)
-        form += -D * ufl.inner(n, ufl.grad(v)) * (u - self.value_fenics) * ds_bc
+        form += -ufl.dot(D * ufl.grad(v), n) * (u - self.value_fenics) * ds_bc
 
         return form
 

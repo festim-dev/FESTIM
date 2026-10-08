@@ -417,6 +417,59 @@ For transient heat transfer simulations, thermal conductivity, heat capacity, an
 * :code:`heat_capacity`: Heat capacity (J/kg/K).
 * :code:`density`: Density (kg/m³).
 
+Tensor-valued Diffusivity
+-------------------------
+
+For diffusion that varies with direction, provide ``D_0`` as a square matrix
+matching the mesh geometry dimension:
+
+.. testcode:: tensor-diffusion
+
+    import festim as F
+
+    material = F.Material(D_0=[[2e-7, 0.0], [0.0, 5e-8]], E_D=0.2)
+
+The scalar ``E_D`` applies the same Arrhenius factor to every matrix entry.
+A matrix proportional to the identity represents isotropic diffusion.
+Scalar and tensor-valued materials can be used together in the same problem.
+
+To use different activation energies in different directions, construct the
+complete diffusivity with ``ufl.as_matrix`` and pass it as ``D``. Use the same
+mutable temperature coefficient for the tensor and the problem:
+
+.. testcode:: tensor-diffusion
+
+    from mpi4py import MPI
+    import dolfinx
+    from dolfinx import fem
+    import numpy as np
+    import ufl
+
+    mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 4, 4)
+    T = fem.Constant(mesh, dolfinx.default_scalar_type(400.0))
+    D = ufl.as_matrix([
+        [2e-7 * ufl.exp(-0.1 / (F.k_B * T)), 0.0],
+        [0.0, 5e-8 * ufl.exp(-0.3 / (F.k_B * T))],
+    ])
+    volume = F.VolumeSubdomain(
+        id=1,
+        material=F.Material(D=D),
+        locator=lambda x: np.full_like(x[0], True, dtype=bool),
+    )
+    model = F.HydrogenTransportProblem(
+        mesh=F.Mesh(mesh),
+        species=[F.Species("c")],
+        subdomains=[volume],
+        temperature=T,
+    )
+
+Updating ``T.value`` changes both diffusivity components according to their
+respective activation energies. Numeric nested arrays are converted to
+``fem.Constant`` objects. Arrays containing symbolic entries raise ``TypeError``;
+wrap these entries in ``ufl.as_matrix`` and pass the resulting tensor as ``D`` to
+preserve their dependence on temperature. Supplying ``D`` directly is currently
+supported for a single volume subdomain.
+
 Temperature-dependent Parameters
 ---------------------------------
 

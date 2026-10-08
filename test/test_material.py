@@ -1,8 +1,13 @@
+from mpi4py import MPI
+
+import dolfinx
 import numpy as np
 import pytest
+import ufl
 from dolfinx import fem
 
 import festim as F
+from festim.helpers import as_fenics_constant
 
 test_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
 
@@ -203,12 +208,18 @@ def test_raises_TypeError_when_E_D_is_not_correct_type():
         1,
         "coucou",
         lambda T: 1.0 + T,
+        [1.0, 2.0],
+        [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
     ],
 )
 def test_raises_TypeError_when_D_is_not_correct_type(input_value):
-    """Test that a TypeError is raised when D is not an fem.Function."""
+    """Test that a TypeError is raised when D is not one of the accepted types.
 
-    with pytest.raises(TypeError, match=r"D must be of type fem.Function"):
+    A scalar is deliberately still rejected: a constant diffusivity goes in as
+    ``D_0``/``E_D``. ``D`` takes a ready-made field or an anisotropic tensor.
+    """
+
+    with pytest.raises(TypeError, match=r"D must be"):
         F.Material(D=input_value)
 
 
@@ -246,3 +257,53 @@ def test_error_raised_when_D_and_D_0_both_None():
         match=r"D_0 and D cannot both be None. Please set one of them.",
     ):
         F.Material()
+
+
+@pytest.mark.parametrize(
+    "D_0, expected",
+    [(2.0, False), (np.eye(2), True), ([[2.0, 0.5], [0.5, 1.0]], True)],
+    ids=["scalar", "isotropic-tensor", "anisotropic-tensor"],
+)
+def test_diffusion_tensor_representation(D_0, expected):
+    mat = F.Material(D_0=D_0, E_D=0.1)
+    assert mat.is_tensor_valued() is expected
+
+
+def test_matrix_D_0_keeps_arrhenius():
+    """``D_0 exp(-E_D / kT)``, with the exponential scaling every entry."""
+    mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 4, 4)
+    D_0 = np.array([[2.0, 0.5], [0.5, 1.0]])
+    E_D, T = 0.2, 400.0
+    mat = F.Material(D_0=D_0.tolist(), E_D=E_D)
+    D = mat.get_diffusion_coefficient(mesh, as_fenics_constant(T, mesh))
+    assert D.ufl_shape == (2, 2)
+
+    V = fem.functionspace(mesh, ("DG", 0, (2, 2)))
+    f = fem.Function(V)
+    f.interpolate(fem.Expression(D, V.element.interpolation_points))
+    expected = D_0 * np.exp(-E_D / (F.k_B * T))
+    assert np.allclose(f.x.array.reshape(-1, 2, 2), expected)
+
+
+def test_matrix_given_as_D():
+    mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 4, 4)
+    mat = F.Material(D=[[3.0, 0.0], [0.0, 1.0]])
+    assert mat.is_tensor_valued()
+    assert mat.get_diffusion_coefficient(mesh).ufl_shape == (2, 2)
+
+
+def test_matrix_D_and_D_0_still_mutually_exclusive():
+    """The check must survive a matrix, whose truth value is ambiguous."""
+    with pytest.raises(ValueError, match="cannot be set at the same time"):
+        F.Material(D_0=np.eye(2), E_D=0.0, D=np.eye(2))
+
+
+@pytest.mark.parametrize("argument", ["D", "D_0"])
+@pytest.mark.parametrize("container", [list, tuple, np.asarray])
+def test_symbolic_arrays_require_ufl_matrix(argument, container):
+    """Symbolic entries must never be evaluated into a fixed numeric array."""
+    T = fem.Constant(test_mesh.mesh, dolfinx.default_scalar_type(400.0))
+    entries = [[ufl.exp(-0.1 / (F.k_B * T)), 0.0], [0.0, 1.0]]
+    material = F.Material(**{argument: container(entries)}, E_D=0.0)
+    with pytest.raises(TypeError, match=r"ufl\.as_matrix"):
+        material.get_diffusion_coefficient(test_mesh.mesh, T)
