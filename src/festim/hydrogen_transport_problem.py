@@ -773,11 +773,11 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 D = as_fenics_constant(D, self.mesh.mesh)
             return D, None
 
-        # an anisotropic material needs tensor-valued spaces to hold D_0 and D
-        anisotropic = any(
-            vol.material.is_anisotropic(species) for vol in self.volume_subdomains
+        # a tensor-valued diffusivity needs tensor-valued spaces to hold D_0 and D
+        tensor_valued = any(
+            vol.material.is_tensor_valued(species) for vol in self.volume_subdomains
         )
-        if anisotropic:
+        if tensor_valued:
             dim = self.mesh.mesh.geometry.dim
             V_0 = fem.functionspace(self.mesh.mesh, ("DG", 0, (dim, dim)))
             V_1 = fem.functionspace(self.mesh.mesh, ("DG", 1, (dim, dim)))
@@ -792,20 +792,31 @@ class HydrogenTransportProblem(problem.ProblemBase):
             cell_indices = self.volume_meshtags.find(vol.id)
 
             # replace values of D_0 and E_D by values from the material
-            if anisotropic:
-                block = np.asarray(vol.material.get_D_0(species=species)).reshape(-1)
+            if tensor_valued:
+                prefactor = np.asarray(vol.material.get_D_0(species=species))
+                if prefactor.ndim == 0:
+                    prefactor = prefactor * np.eye(dim)
+                if prefactor.shape != (dim, dim):
+                    raise ValueError(
+                        f"D_0 tensor must have shape {(dim, dim)} to match the "
+                        f"mesh geometry dimension, not {prefactor.shape}"
+                    )
                 dofs = V_0.dofmap.list[cell_indices].reshape(-1)
-                for component, entry in enumerate(block):
-                    D_0.x.array[block.size * dofs + component] = entry
+                # Use the space's block size even when a material supplied a scalar.
+                values = D_0.x.array.reshape(-1, V_0.dofmap.index_map_bs)
+                values[dofs] = prefactor.reshape(-1)
             else:
                 D_0.x.array[cell_indices] = vol.material.get_D_0(species=species)
             E_D.x.array[cell_indices] = vol.material.get_E_D(species=species)
 
+        D_0.x.scatter_forward()
+        E_D.x.scatter_forward()
         expr = D_0 * ufl.exp(
             -E_D / as_fenics_constant(k_B, self.mesh.mesh) / self.temperature_fenics
         )
         D_expr = fem.Expression(expr, V_1.element.interpolation_points)
         D.interpolate(D_expr)
+        D.x.scatter_forward()
         return D, D_expr
 
     def define_function_spaces(self, element_degree: int = 1):

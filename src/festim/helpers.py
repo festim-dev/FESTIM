@@ -43,9 +43,9 @@ def as_fenics_constant(
 ) -> fem.Constant:
     """Converts a value to a dolfinx.Constant.
 
-    Array-like values become tensor-valued constants, which is how an anisotropic
-    material property is supplied: a ``(dim, dim)`` nested list or array gives a
-    constant that multiplies a gradient as a matrix rather than as a scalar.
+    Array-like values become tensor-valued ``fem.Constant`` objects. A
+    ``(dim, dim)`` nested list or array supplies a material property that
+    multiplies a gradient as a matrix rather than as a scalar.
 
     Args:
         value: the value to convert
@@ -59,7 +59,7 @@ def as_fenics_constant(
             dolfinx.Constant
     """
     if isinstance(value, bool):
-        raise TypeError(f"Value must not be a bool, not {type(value)}")
+        raise TypeError("Boolean values are not supported")
     if isinstance(value, float | int):
         return fem.Constant(mesh, dolfinx.default_scalar_type(float(value)))
     elif isinstance(value, fem.Constant):

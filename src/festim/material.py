@@ -33,8 +33,8 @@ class Material:
     """Material class.
 
     Args:
-        D_0: the pre-exponential factor of the
-            diffusion coefficient (m2/s)
+        D_0: the pre-exponential factor of the diffusion coefficient (m2/s).
+            May be a scalar or a square matrix matching the mesh geometry dimension.
         E_D: the activation energy of the diffusion
             coeficient (eV)
         K_S_0: the pre-exponential factor of the
@@ -49,7 +49,13 @@ class Material:
             For single material problems one can use NONE. This does not work for
             multi-material problems
 
-        D: the diffusion coefficient of the material (m2/s)
+        D: the diffusion coefficient of the material (m2/s), supplied as a
+            fem.Function, fem.Constant, UFL expression or numeric square matrix.
+            For direction-dependent activation energies, build a tensor with
+            ``ufl.as_matrix`` using the same temperature coefficient supplied to
+            the problem. Nested numeric arrays are converted to constants;
+            wrap symbolic entries in ``ufl.as_matrix`` to preserve their dependence
+            on temperature.
 
     Attributes:
         D_0: the pre-exponential factor of the
@@ -149,8 +155,8 @@ class Material:
             self._D = value
         else:
             raise TypeError(
-                "D must be a fem.Function, a fem.Constant, a ufl expression or an "
-                f"array-like (for an anisotropic tensor), not {type(value)}"
+                "D must be a fem.Function, fem.Constant, ufl expression or a "
+                f"square array-like (for an anisotropic tensor), not {type(value)}"
             )
 
     @staticmethod
@@ -172,12 +178,11 @@ class Material:
         shape = getattr(value, "ufl_shape", None)
         return bool(shape) and len(shape) == 2
 
-    def is_anisotropic(self, species=None) -> bool:
+    def is_tensor_valued(self, species=None) -> bool:
         """Whether this material's diffusivity is a tensor rather than a scalar.
 
-        Anything reading ``D`` as a scalar -- a surface flux, a Nitsche penalty --
-        has to ask, because for a tensor the same expression has to be written
-        with the matrix product instead.
+        Used to select the function spaces for the global diffusion coefficient.
+        A tensor proportional to the identity is tensor-valued but isotropic.
         """
         if self.D is not None:
             return self._is_tensor(self.D)
@@ -334,8 +339,8 @@ class Material:
             # coefficient multiplies grad(u) as a matrix and the material is
             # anisotropic. E_D stays a scalar: one activation energy shared by
             # every direction. For per-direction activation energies, build the
-            # tensor yourself and pass it as ``D`` -- a ufl expression built from
-            # the problem's temperature stays temperature dependent.
+            # tensor with ufl.as_matrix and pass it as ``D``, using the same
+            # temperature coefficient supplied to the problem.
             D_0 = as_fenics_constant(self.D_0, mesh)
             E_D = as_fenics_constant(self.E_D, mesh)
 
