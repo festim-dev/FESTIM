@@ -525,6 +525,61 @@ def test_nitsche_reaches_at_ten_what_the_penalty_needs_thousands_for():
 
 
 @pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+@pytest.mark.parametrize("scalar_bottom", [False, True], ids=["rotated", "mixed"])
+@pytest.mark.parametrize("swap_interface_order", [False, True])
+def test_nitsche_tensor_interface_manufactured_solution(
+    scalar_bottom, swap_interface_order
+):
+    """Transmit the full tensor flux with a tangential concentration gradient."""
+    model, (bottom, top), H = build(
+        penalty=20.0, swap_interface_order=swap_interface_order, n=4
+    )
+    model.show_progress_bar = False
+    D_bot = 5.0 * np.eye(2) if scalar_bottom else np.array([[2.0, 0.4], [0.4, 1.0]])
+    D_top = np.array([[1.0, -0.2], [-0.2, 3.0]])
+    bottom.material.D_0 = 5.0 if scalar_bottom else D_bot
+    top.material.D_0 = D_top
+    model.interfaces[0].method = InterfaceMethod.nitsche
+    tangential_slope, bottom_slope = 0.3, 0.2
+    normal_flux = K_BOT * (D_bot[1, 0] * tangential_slope + D_bot[1, 1] * bottom_slope)
+    top_slope = (normal_flux / K_TOP - D_top[1, 0] * tangential_slope) / D_top[1, 1]
+
+    def exact_bottom(x):
+        return K_BOT * (1.0 + tangential_slope * x[0] + bottom_slope * (x[1] - 0.5))
+
+    def exact_top(x):
+        return K_TOP * (1.0 + tangential_slope * x[0] + top_slope * (x[1] - 0.5))
+
+    bottom_surf, top_surf = model.surface_subdomains
+    bottom_surf.locator = lambda x: (
+        (x[1] <= 0.5 + 1e-14)
+        & (np.isclose(x[0], 0) | np.isclose(x[0], 1) | np.isclose(x[1], 0))
+    )
+    top_surf.locator = lambda x: (
+        (x[1] >= 0.5 - 1e-14)
+        & (np.isclose(x[0], 0) | np.isclose(x[0], 1) | np.isclose(x[1], 1))
+    )
+    model.boundary_conditions = [
+        F.FixedConcentrationBC(bottom_surf, value=exact_bottom, species=H),
+        F.FixedConcentrationBC(top_surf, value=exact_top, species=H),
+    ]
+    model.initialise()
+    model.run()
+    for volume, exact in [(bottom, exact_bottom), (top, exact_top)]:
+        u = H.subdomain_to_post_processing_solution[volume]
+        mesh = u.function_space.mesh
+        error = dolfinx.fem.assemble_scalar(
+            dolfinx.fem.form(
+                (u - exact(ufl.SpatialCoordinate(mesh))) ** 2 * ufl.dx(domain=mesh)
+            )
+        )
+        assert mesh.comm.allreduce(error, op=MPI.SUM) < 1e-20
+    flux_bottom, flux_top = wall_fluxes(model)
+    assert flux_bottom == pytest.approx(normal_flux, rel=1e-10)
+    assert flux_top == pytest.approx(-normal_flux, rel=1e-10)
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
 def test_interface_method_survives_initialise():
     """``initialise`` must not overwrite a method set on the interface itself.
 

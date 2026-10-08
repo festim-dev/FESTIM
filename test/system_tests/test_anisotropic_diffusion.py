@@ -177,6 +177,163 @@ def test_direction_dependent_activation_energies_update_flux(axis):
         assert flux.value == pytest.approx(expected, rel=1e-10)
 
 
+@pytest.mark.parametrize("tensor", [False, True], ids=["scalar", "tensor"])
+@pytest.mark.parametrize("temperature_kind", ["constant", "function"])
+def test_arrhenius_flux_follows_supplied_temperature(tensor, temperature_kind):
+    """Cached diffusivity follows externally updated temperature coefficients."""
+    mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 4, 4)
+    if temperature_kind == "constant":
+        T = dolfinx.fem.Constant(mesh, dolfinx.default_scalar_type(400.0))
+    else:
+        T = dolfinx.fem.Function(dolfinx.fem.functionspace(mesh, ("Lagrange", 1)))
+        T.x.array[:] = 400.0
+    D_0 = np.diag([3.0, 1.0]) if tensor else 3.0
+    volume = F.VolumeSubdomain(
+        id=1,
+        material=F.Material(D_0=D_0, E_D=0.1),
+        locator=lambda x: np.full_like(x[0], True, dtype=bool),
+    )
+    inlet = F.SurfaceSubdomain(id=2, locator=lambda x: np.isclose(x[0], 0))
+    outlet = F.SurfaceSubdomain(id=3, locator=lambda x: np.isclose(x[0], 1))
+    c = F.Species("c")
+    flux = F.SurfaceFlux(field=c, surface=outlet)
+    model = F.HydrogenTransportProblem(
+        mesh=F.Mesh(mesh),
+        species=[c],
+        subdomains=[volume, inlet, outlet],
+        boundary_conditions=[
+            F.FixedConcentrationBC(subdomain=inlet, value=1.0, species=c),
+            F.FixedConcentrationBC(subdomain=outlet, value=0.0, species=c),
+        ],
+        temperature=T,
+        settings=F.Settings(atol=1e-14, rtol=1e-14, transient=False),
+        exports=[flux],
+    )
+    model.show_progress_bar = False
+    model.initialise()
+    for temperature in [400.0, 800.0]:
+        if temperature_kind == "constant":
+            T.value = temperature
+        else:
+            T.x.array[:] = temperature
+            T.x.scatter_forward()
+        model.run()
+        expected = 3.0 * np.exp(-0.1 / (F.k_B * temperature))
+        assert flux.value == pytest.approx(expected, rel=1e-10)
+
+
+@pytest.mark.parametrize(
+    "tensor, coefficient_kind",
+    [
+        (tensor, kind)
+        for tensor in [False, True]
+        for kind in ["constant", "ufl", "function"]
+    ]
+    + [(True, "array")],
+)
+def test_transient_temperature_with_direct_diffusivity(tensor, coefficient_kind):
+    """Direct coefficients survive post-processing during a temperature ramp."""
+    mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 4, 4)
+    value = np.diag([2.0, 1.0]) if tensor else dolfinx.default_scalar_type(2.0)
+    if coefficient_kind == "constant":
+        D = dolfinx.fem.Constant(mesh, value)
+    elif coefficient_kind == "ufl":
+        D = ufl.as_matrix(value) if tensor else ufl.as_ufl(value)
+    elif coefficient_kind == "function":
+        element = ("DG", 0, (2, 2)) if tensor else ("DG", 0)
+        D = dolfinx.fem.Function(dolfinx.fem.functionspace(mesh, element))
+        D.x.array.reshape(-1, 4 if tensor else 1)[:] = np.asarray(value).reshape(-1)
+        D.x.scatter_forward()
+    else:
+        D = value.tolist()
+    volume = F.VolumeSubdomain(
+        id=1,
+        material=F.Material(D=D),
+        locator=lambda x: np.full_like(x[0], True, dtype=bool),
+    )
+    inlet = F.SurfaceSubdomain(id=2, locator=lambda x: np.isclose(x[0], 0))
+    outlet = F.SurfaceSubdomain(id=3, locator=lambda x: np.isclose(x[0], 1))
+    c = F.Species("c")
+    flux = F.SurfaceFlux(field=c, surface=outlet)
+    model = F.HydrogenTransportProblem(
+        mesh=F.Mesh(mesh),
+        species=[c],
+        subdomains=[volume, inlet, outlet],
+        boundary_conditions=[
+            F.FixedConcentrationBC(subdomain=inlet, value=1.0, species=c),
+            F.FixedConcentrationBC(subdomain=outlet, value=0.0, species=c),
+        ],
+        initial_conditions=[
+            F.InitialConcentration(value=lambda x: 1.0 - x[0], species=c, volume=volume)
+        ],
+        temperature=lambda t: 400.0 + 100.0 * t,
+        settings=F.Settings(
+            atol=1e-12, rtol=1e-12, transient=True, stepsize=0.1, final_time=0.2
+        ),
+        exports=[flux],
+    )
+    model.show_progress_bar = False
+    model.initialise()
+    model.run()
+    assert float(model.temperature_fenics) == pytest.approx(420.0)
+    assert np.allclose(flux.data, 2.0)
+
+
+@pytest.mark.parametrize("tensor", [False, True], ids=["scalar", "tensor"])
+def test_arrhenius_flux_follows_coupled_heat_solver(tensor):
+    """Exported flux uses the heat solver's temperature at each time step."""
+    mesh = F.Mesh(dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 4, 4))
+    material = F.Material(
+        D_0=np.diag([3.0, 1.0]) if tensor else 3.0,
+        E_D=0.1,
+        thermal_conductivity=1.0,
+        density=1.0,
+        heat_capacity=1.0,
+    )
+    volume = F.VolumeSubdomain(
+        id=1,
+        material=material,
+        locator=lambda x: np.full_like(x[0], True, dtype=bool),
+    )
+    heat = F.HeatTransferProblem(
+        mesh=mesh,
+        subdomains=[volume],
+        sources=[F.HeatSource(value=400.0, volume=volume)],
+        initial_condition=F.InitialTemperature(value=400.0, volume=volume),
+        settings=F.Settings(
+            atol=1e-12, rtol=1e-12, transient=True, stepsize=0.5, final_time=1.0
+        ),
+    )
+    inlet = F.SurfaceSubdomain(id=2, locator=lambda x: np.isclose(x[0], 0))
+    outlet = F.SurfaceSubdomain(id=3, locator=lambda x: np.isclose(x[0], 1))
+    c = F.Species("c")
+    flux = F.SurfaceFlux(field=c, surface=outlet)
+    hydrogen = F.HydrogenTransportProblem(
+        mesh=mesh,
+        species=[c],
+        subdomains=[volume, inlet, outlet],
+        boundary_conditions=[
+            F.FixedConcentrationBC(subdomain=inlet, value=1.0, species=c),
+            F.FixedConcentrationBC(subdomain=outlet, value=0.0, species=c),
+        ],
+        initial_conditions=[
+            F.InitialConcentration(value=lambda x: 1.0 - x[0], species=c, volume=volume)
+        ],
+        settings=F.Settings(
+            atol=1e-12, rtol=1e-12, transient=True, stepsize=0.5, final_time=1.0
+        ),
+        exports=[flux],
+    )
+    hydrogen.show_progress_bar = False
+    coupled = F.CoupledTransientHeatTransferHydrogenTransport(heat, hydrogen)
+    coupled.initialise()
+    for temperature in [600.0, 800.0]:
+        coupled.iterate()
+        assert np.allclose(heat.u.x.array, temperature)
+        expected = 3.0 * np.exp(-0.1 / (F.k_B * temperature))
+        assert flux.value == pytest.approx(expected, rel=1e-10)
+
+
 def permeation(D, n_cells=24):
     """A slab held at 1 and 0 on opposite faces, returning both surface fluxes."""
     mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, n_cells, n_cells)

@@ -393,6 +393,26 @@ def test_define_D_global_rejects_tensor_dimension_mismatch():
         model.define_D_global(c)
 
 
+def test_define_D_global_rejects_symbolic_array_entries():
+    """The export path must not freeze symbolic prefactors into numeric values."""
+    mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 2, 2)
+    T = fem.Constant(mesh, dolfinx.default_scalar_type(400.0))
+    volume = F.VolumeSubdomain(
+        id=1,
+        material=F.Material(D_0=[[T, 0.0], [0.0, 1.0]], E_D=0.0),
+        locator=lambda x: np.full_like(x[0], True, dtype=bool),
+    )
+    c = F.Species("c")
+    model = F.HydrogenTransportProblem(
+        mesh=F.Mesh(mesh), subdomains=[volume], species=[c], temperature=T
+    )
+    model.define_function_spaces()
+    model.define_meshtags_and_measures()
+    model.define_temperature()
+    with pytest.raises(TypeError, match=r"ufl\.as_matrix"):
+        model.define_D_global(c)
+
+
 def test_initialise_exports_multiple_exports_same_species():
     """Test that the diffusion coefficient within the D_global object function is the
     same for multiple exports of the same species, and that D_global object is only

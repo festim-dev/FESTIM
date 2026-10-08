@@ -465,9 +465,10 @@ mutable temperature coefficient for the tensor and the problem:
 
 Updating ``T.value`` changes both diffusivity components according to their
 respective activation energies. Numeric nested arrays are converted to
-``fem.Constant`` objects; wrap symbolic entries in ``ufl.as_matrix`` to preserve
-their dependence on temperature. Supplying ``D`` directly is currently supported
-for a single volume subdomain.
+``fem.Constant`` objects. Arrays containing symbolic entries raise ``TypeError``;
+wrap these entries in ``ufl.as_matrix`` and pass the resulting tensor as ``D`` to
+preserve their dependence on temperature. Supplying ``D`` directly is currently
+supported for a single volume subdomain.
 
 Temperature-dependent Parameters
 ---------------------------------

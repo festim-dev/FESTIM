@@ -3,6 +3,7 @@ from mpi4py import MPI
 import dolfinx
 import numpy as np
 import pytest
+import ufl
 from dolfinx import fem
 
 import festim as F
@@ -295,3 +296,14 @@ def test_matrix_D_and_D_0_still_mutually_exclusive():
     """The check must survive a matrix, whose truth value is ambiguous."""
     with pytest.raises(ValueError, match="cannot be set at the same time"):
         F.Material(D_0=np.eye(2), E_D=0.0, D=np.eye(2))
+
+
+@pytest.mark.parametrize("argument", ["D", "D_0"])
+@pytest.mark.parametrize("container", [list, tuple, np.asarray])
+def test_symbolic_arrays_require_ufl_matrix(argument, container):
+    """Symbolic entries must never be evaluated into a fixed numeric array."""
+    T = fem.Constant(test_mesh.mesh, dolfinx.default_scalar_type(400.0))
+    entries = [[ufl.exp(-0.1 / (F.k_B * T)), 0.0], [0.0, 1.0]]
+    material = F.Material(**{argument: container(entries)}, E_D=0.0)
+    with pytest.raises(TypeError, match=r"ufl\.as_matrix"):
+        material.get_diffusion_coefficient(test_mesh.mesh, T)
