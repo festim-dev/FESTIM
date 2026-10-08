@@ -37,6 +37,17 @@ def spatial_coordinate(mesh):
     return coordinate
 
 
+def _as_numeric_array(value):
+    """Convert numeric entries without evaluating symbolic coefficients."""
+    array = np.asarray(value)
+    if any(isinstance(entry, ufl.core.expr.Expr) for entry in array.flat):
+        raise TypeError(
+            "Symbolic array entries cannot be converted to fem.Constant; "
+            "use ufl.as_matrix to construct a symbolic tensor"
+        )
+    return np.asarray(array, dtype=dolfinx.default_scalar_type)
+
+
 def as_fenics_constant(
     value: float | int | np.ndarray | list | tuple | fem.Constant,
     mesh: dolfinx.mesh.Mesh,
@@ -55,8 +66,8 @@ def as_fenics_constant(
         The converted value
 
     Raises:
-        TypeError: if the value is not a float, an int, an array-like or a
-            dolfinx.Constant
+        TypeError: if the value is not a float, an int, a numeric array-like or a
+            dolfinx.Constant, or if an array contains symbolic entries
     """
     if isinstance(value, bool):
         raise TypeError("Boolean values are not supported")
@@ -65,8 +76,7 @@ def as_fenics_constant(
     elif isinstance(value, fem.Constant):
         return value
     elif isinstance(value, np.ndarray | list | tuple):
-        array = np.asarray(value, dtype=dolfinx.default_scalar_type)
-        return fem.Constant(mesh, array)
+        return fem.Constant(mesh, _as_numeric_array(value))
     else:
         raise TypeError(
             "Value must be a float, an int, an array-like or a dolfinx.Constant, "

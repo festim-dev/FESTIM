@@ -44,6 +44,7 @@ from festim.enclosure.openings import EnclosureConnection
 from festim.helpers import (
     KSPMonitor,
     SnesMonitor,
+    _as_numeric_array,
     as_fenics_constant,
     convergenceTest,
     is_it_time_to_export,
@@ -793,7 +794,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
             # replace values of D_0 and E_D by values from the material
             if tensor_valued:
-                prefactor = np.asarray(vol.material.get_D_0(species=species))
+                prefactor = _as_numeric_array(vol.material.get_D_0(species=species))
                 if prefactor.ndim == 0:
                     prefactor = prefactor * np.eye(dim)
                 if prefactor.shape != (dim, dim):
@@ -1232,14 +1233,18 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
         self.update_post_processing_solutions()
 
-        if self.temperature_time_dependent:
-            # update global D if temperature time dependent or internal
-            # variables time dependent
-            # TODO: honestly, we probably don't need to do this at all
-            # SurfaceFlux quantities should use ufl.Expr for D instead of a fem.Function
-
-            for spe, D_global in self._species_to_D_global.items():
-                D_global.interpolate(self._species_to_D_global_expr[spe])
+        # Supplied temperature coefficients may be updated externally, including by
+        # a coupled heat solver. Refresh cached Arrhenius fields before exporting.
+        if self.temperature_time_dependent or isinstance(
+            self.temperature, fem.Constant | fem.Function
+        ):
+            for spe, D_expr in self._species_to_D_global_expr.items():
+                # Direct D inputs are already live coefficients, with no expression
+                # to interpolate. UFL tensors evaluate their dependencies themselves.
+                if D_expr is not None:
+                    D_global = self._species_to_D_global[spe]
+                    D_global.interpolate(D_expr)
+                    D_global.x.scatter_forward()
 
         for export in self.exports:
             # skip if it isn't time to export
