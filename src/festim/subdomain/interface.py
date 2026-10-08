@@ -549,13 +549,16 @@ class Interface(InterfaceBase):
 
         def flux(u, D):
             """The diffusive flux of ``u`` through the interface, along n_0."""
-            return D * ufl.dot(ufl.grad(u), n_0)
+            return ufl.dot(D * ufl.grad(u), n_0)
 
         # {D grad(u) . n}: at the exact solution both sides equal the transmitted
         # flux, so this term reproduces it and the two below vanish
         avg_flux = 0.5 * (flux(u_0, D_0) + flux(u_1, D_1))
-        # gamma * D / h : turns the concentration jump into a flux
-        stabilisation = self.penalty_term * (D_0 + D_1) / (h_0 + h_1)
+        # The penalty scales with the scalar normal conductance on either side.
+        # For scalar diffusivities this reduces to the existing D / h scale.
+        D_n_0 = ufl.dot(n_0, D_0 * n_0)
+        D_n_1 = ufl.dot(n_0, D_1 * n_0)
+        stabilisation = self.penalty_term * (D_n_0 + D_n_1) / (h_0 + h_1)
 
         # consistency
         F_0 = -avg_flux * v_0 * dS(self.id)
