@@ -132,7 +132,12 @@ class DirichletBCBase:
             if isinstance(function_space, tuple)
             else function_space.mesh
         )
-        if facet_meshtags.topology != mesh.topology._cpp_object:
+        # MeshTags.topology is the cpp object in dolfinx <= 0.11 and the python
+        # wrapper afterwards, so compare the underlying cpp objects
+        tags_topology = getattr(
+            facet_meshtags.topology, "_cpp_object", facet_meshtags.topology
+        )
+        if tags_topology != mesh.topology._cpp_object:
             raise ValueError(
                 "Mesh of function-space is not the same as the one used for the meshtags"  # noqa: E501
             )
