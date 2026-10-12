@@ -50,12 +50,9 @@ class Material:
             multi-material problems
 
         D: the diffusion coefficient of the material (m2/s), supplied as a
-            fem.Function, fem.Constant, UFL expression or numeric square matrix.
-            For direction-dependent activation energies, build a tensor with
-            ``ufl.as_matrix`` using the same temperature coefficient supplied to
-            the problem. Nested numeric arrays are converted to constants;
-            wrap symbolic entries in ``ufl.as_matrix`` to preserve their dependence
-            on temperature.
+            fem.Function, fem.Constant or numeric square matrix. Nested numeric
+            arrays are converted to constants. UFL expressions and arrays
+            containing symbolic entries are not supported.
 
     Attributes:
         D_0: the pre-exponential factor of the
@@ -103,7 +100,7 @@ class Material:
         heat_capacity: float | None = None,
         name: str | None = None,
         solubility_law: SolubilityLaw | str = SolubilityLaw.NONE,
-        D: fem.Function | None = None,
+        D: fem.Function | fem.Constant | np.ndarray | list | tuple | None = None,
     ) -> None:
         self.D_0 = D_0
         self.E_D = E_D
@@ -147,15 +144,15 @@ class Material:
     def D(self, value):
         if value is None:
             self._D = None
-        elif isinstance(
-            value, fem.Function | fem.Constant | ufl.core.expr.Expr
-        ) or self._is_square_matrix(value):
+        elif isinstance(value, fem.Function | fem.Constant) or self._is_square_matrix(
+            value
+        ):
             # array-like values are held as given and turned into a tensor constant
             # in get_diffusion_coefficient, which is the first point a mesh is known
             self._D = value
         else:
             raise TypeError(
-                "D must be a fem.Function, fem.Constant, ufl expression or a "
+                "D must be a fem.Function, fem.Constant or a numeric "
                 f"square array-like (for an anisotropic tensor), not {type(value)}"
             )
 
@@ -338,9 +335,7 @@ class Material:
             # an array-like D_0 becomes a tensor constant, so the returned
             # coefficient multiplies grad(u) as a matrix and the material is
             # anisotropic. E_D stays a scalar: one activation energy shared by
-            # every direction. For per-direction activation energies, build the
-            # tensor with ufl.as_matrix and pass it as ``D``, using the same
-            # temperature coefficient supplied to the problem.
+            # every direction.
             D_0 = as_fenics_constant(self.D_0, mesh)
             E_D = as_fenics_constant(self.E_D, mesh)
 

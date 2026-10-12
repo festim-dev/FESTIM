@@ -300,10 +300,20 @@ def test_matrix_D_and_D_0_still_mutually_exclusive():
 
 @pytest.mark.parametrize("argument", ["D", "D_0"])
 @pytest.mark.parametrize("container", [list, tuple, np.asarray])
-def test_symbolic_arrays_require_ufl_matrix(argument, container):
+def test_symbolic_arrays_are_rejected(argument, container):
     """Symbolic entries must never be evaluated into a fixed numeric array."""
     T = fem.Constant(test_mesh.mesh, dolfinx.default_scalar_type(400.0))
     entries = [[ufl.exp(-0.1 / (F.k_B * T)), 0.0], [0.0, 1.0]]
     material = F.Material(**{argument: container(entries)}, E_D=0.0)
-    with pytest.raises(TypeError, match=r"ufl\.as_matrix"):
+    with pytest.raises(TypeError, match="Symbolic array entries"):
         material.get_diffusion_coefficient(test_mesh.mesh, T)
+
+
+@pytest.mark.parametrize("tensor", [False, True], ids=["scalar", "tensor"])
+@pytest.mark.parametrize("temperature_dependent", [False, True])
+def test_ufl_diffusivity_is_rejected(tensor, temperature_dependent):
+    T = fem.Constant(test_mesh.mesh, dolfinx.default_scalar_type(400.0))
+    value = ufl.exp(-0.1 / (F.k_B * T)) if temperature_dependent else ufl.as_ufl(2.0)
+    D = ufl.as_matrix([[value, 0.0], [0.0, value]]) if tensor else value
+    with pytest.raises(TypeError, match="D must be"):
+        F.Material(D=D)

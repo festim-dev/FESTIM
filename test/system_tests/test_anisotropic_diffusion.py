@@ -5,8 +5,6 @@ lattice conducts differently along different directions, and the material
 property that describes that is a second-rank tensor. ``D_0`` may therefore be
 given as a matrix, with ``E_D`` staying a scalar -- one activation energy shared
 by every direction, the prefactor carrying the anisotropy.
-For direction-dependent activation energies, ``D`` can instead be a tensor
-constructed with ``ufl.as_matrix`` from the problem's temperature coefficient.
 
 Manufactured solution, chosen so that it exercises the off-diagonal entries::
 
@@ -134,49 +132,6 @@ def test_matrix_given_as_D_matches_D_0():
     assert run(24, D, as_matrix_D=True) == pytest.approx(run(24, D), rel=1e-10)
 
 
-@pytest.mark.parametrize("axis", [0, 1], ids=["x", "y"])
-def test_direction_dependent_activation_energies_update_flux(axis):
-    """A symbolic tensor follows temperature changes in the solve and the export."""
-    mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 4, 4)
-    T = dolfinx.fem.Constant(mesh, dolfinx.default_scalar_type(400.0))
-    D_0 = [2.0, 3.0]
-    E_D = [0.1, 0.3]
-    D = ufl.as_matrix(
-        [
-            [D_0[0] * ufl.exp(-E_D[0] / (F.k_B * T)), 0.0],
-            [0.0, D_0[1] * ufl.exp(-E_D[1] / (F.k_B * T))],
-        ]
-    )
-    volume = F.VolumeSubdomain(
-        id=1,
-        material=F.Material(D=D),
-        locator=lambda x: np.full_like(x[0], True, dtype=bool),
-    )
-    inlet = F.SurfaceSubdomain(id=2, locator=lambda x: np.isclose(x[axis], 0))
-    outlet = F.SurfaceSubdomain(id=3, locator=lambda x: np.isclose(x[axis], 1))
-    c = F.Species("c")
-    flux = F.SurfaceFlux(field=c, surface=outlet)
-    model = F.HydrogenTransportProblem(
-        mesh=F.Mesh(mesh),
-        species=[c],
-        subdomains=[volume, inlet, outlet],
-        boundary_conditions=[
-            F.FixedConcentrationBC(subdomain=inlet, value=1.0, species=c),
-            F.FixedConcentrationBC(subdomain=outlet, value=0.0, species=c),
-        ],
-        temperature=T,
-        settings=F.Settings(atol=1e-14, rtol=1e-14, transient=False),
-        exports=[flux],
-    )
-    model.show_progress_bar = False
-    model.initialise()
-    for temperature in [400.0, 800.0]:
-        T.value = temperature
-        model.run()
-        expected = D_0[axis] * np.exp(-E_D[axis] / (F.k_B * temperature))
-        assert flux.value == pytest.approx(expected, rel=1e-10)
-
-
 @pytest.mark.parametrize("tensor", [False, True], ids=["scalar", "tensor"])
 @pytest.mark.parametrize("temperature_kind", ["constant", "function"])
 def test_arrhenius_flux_follows_supplied_temperature(tensor, temperature_kind):
@@ -224,11 +179,7 @@ def test_arrhenius_flux_follows_supplied_temperature(tensor, temperature_kind):
 
 @pytest.mark.parametrize(
     "tensor, coefficient_kind",
-    [
-        (tensor, kind)
-        for tensor in [False, True]
-        for kind in ["constant", "ufl", "function"]
-    ]
+    [(tensor, kind) for tensor in [False, True] for kind in ["constant", "function"]]
     + [(True, "array")],
 )
 def test_transient_temperature_with_direct_diffusivity(tensor, coefficient_kind):
@@ -237,8 +188,6 @@ def test_transient_temperature_with_direct_diffusivity(tensor, coefficient_kind)
     value = np.diag([2.0, 1.0]) if tensor else dolfinx.default_scalar_type(2.0)
     if coefficient_kind == "constant":
         D = dolfinx.fem.Constant(mesh, value)
-    elif coefficient_kind == "ufl":
-        D = ufl.as_matrix(value) if tensor else ufl.as_ufl(value)
     elif coefficient_kind == "function":
         element = ("DG", 0, (2, 2)) if tensor else ("DG", 0)
         D = dolfinx.fem.Function(dolfinx.fem.functionspace(mesh, element))

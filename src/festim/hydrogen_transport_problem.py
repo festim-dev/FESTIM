@@ -1240,7 +1240,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         ):
             for spe, D_expr in self._species_to_D_global_expr.items():
                 # Direct D inputs are already live coefficients, with no expression
-                # to interpolate. UFL tensors evaluate their dependencies themselves.
+                # to interpolate.
                 if D_expr is not None:
                     D_global = self._species_to_D_global[spe]
                     D_global.interpolate(D_expr)

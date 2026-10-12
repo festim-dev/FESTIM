@@ -409,7 +409,7 @@ def test_define_D_global_rejects_symbolic_array_entries():
     model.define_function_spaces()
     model.define_meshtags_and_measures()
     model.define_temperature()
-    with pytest.raises(TypeError, match=r"ufl\.as_matrix"):
+    with pytest.raises(TypeError, match="Symbolic array entries"):
         model.define_D_global(c)
 
 

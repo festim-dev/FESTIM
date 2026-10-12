@@ -43,7 +43,7 @@ def _as_numeric_array(value):
     if any(isinstance(entry, ufl.core.expr.Expr) for entry in array.flat):
         raise TypeError(
             "Symbolic array entries cannot be converted to fem.Constant; "
-            "use ufl.as_matrix to construct a symbolic tensor"
+            "array-like values must contain only numeric entries"
         )
     return np.asarray(array, dtype=dolfinx.default_scalar_type)
 
