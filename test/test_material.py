@@ -269,6 +269,25 @@ def test_diffusion_tensor_representation(D_0, expected):
     assert mat.is_tensor_valued() is expected
 
 
+@pytest.mark.parametrize(
+    "prefactor, species, error",
+    [
+        ([1.0, 2.0], None, TypeError),
+        ({"known": np.eye(2)}, None, ValueError),
+        ({"known": np.eye(2)}, F.Species("unknown"), ValueError),
+    ],
+    ids=["invalid-prefactor", "missing-species", "unknown-species"],
+)
+def test_tensor_detection_falls_back_without_hiding_prefactor_errors(
+    prefactor, species, error
+):
+    """Shape detection is tolerant, but retrieving invalid prefactors still fails."""
+    mat = F.Material(D_0=prefactor, E_D=0.0)
+    assert mat.is_tensor_valued(species) is False
+    with pytest.raises(error):
+        mat.get_D_0(species)
+
+
 def test_matrix_D_0_keeps_arrhenius():
     """``D_0 exp(-E_D / kT)``, with the exponential scaling every entry."""
     mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 4, 4)

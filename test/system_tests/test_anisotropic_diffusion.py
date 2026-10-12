@@ -61,7 +61,7 @@ def run(n, D, temperature=500.0, E_D=0.0, as_matrix_D=False):
             | np.isclose(x[1], 1)
         ),
     )
-    c = F.Species("c")
+    c = F.Species("c", subdomains=[volume])
 
     pi = np.pi
 
@@ -71,7 +71,7 @@ def run(n, D, temperature=500.0, E_D=0.0, as_matrix_D=False):
             - 2 * D_lab[0, 1] * ufl.cos(pi * x[0]) * ufl.cos(pi * x[1])
         )
 
-    model = F.HydrogenTransportProblem(
+    model = F.HydrogenTransportProblemDiscontinuous(
         mesh=F.Mesh(mesh),
         species=[c],
         subdomains=[volume, boundary],
@@ -89,7 +89,7 @@ def run(n, D, temperature=500.0, E_D=0.0, as_matrix_D=False):
     def exact(x):
         return np.sin(pi * x[0]) * np.sin(pi * x[1])
 
-    return error_L2(c.post_processing_solution, exact)
+    return error_L2(c.subdomain_to_post_processing_solution[volume], exact)
 
 
 @pytest.mark.parametrize(
@@ -135,7 +135,7 @@ def test_matrix_given_as_D_matches_D_0():
 @pytest.mark.parametrize("tensor", [False, True], ids=["scalar", "tensor"])
 @pytest.mark.parametrize("temperature_kind", ["constant", "function"])
 def test_arrhenius_flux_follows_supplied_temperature(tensor, temperature_kind):
-    """Cached diffusivity follows externally updated temperature coefficients."""
+    """Diffusivity follows externally updated temperature coefficients."""
     mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 4, 4)
     if temperature_kind == "constant":
         T = dolfinx.fem.Constant(mesh, dolfinx.default_scalar_type(400.0))
@@ -150,9 +150,9 @@ def test_arrhenius_flux_follows_supplied_temperature(tensor, temperature_kind):
     )
     inlet = F.SurfaceSubdomain(id=2, locator=lambda x: np.isclose(x[0], 0))
     outlet = F.SurfaceSubdomain(id=3, locator=lambda x: np.isclose(x[0], 1))
-    c = F.Species("c")
+    c = F.Species("c", subdomains=[volume])
     flux = F.SurfaceFlux(field=c, surface=outlet)
-    model = F.HydrogenTransportProblem(
+    model = F.HydrogenTransportProblemDiscontinuous(
         mesh=F.Mesh(mesh),
         species=[c],
         subdomains=[volume, inlet, outlet],
@@ -202,9 +202,9 @@ def test_transient_temperature_with_direct_diffusivity(tensor, coefficient_kind)
     )
     inlet = F.SurfaceSubdomain(id=2, locator=lambda x: np.isclose(x[0], 0))
     outlet = F.SurfaceSubdomain(id=3, locator=lambda x: np.isclose(x[0], 1))
-    c = F.Species("c")
+    c = F.Species("c", subdomains=[volume])
     flux = F.SurfaceFlux(field=c, surface=outlet)
-    model = F.HydrogenTransportProblem(
+    model = F.HydrogenTransportProblemDiscontinuous(
         mesh=F.Mesh(mesh),
         species=[c],
         subdomains=[volume, inlet, outlet],
@@ -255,9 +255,9 @@ def test_arrhenius_flux_follows_coupled_heat_solver(tensor):
     )
     inlet = F.SurfaceSubdomain(id=2, locator=lambda x: np.isclose(x[0], 0))
     outlet = F.SurfaceSubdomain(id=3, locator=lambda x: np.isclose(x[0], 1))
-    c = F.Species("c")
+    c = F.Species("c", subdomains=[volume])
     flux = F.SurfaceFlux(field=c, surface=outlet)
-    hydrogen = F.HydrogenTransportProblem(
+    hydrogen = F.HydrogenTransportProblemDiscontinuous(
         mesh=mesh,
         species=[c],
         subdomains=[volume, inlet, outlet],
@@ -274,10 +274,14 @@ def test_arrhenius_flux_follows_coupled_heat_solver(tensor):
         exports=[flux],
     )
     hydrogen.show_progress_bar = False
-    coupled = F.CoupledTransientHeatTransferHydrogenTransport(heat, hydrogen)
-    coupled.initialise()
+    heat.show_progress_bar = False
+    heat.initialise()
+    hydrogen.temperature = heat.u
+    hydrogen.initialise()
     for temperature in [600.0, 800.0]:
-        coupled.iterate()
+        heat.iterate()
+        hydrogen.iterate()
+        assert float(hydrogen.t) == pytest.approx(float(heat.t))
         assert np.allclose(heat.u.x.array, temperature)
         expected = 3.0 * np.exp(-0.1 / (F.k_B * temperature))
         assert flux.value == pytest.approx(expected, rel=1e-10)
@@ -293,13 +297,13 @@ def permeation(D, n_cells=24):
     )
     left = F.SurfaceSubdomain(id=2, locator=lambda x: np.isclose(x[0], 0))
     right = F.SurfaceSubdomain(id=3, locator=lambda x: np.isclose(x[0], 1))
-    c = F.Species("c")
+    c = F.Species("c", subdomains=[volume])
     fluxes = [
         F.SurfaceFlux(field=c, surface=left),
         F.SurfaceFlux(field=c, surface=right),
     ]
 
-    model = F.HydrogenTransportProblem(
+    model = F.HydrogenTransportProblemDiscontinuous(
         mesh=F.Mesh(mesh),
         species=[c],
         subdomains=[volume, left, right],
@@ -314,7 +318,7 @@ def permeation(D, n_cells=24):
     model.show_progress_bar = False
     model.initialise()
     model.run()
-    return fluxes, c, mesh
+    return fluxes, c, model
 
 
 def test_anisotropic_surface_flux_diagonal():
@@ -341,22 +345,20 @@ def test_anisotropic_surface_flux_off_diagonal():
     off-diagonal entries would still produce a number -- and a wrong one.
     """
     D = rotate([3.0, 0.5], 0.35)
-    fluxes, c, mesh = permeation(D)
+    fluxes, c, model = permeation(D)
+    mesh = model.mesh.mesh
+    volume = model.volume_subdomains[0]
+    solution = c.subdomain_to_post_processing_solution[volume]
 
     n = ufl.FacetNormal(mesh)
-    facets = dolfinx.mesh.locate_entities_boundary(
-        mesh, mesh.topology.dim - 1, lambda x: np.isclose(x[0], 1.0)
-    )
-    tags = dolfinx.mesh.meshtags(
-        mesh, mesh.topology.dim - 1, np.sort(facets), np.full(len(facets), 1, np.int32)
-    )
-    ds = ufl.Measure("ds", domain=mesh, subdomain_data=tags)
     D_ufl = ufl.as_matrix(D.tolist())
-    by_hand = dolfinx.fem.assemble_scalar(
+    by_hand_local = dolfinx.fem.assemble_scalar(
         dolfinx.fem.form(
-            -ufl.dot(D_ufl * ufl.grad(c.post_processing_solution), n) * ds(1)
+            -ufl.dot(D_ufl * ufl.grad(solution), n) * model.ds(fluxes[1].surface.id),
+            entity_maps=[volume.cell_map],
         )
     )
+    by_hand = mesh.comm.allreduce(by_hand_local, op=MPI.SUM)
     assert fluxes[1].value == pytest.approx(by_hand, rel=1e-10)
     # and the slab conserves: what goes in comes out
     assert fluxes[0].value + fluxes[1].value == pytest.approx(0.0, abs=1e-10)
@@ -379,10 +381,10 @@ def outlet_flux_with_inlet(enforce_weakly, D):
     )
     left = F.SurfaceSubdomain(id=2, locator=lambda x: np.isclose(x[0], 0))
     right = F.SurfaceSubdomain(id=3, locator=lambda x: np.isclose(x[0], 1))
-    c = F.Species("c")
+    c = F.Species("c", subdomains=[volume])
     flux = F.SurfaceFlux(field=c, surface=right)
 
-    model = F.HydrogenTransportProblem(
+    model = F.HydrogenTransportProblemDiscontinuous(
         mesh=F.Mesh(mesh),
         species=[c],
         subdomains=[volume, left, right],

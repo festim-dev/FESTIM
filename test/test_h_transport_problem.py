@@ -322,8 +322,105 @@ def test_define_D_global_different_materials():
 @pytest.mark.parametrize("dim", [2, 3])
 @pytest.mark.parametrize("scalar_left", [True, False], ids=["mixed", "tensors"])
 @pytest.mark.parametrize("reverse_subdomains", [False, True])
-def test_define_D_global_tensor_materials(dim, scalar_left, reverse_subdomains):
-    """Global tensors preserve every material's components and Arrhenius factor."""
+def test_legacy_global_diffusivity_preserves_material_tensors(
+    dim, scalar_left, reverse_subdomains
+):
+    """The legacy export field preserves tensor components and scalar promotion."""
+    if dim == 2:
+        mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 4, 2)
+    else:
+        mesh = dolfinx.mesh.create_unit_cube(MPI.COMM_WORLD, 4, 2, 2)
+    temperature = fem.Constant(mesh, default_scalar_type(400.0))
+    left_tensor = 2.0 * np.eye(dim)
+    left_tensor[0, 1] = left_tensor[1, 0] = 0.2
+    left_prefactor = 2.0 if scalar_left else left_tensor
+    right_prefactor = np.diag(np.arange(1.0, dim + 1.0))
+    right_prefactor[0, 1] = right_prefactor[1, 0] = 0.5
+    volumes = [
+        F.VolumeSubdomain(
+            id=1,
+            material=F.Material(D_0=left_prefactor, E_D=0.1),
+            locator=lambda x: x[0] <= 0.5 + 1e-14,
+        ),
+        F.VolumeSubdomain(
+            id=2,
+            material=F.Material(D_0=right_prefactor, E_D=0.2),
+            locator=lambda x: x[0] >= 0.5 - 1e-14,
+        ),
+    ]
+    if reverse_subdomains:
+        volumes.reverse()
+    c = F.Species("c")
+    model = F.HydrogenTransportProblem(
+        mesh=F.Mesh(mesh), subdomains=volumes, species=[c], temperature=temperature
+    )
+    model.define_function_spaces()
+    model.define_meshtags_and_measures()
+    model.define_temperature()
+    D, expression = model.define_D_global(c)
+    assert D.ufl_shape == (dim, dim)
+    for value in [400.0, 800.0]:
+        temperature.value = value
+        D.interpolate(expression)
+        D.x.scatter_forward()
+        for volume_id, prefactor, energy in [
+            (1, 2.0 * np.eye(dim) if scalar_left else left_tensor, 0.1),
+            (2, right_prefactor, 0.2),
+        ]:
+            expected = ufl.as_matrix(prefactor * np.exp(-energy / (F.k_B * value)))
+            error = fem.assemble_scalar(
+                fem.form(ufl.inner(D - expected, D - expected) * model.dx(volume_id))
+            )
+            assert mesh.comm.allreduce(error, op=MPI.SUM) < 1e-24
+
+
+@pytest.mark.parametrize("container", [list, tuple, np.asarray])
+def test_legacy_global_diffusivity_converts_numeric_matrix(container):
+    """A direct numeric tensor remains unchanged in the legacy export coefficient."""
+    mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 2, 2)
+    expected = np.array([[3.0, 0.4], [0.4, 1.0]])
+    volume = F.VolumeSubdomain(
+        id=1,
+        material=F.Material(D=container(expected.tolist())),
+        locator=lambda x: np.full_like(x[0], True, dtype=bool),
+    )
+    c = F.Species("c")
+    model = F.HydrogenTransportProblem(
+        mesh=F.Mesh(mesh), subdomains=[volume], species=[c]
+    )
+    D, expression = model.define_D_global(c)
+    assert isinstance(D, fem.Constant)
+    assert D.ufl_shape == (2, 2)
+    np.testing.assert_allclose(D.value, expected)
+    assert expression is None
+
+
+def test_legacy_global_diffusivity_rejects_tensor_dimension_mismatch():
+    """The legacy global field rejects tensors incompatible with its mesh."""
+    mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 2, 2)
+    volume = F.VolumeSubdomain(
+        id=1,
+        material=F.Material(D_0=np.eye(3), E_D=0.0),
+        locator=lambda x: np.full_like(x[0], True, dtype=bool),
+    )
+    c = F.Species("c")
+    model = F.HydrogenTransportProblem(
+        mesh=F.Mesh(mesh), subdomains=[volume], species=[c], temperature=500.0
+    )
+    model.define_function_spaces()
+    model.define_meshtags_and_measures()
+    model.define_temperature()
+    with pytest.raises(ValueError, match=r"D_0 tensor must have shape \(2, 2\)"):
+        model.define_D_global(c)
+
+
+@pytest.mark.parametrize("dim", [2, 3])
+@pytest.mark.parametrize("scalar_left", [True, False], ids=["mixed", "tensors"])
+@pytest.mark.parametrize("reverse_subdomains", [False, True])
+def test_discontinuous_diffusion_coefficient_materials(
+    dim, scalar_left, reverse_subdomains
+):
+    """Each material's scalar or tensor coefficient follows its Arrhenius law."""
     if dim == 2:
         mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 4, 2)
     else:
@@ -349,52 +446,61 @@ def test_define_D_global_tensor_materials(dim, scalar_left, reverse_subdomains):
     ]
     if reverse_subdomains:
         volumes.reverse()
-    c = F.Species("c")
-    model = F.HydrogenTransportProblem(
-        mesh=F.Mesh(mesh), subdomains=volumes, species=[c], temperature=T
+    c = F.Species("c", subdomains=volumes)
+    model = F.HydrogenTransportProblemDiscontinuous(
+        mesh=F.Mesh(mesh),
+        subdomains=volumes,
+        species=[c],
+        temperature=T,
+        settings=F.Settings(atol=1e-12, rtol=1e-12, transient=False),
     )
-    model.define_function_spaces()
-    model.define_meshtags_and_measures()
-    model.define_temperature()
-    D, D_expr = model.define_D_global(c)
-    assert D.ufl_shape == (dim, dim)
+    model.show_progress_bar = False
+    model.initialise()
+    coefficients = {
+        volume: model.diffusion_coefficient(volume, c) for volume in volumes
+    }
+    expected_materials = {
+        1: (left_prefactor, E_left),
+        2: (right_prefactor, E_right),
+    }
     for temperature in [400.0, 800.0]:
         T.value = temperature
-        D.interpolate(D_expr)
-        D.x.scatter_forward()
-        for volume_id, prefactor, energy in [
-            (1, 2.0 * np.eye(dim) if scalar_left else left_tensor, E_left),
-            (2, right_prefactor, E_right),
-        ]:
-            expected = ufl.as_matrix(
-                prefactor * np.exp(-energy / (F.k_B * temperature))
-            )
+        for volume, D in coefficients.items():
+            prefactor, energy = expected_materials[volume.id]
+            value = prefactor * np.exp(-energy / (F.k_B * temperature))
+            if np.ndim(prefactor) == 0:
+                assert D.ufl_shape == ()
+                expected = ufl.as_ufl(value)
+            else:
+                assert D.ufl_shape == (dim, dim)
+                expected = ufl.as_matrix(value)
             error = fem.assemble_scalar(
-                fem.form(ufl.inner(D - expected, D - expected) * model.dx(volume_id))
+                fem.form(ufl.inner(D - expected, D - expected) * model.dx(volume.id))
             )
             assert mesh.comm.allreduce(error, op=MPI.SUM) < 1e-24
 
 
-def test_define_D_global_rejects_tensor_dimension_mismatch():
+def test_discontinuous_rejects_tensor_dimension_mismatch():
     mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 2, 2)
     volume = F.VolumeSubdomain(
         id=1,
         material=F.Material(D_0=np.eye(3), E_D=0.0),
         locator=lambda x: np.full_like(x[0], True, dtype=bool),
     )
-    c = F.Species("c")
-    model = F.HydrogenTransportProblem(
-        mesh=F.Mesh(mesh), subdomains=[volume], species=[c], temperature=500.0
+    c = F.Species("c", subdomains=[volume])
+    model = F.HydrogenTransportProblemDiscontinuous(
+        mesh=F.Mesh(mesh),
+        subdomains=[volume],
+        species=[c],
+        temperature=500.0,
+        settings=F.Settings(atol=1e-12, rtol=1e-12, transient=False),
     )
-    model.define_function_spaces()
-    model.define_meshtags_and_measures()
-    model.define_temperature()
-    with pytest.raises(ValueError, match=r"D_0 tensor must have shape \(2, 2\)"):
-        model.define_D_global(c)
+    with pytest.raises(ValueError, match="Dimension mismatch"):
+        model.initialise()
 
 
-def test_define_D_global_rejects_symbolic_array_entries():
-    """The export path must not freeze symbolic prefactors into numeric values."""
+def test_discontinuous_rejects_symbolic_array_entries():
+    """Initialization must not freeze symbolic prefactors into numeric values."""
     mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 2, 2)
     T = fem.Constant(mesh, dolfinx.default_scalar_type(400.0))
     volume = F.VolumeSubdomain(
@@ -402,15 +508,16 @@ def test_define_D_global_rejects_symbolic_array_entries():
         material=F.Material(D_0=[[T, 0.0], [0.0, 1.0]], E_D=0.0),
         locator=lambda x: np.full_like(x[0], True, dtype=bool),
     )
-    c = F.Species("c")
-    model = F.HydrogenTransportProblem(
-        mesh=F.Mesh(mesh), subdomains=[volume], species=[c], temperature=T
+    c = F.Species("c", subdomains=[volume])
+    model = F.HydrogenTransportProblemDiscontinuous(
+        mesh=F.Mesh(mesh),
+        subdomains=[volume],
+        species=[c],
+        temperature=T,
+        settings=F.Settings(atol=1e-12, rtol=1e-12, transient=False),
     )
-    model.define_function_spaces()
-    model.define_meshtags_and_measures()
-    model.define_temperature()
     with pytest.raises(TypeError, match="Symbolic array entries"):
-        model.define_D_global(c)
+        model.initialise()
 
 
 def test_initialise_exports_multiple_exports_same_species():
