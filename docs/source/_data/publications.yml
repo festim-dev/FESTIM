@@ -10,7 +10,7 @@
 - doi: "10.1088/1741-4326/ac2abc"
 - doi: "10.1038/s41598-020-74844-w"
 - doi: "10.48550/arXiv.2604.04751"
-- doi: "10.48550/arxiv.2603.28991"
+- doi: "10.1016/j.ijhydene.2026.156016"
 - doi: "10.48550/arxiv.2603.25751"
 - doi: "10.1016/j.ijhydene.2026.153987"
 - doi: "10.1088/1741-4326/ae4110"
@@ -52,7 +52,6 @@
 
 
 - doi: "10.1080/15361055.2026.2686572"
-- doi: "10.5281/zenodo.21509833"
 - type: thesis
   title: "Component-Level Tritium Transport Modelling of a Stellarator Ceramic Breeder Blanket"
   authors: ["Christopher Soika"]
