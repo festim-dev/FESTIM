@@ -152,8 +152,13 @@ class VolumeSubdomain:
             # Dirichlet BCs, which are not supported on a manifold subdomain yet.
             self.ft = None
             return
+        # keyword arguments: scifem >= 0.25 makes the maps keyword-only and
+        # dolfinx > 0.11 swaps their positional order
         sub_tag = transfer_meshtags_to_submesh(
-            tag, self.submesh, self.v_map, self.cell_map
+            tag,
+            self.submesh,
+            vertex_to_parent=self.v_map,
+            cell_to_parent=self.cell_map,
         )
         if isinstance(sub_tag, dolfinx.mesh.MeshTags):
             self.ft = sub_tag

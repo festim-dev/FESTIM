@@ -30,15 +30,23 @@ class Enclosure:
             independent of the temperature of the transport problem.
         surfaces: the surfaces in contact with the enclosure, as a dict mapping each
             :py:class:`festim.SurfaceSubdomain` to its physical area. The area is what
-            turns the flux through the surface into a number of particles per second,
-            and the mesh only provides it in 3D:
+            turns the flux through the surface into a number of particles per second.
+            The mesh and its coordinate system only provide part of it, so the value
+            to give is whatever extent is missing:
 
-            - **1D**: a surface is a point and carries no extent, so the area is the
-              area of the membrane facing the enclosure, in m2. Required.
-            - **2D**: a surface is a line, so the area is the out-of-plane depth of the
-              model, in m. Required.
-            - **3D**: the mesh already measures the area, so pass 1.0. A plain list of
-              surfaces is accepted in 3D and means an area of 1.0 for each.
+            - **1D cartesian**: a surface is a point and carries no extent, so the
+              value is the area of the membrane facing the enclosure, in m2. Required.
+            - **2D cartesian**: a surface is a line, so the value is the out-of-plane
+              depth of the model, in m. Required.
+            - **1D cylindrical**: the model is per unit axial length, so the value is
+              the axial length of the cylinder, in m. Required.
+            - **3D cartesian, 2D cylindrical, 1D spherical**: the area is already
+              fully measured, so pass 1.0. A plain list of surfaces is accepted and
+              means 1.0 for each.
+
+            Cylindrical and spherical meshes are assumed to cover the full angle. For
+            a model representing only a sector, give the fraction covered instead of
+            1.0 (or multiply the axial length by it in 1D cylindrical).
 
             An enclosure with no contact surfaces is allowed (it then only exchanges
             through its openings).
@@ -120,8 +128,8 @@ class Enclosure:
     def surfaces(self, value):
         if value is None:
             value = {}
-        # a plain list means "no areas given"; only valid in 3D, where the mesh
-        # measures the area itself. Checked against the mesh in the problem class.
+        # a plain list means "no areas given"; only valid where the mesh and its
+        # coordinate system measure the area fully. Checked in the problem class.
         self.areas_given = isinstance(value, dict)
         if not self.areas_given:
             value = dict.fromkeys(value, 1.0)
