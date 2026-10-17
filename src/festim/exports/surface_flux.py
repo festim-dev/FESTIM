@@ -15,6 +15,10 @@ class SurfaceFlux(SurfaceQuantity):
 
     The total flux ``-D grad(c) . n + c v . n`` is computed, so a drift term acting on
     the field -- advection, Soret, electromigration -- contributes.
+    For a tensor D, the diffusive contribution uses the matrix-vector product
+    ``-dot(D * grad(c), n)``. The result is integrated over the surface and is
+    positive when leaving the domain. This is the physical gradient-based flux;
+    weak Dirichlet penalty corrections are not included.
 
     Args:
         field: species for which the surface flux is computed

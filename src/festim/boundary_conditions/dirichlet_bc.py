@@ -24,7 +24,8 @@ class DirichletBCBase:
         enforce_weakly: Whether to enforce the boundary condition weakly using Nitsche's
             method. Defaults to False.
         penalty: The dimensionless penalty parameter to use if ``enforce_weakly`` is
-            True. The Nitsche penalty term scales as ``penalty * D / h``, so a value of
+            True. The Nitsche penalty term scales as ``penalty * D / h`` (using
+            ``dot(n, D * n)`` for a tensor diffusivity), so a value of
             order 10-100 is appropriate regardless of the material or the mesh size.
             Defaults to None
 

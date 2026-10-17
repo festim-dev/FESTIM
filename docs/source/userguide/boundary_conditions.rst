@@ -10,6 +10,9 @@ Boundary conditions
 
 The boundary conditions (BCs) are essential to FESTIM simulations. They describe the mathematical problem at the boundaries of the simulated domain.
 If no BC is set on a boundary, it is assumed that the flux is null. This is also called a symmetry BC.
+For :ref:`anisotropic diffusion <anisotropic_diffusion>`, the condition without
+drift is :math:`(\mathbf{D}\nabla c)\cdot\mathbf{n}=0`, which need not imply a
+zero normal concentration gradient.
 
 All boundary conditions in FESTIM require a surface subdomain. 
 The subdomain can be a surface, an edge or a point and can be defined with the :class:`festim.SurfaceSubdomain` class.
