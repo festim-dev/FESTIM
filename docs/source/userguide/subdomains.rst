@@ -383,9 +383,8 @@ Limitations
   maximum quantities and :class:`festim.CustomQuantity` are not available in
   :class:`festim.HydrogenTransportProblemDiscontinuous` at all, manifold or not.
 
-----------
 Materials
-----------
+=========
 
 Materials play a key role in hydrogen transport simulations, defining diffusivity, solubility, and thermal properties such as thermal conductivity and heat capacity.
 
@@ -397,25 +396,146 @@ To define a material, use the :class:`festim.Material` class:
 
     mat = Material(D_0=2, E_D=0.1)
 
-The :class:`festim.Material` class requires two arguments:
+To use the Arrhenius law, provide:
 
-* :code:`D_0`: The diffusivity pre-exponential factor (m²/s).
-* :code:`E_D`: The diffusivity activation energy (eV).
+* :code:`D_0`: The scalar or tensor diffusivity pre-exponential factor (m²/s).
+* :code:`E_D`: The scalar diffusivity activation energy (eV).
 
 Diffusivity is automatically computed using these parameters based on the Arrhenius law.
+Alternatively, supply the complete coefficient as ``D`` without ``D_0``; no
+Arrhenius factor is applied in that case.
+
+.. _anisotropic_diffusion:
+
+Anisotropic diffusion
+---------------------
+
+Use a tensor diffusion coefficient when transport is faster in some directions
+than others. The diffusive flux is :math:`\mathbf{J}=-\mathbf{D}\nabla c`,
+where multiplication by :math:`\mathbf{D}` is a matrix-vector product. The flux
+need not be parallel to the concentration gradient.
+
+Tensor inputs and temperature dependence
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:class:`~festim.material.Material` accepts a square NumPy array, nested list or nested
+tuple as ``D_0``. Use shape ``(2, 2)`` for a two-dimensional mesh and ``(3, 3)``
+for a three-dimensional mesh. Components are expressed in the mesh coordinate
+system, and each entry has units of m²/s. Supply a symmetric positive-definite
+tensor for ordinary diffusion; FESTIM does not check its eigenvalues.
+
+.. testcode:: anisotropic_material
+
+    import numpy as np
+    import festim as F
+
+    # Principal directions aligned with x and y.
+    D_principal = np.diag([5e-7, 5e-8])
+    aligned = F.Material(D_0=D_principal, E_D=0.2)
+
+    # Rotate the fast direction 30 degrees from x towards y.
+    angle = np.deg2rad(30.0)
+    R = np.array([[np.cos(angle), -np.sin(angle)],
+                  [np.sin(angle),  np.cos(angle)]])
+    D_0 = R @ D_principal @ R.T
+    rotated = F.Material(D_0=D_0, E_D=0.2)
+
+``E_D`` remains a scalar activation energy in eV. A single Arrhenius factor
+scales every component:
+
+.. math::
+
+    \mathbf{D}(T) = \mathbf{D}_0 \exp\left(-\frac{E_D}{k_B T}\right).
+
+Thus ``E_D=0.0`` makes the tensor independent of temperature. The temperature
+is in K. Direction-dependent activation energies are not part of the built-in
+Arrhenius model. A tensor proportional to the identity represents isotropic
+diffusion.
+
+Supplying the complete coefficient
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``D`` accepts a numeric square array-like tensor, a ``dolfinx.fem.Constant``
+or a ``dolfinx.fem.Function``. The FEniCS objects may be scalar or tensor valued;
+numeric arrays are converted to constants. Direct UFL expressions and arrays
+containing symbolic entries are not supported. No additional Arrhenius factor
+is applied to ``D``. Do not set ``D_0`` together with ``D``. For a plain scalar
+constant use ``D_0=value, E_D=0.0``.
+
+.. testcode:: anisotropic_material
+
+    constant_tensor = F.Material(D=[[5e-7, 0.0], [0.0, 5e-8]])
+
+A NumPy array evaluated at a temperature is fixed at that value. When supplying
+a FEniCS coefficient, build it on the mesh where it will be used and update its
+values yourself if the diffusivity changes.
+
+Species and multiple materials
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For species-dependent Arrhenius properties, supply both ``D_0`` and ``E_D`` as
+dictionaries. Keys may be species objects or species names and must match in
+both dictionaries, including their insertion order. Each ``D_0`` entry can be
+a tensor, while each ``E_D`` entry is a scalar:
+
+.. testcode:: anisotropic_material
+
+    material = F.Material(
+        D_0={"H": D_0, "D": 0.8 * D_0},
+        E_D={"H": 0.2, "D": 0.22},
+    )
+
+``D`` is a single coefficient shared by the species using that material;
+species dictionaries are supported through ``D_0`` and ``E_D``.
+
+In :class:`~festim.hydrogen_transport_problem.HydrogenTransportProblem`, directly supplying ``D`` is limited
+to one volume subdomain. For multiple tensor materials use ``D_0`` and ``E_D``.
+Scalar and tensor-valued materials can be used together in the same problem;
+a scalar prefactor is treated as ``D_scalar * np.eye(dim)`` when a tensor
+representation is needed.
+
+The Nitsche :class:`~festim.subdomain.Interface` formulation supports tensor
+coefficients. Its consistency terms use the tensor flux and its penalty scales
+with the normal diffusivity on each side of the interface.
+
+Boundary conditions and exported fluxes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+An unspecified boundary has zero normal total flux. With diffusion alone this
+means :math:`(\mathbf{D}\nabla c)\cdot\mathbf{n}=0`. For a rotated tensor it
+does not generally mean :math:`\partial c/\partial n=0`, or
+:math:`\nabla c=0`. For example, fixed concentrations on the left and right of
+a square with insulated top and bottom need not yield a profile depending
+only on :math:`x`.
+
+:class:`~festim.exports.SurfaceFlux` integrates
+:math:`-(\mathbf{D}\nabla c)\cdot\mathbf{n}` over the selected surface, with
+positive values leaving the domain. When drift is present its contribution is
+included too. To build the diffusive integrand for a custom surface quantity,
+use ``-ufl.dot(D * ufl.grad(c), n)``.
+
+Weak Dirichlet conditions (``enforce_weakly=True``) use the tensor flux in
+Nitsche's method and scale the penalty by the normal diffusivity
+:math:`\mathbf{n}\cdot\mathbf{D}\mathbf{n}`. ``penalty`` is dimensionless.
+``SurfaceFlux`` reports the gradient-based physical flux; it does not add the
+penalty correction of :meth:`~festim.boundary_conditions.DirichletBCBase.numerical_flux`.
+
+Additional material properties
+------------------------------
 
 Additional parameters are required for specific simulations. When considering chemical potential conservation at material interfaces, hydrogen solubility must be specified using:
 
 * :code:`name`: Name for the material.
-* :code:`S_0`: The solubility pre-exponential factor (units depend on the solubility law: Sievert's or Henry's).
-* :code:`E_S`: The solubility activation energy (eV).
-* :code:`solubility_law`: The solubility law, either :code:`"festim.SolubilityLaw.HENRY"` or :code:`festim.SolubilityLaw.SIEVERT`.
+* :code:`K_S_0`: The solubility pre-exponential factor (units depend on the solubility law: Sievert's or Henry's).
+* :code:`E_K_S`: The solubility activation energy (eV).
+* :code:`solubility_law`: The solubility law, either :code:`festim.SolubilityLaw.HENRY` or :code:`festim.SolubilityLaw.SIEVERT` (also accepted as ``"henry"`` or ``"sievert"``).
 
 For transient heat transfer simulations, thermal conductivity, heat capacity, and density must be defined:
 
 * :code:`thermal_conductivity`: Thermal conductivity (W/m/K).
 * :code:`heat_capacity`: Heat capacity (J/kg/K).
 * :code:`density`: Density (kg/m³).
+
 
 Temperature-dependent Parameters
 ---------------------------------
