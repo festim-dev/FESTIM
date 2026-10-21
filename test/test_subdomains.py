@@ -282,3 +282,16 @@ def test_map_surface_to_volume_subdomains():
         "Expected surface 2 to be connected to volume 2, "
         f"got {surface_to_subdomain[surface_2].id}"
     )
+
+
+def test_left_and_right_surfaces():
+    """Checks that the left and right properties return the correct surfaces."""
+    my_mat = F.Material(D_0=1, E_D=1, name="mat")
+    bulk = F.VolumeSubdomain1D(id=1, borders=[0, 1e-3], material=my_mat)
+
+    assert bulk.left.id == -1
+    assert bulk.left.x == 0
+    assert isinstance(bulk.left, F.SurfaceSubdomain1D)
+    assert bulk.right.id == -2
+    assert bulk.right.x == 1e-3
+    assert isinstance(bulk.right, F.SurfaceSubdomain1D)
