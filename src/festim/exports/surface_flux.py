@@ -1,5 +1,3 @@
-import math
-
 import ufl
 from dolfinx import fem
 from scifem import assemble_scalar
@@ -80,25 +78,7 @@ class SurfaceFlux(SurfaceQuantity):
         mesh = ds.ufl_domain()
         n = ufl.FacetNormal(mesh)
 
-        match self.coordinate_system:
-            case CoordinateSystem.CARTESIAN:
-                weight = 1
-            case CoordinateSystem.CYLINDRICAL:
-                r = ufl.SpatialCoordinate(mesh)[0]
-                # TODO: full coverage assumed; expose as a constructor parameter
-                # (e.g. azimuth_range) to support partial coverage
-                coverage = 2 * math.pi  # radians
-                weight = coverage * r
-            case CoordinateSystem.SPHERICAL:
-                r = ufl.SpatialCoordinate(mesh)[0]
-                # TODO: full coverage assumed; expose as constructor parameters
-                # (e.g. azimuth_range, polar_range) to support partial coverage
-                coverage = 4 * math.pi  # steradians
-                weight = coverage * r**2
-            case _:
-                raise NotImplementedError(
-                    f"Unknown coordinate system {self.coordinate_system!s}"
-                )
+        weight = self.coordinate_system.integration_weight(mesh)
 
         integrand = -self.D * ufl.dot(ufl.grad(u), n)
         if subdomain_id is None:

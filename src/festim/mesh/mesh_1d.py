@@ -152,7 +152,7 @@ class Mesh1D(Mesh):
 
     def define_meshtags(self, surface_subdomains, volume_subdomains, interfaces=None):
         # check if all borders are defined
-        self.check_borders(volume_subdomains)
+        self.check_borders([v for v in volume_subdomains if v.codim(self.vdim) == 0])
         return super().define_meshtags(
             surface_subdomains, volume_subdomains, interfaces
         )

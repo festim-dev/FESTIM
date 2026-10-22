@@ -1567,7 +1567,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 element_CG = basix.ufl.element(
                     basix.ElementFamily.P,
                     subdomain.submesh.basix_cell(),
-                    1,  # could expose?
+                    0 if subdomain.submesh.topology.dim == 0 else 1,
                     basix.LagrangeVariant.equispaced,
                 )
                 V = dolfinx.fem.functionspace(subdomain.submesh, element_CG)
@@ -1718,7 +1718,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             else:
                 V = condition.species.subdomain_to_function_space[condition.volume]
 
-                if isinstance(self.temperature_fenics, fem.Function):
+                if condition.volume in self.manifold_subdomains or isinstance(
+                    self.temperature_fenics, fem.Function
+                ):
                     temperature = condition.volume.sub_T
                 else:
                     temperature = self.temperature_fenics
@@ -1768,6 +1770,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 unique_species.append(species)
         nb_species = len(unique_species)
 
+        # A radial surface is a point in a 1D mesh. Basix only supports P0 there.
+        if subdomain.submesh.topology.dim == 0:
+            element_degree = 0
         element_CG = basix.ufl.element(
             basix.ElementFamily.P,
             subdomain.submesh.basix_cell(),
@@ -1780,7 +1785,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         u_n = dolfinx.fem.Function(V)
 
         self.subdomain_to_V_CG1[subdomain] = dolfinx.fem.functionspace(
-            subdomain.submesh, ("CG", 1)
+            subdomain.submesh, ("CG", 0 if subdomain.submesh.topology.dim == 0 else 1)
         )
 
         # store attributes in the subdomain object
@@ -1859,7 +1864,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 V = spe.subdomain_to_function_space[drift_term.subdomain]
                 drift_term.convert_inputs(
                     function_space=V,
-                    t=self.t,
+                    t=self.subdomain_time(drift_term.subdomain),
                     temperature=self.subdomain_temperature(drift_term.subdomain),
                 )
 
@@ -2281,11 +2286,16 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         cannot tabulate a parent-mesh coefficient on submesh cells.
         """
         for reaction in self.reactions:
+            manifold = reaction.volume in self.manifold_subdomains
             for rate in reaction.rate_coefficients:
                 if rate.input_value is not None:
                     rate.convert_input_value(
-                        function_space=getattr(self, "function_space", None),
-                        t=self.t,
+                        function_space=(
+                            reaction.volume.u.function_space
+                            if manifold
+                            else getattr(self, "function_space", None)
+                        ),
+                        t=self.subdomain_time(reaction.volume),
                         temperature=self.subdomain_temperature(reaction.volume),
                         subdomain=reaction.volume,
                         up_to_ufl_expr=True,
@@ -2396,12 +2406,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             subdomain (F.VolumeSubdomain): a subdomain of the geometry
         """
         is_manifold = subdomain.codim(self.mesh.vdim) == 1
-        if is_manifold and self.mesh.coordinate_system != CoordinateSystem.CARTESIAN:
-            raise NotImplementedError(
-                "codimensional subdomains are only supported in cartesian coordinates, "
-                f"not {self.mesh.coordinate_system}"
-            )
         dx = self.subdomain_measure(subdomain)
+        integration_mesh = subdomain.submesh if is_manifold else self.mesh.mesh
         # the self terms are integrated over subdomain's own mesh, so their coefficients
         # must live there too -- for a manifold that is its submesh, not the parent mesh
         dt = self.subdomain_dt(subdomain) if self.settings.transient else None
@@ -2419,16 +2425,16 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             if self.settings.transient:
                 self_form += ((u - u_n) / dt) * v * dx
 
-            if spe.mobile:
+            if spe.mobile and subdomain.submesh.topology.dim > 0:
                 D = self.diffusion_coefficient(subdomain, spe)
                 match self.mesh.coordinate_system:
                     case CoordinateSystem.CARTESIAN:
                         self_form += ufl.dot(D * ufl.grad(u), ufl.grad(v)) * dx
                     case CoordinateSystem.CYLINDRICAL:
-                        r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
+                        r = ufl.SpatialCoordinate(integration_mesh)[0]
                         self_form += r * ufl.dot(D * ufl.grad(u), ufl.grad(v / r)) * dx
                     case CoordinateSystem.SPHERICAL:
-                        r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
+                        r = ufl.SpatialCoordinate(integration_mesh)[0]
                         self_form += (
                             r**2 * ufl.dot(D * ufl.grad(u), ufl.grad(v / r**2)) * dx
                         )
@@ -2440,6 +2446,14 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         # add drift (advection, Soret, electromigration)
         for drift_term in self.drift_terms:
             if drift_term.subdomain != subdomain:
+                continue
+            if subdomain.submesh.topology.dim == 0:
+                # A point has no tangential direction in which a species can drift.
+                warnings.warn(
+                    f"{type(drift_term).__name__} is ignored on volume subdomain"
+                    f" {subdomain.id} with dimension zero.",
+                    stacklevel=2,
+                )
                 continue
 
             for spe in drift_term.species:
@@ -2461,7 +2475,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     velocity=velocity,
                     dx=dx,
                     coordinate_system=self.mesh.coordinate_system,
-                    mesh=self.mesh.mesh,
+                    mesh=integration_mesh,
                 )
 
         # add fluxes. These are always parent-mesh integrals: a flux on a manifold
@@ -2522,7 +2536,11 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             subdomain.F = form_coupling
             # self_form is still the integer 0 if the manifold carries no equation of
             # its own, in which case there is nothing to assemble over the submesh
-            subdomain.F_submesh = self_form if isinstance(self_form, ufl.Form) else None
+            subdomain.F_submesh = (
+                self_form
+                if isinstance(self_form, ufl.Form) and self_form.arguments()
+                else None
+            )
         else:
             subdomain.F = self_form + form_coupling
             subdomain.F_submesh = None
@@ -2535,13 +2553,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         """
         if not self.enclosures:
             return
-
-        if self.mesh.coordinate_system != CoordinateSystem.CARTESIAN:
-            raise NotImplementedError(
-                "Enclosures are only supported for cartesian coordinate systems, not "
-                f"{self.mesh.coordinate_system!s}. The surface integrals of the "
-                "pressure balance would need the appropriate metric factors."
-            )
 
         mesh_dim = self.mesh.mesh.topology.dim
         all_gas_species = self.gas_species
@@ -2570,17 +2581,19 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         "of the model"
                     )
             # The flux through a surface is per unit area, so turning it into a number
-            # of particles per second needs the physical area of that surface. Only a 3D
-            # mesh measures that area itself: in 1D a surface is a point and in 2D a
-            # line, so the missing extent has to come from the user.
-            if enclosure.surfaces and not enclosure.areas_given and mesh_dim < 3:
-                missing = (
-                    "area (m2) of the surface"
-                    if mesh_dim == 1
-                    else ("out-of-plane depth (m) of the model")
-                )
+            # of particles per second needs the physical area of that surface. The mesh
+            # and the metric factor of the coordinate system measure it fully in 3D
+            # cartesian, 2D cylindrical (axisymmetric) and 1D spherical models. In the
+            # other cases an extent is missing and has to come from the user.
+            missing = {
+                (CoordinateSystem.CARTESIAN, 1): "area (m2) of the surface",
+                (CoordinateSystem.CARTESIAN, 2): "out-of-plane depth (m) of the model",
+                (CoordinateSystem.CYLINDRICAL, 1): "axial length (m) of the cylinder",
+            }.get((self.mesh.coordinate_system, mesh_dim))
+            if enclosure.surfaces and not enclosure.areas_given and missing:
                 raise ValueError(
-                    f"{enclosure} is attached to surfaces on a {mesh_dim}D mesh, so "
+                    f"{enclosure} is attached to surfaces on a {mesh_dim}D "
+                    f"{self.mesh.coordinate_system!s} mesh, so "
                     "the areas of those surfaces cannot be taken from the mesh and "
                     "must be given: pass surfaces as a dict mapping each surface to "
                     f"the {missing}, eg. surfaces={{my_surface: 1e-4}}."
@@ -2752,12 +2765,24 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         if self.settings.transient:
             form += as_integral((P - P_n) / self.dt)
 
+        # metric factor of the coordinate system (2 pi r in cylindrical, 4 pi r^2 in
+        # spherical), so that the surface integral measures a physical area
+        weight = self.mesh.coordinate_system.integration_weight(self.mesh.mesh)
+
         for surface, area in enclosure.surfaces.items():
             for rate in self.gas_production_rates(surface, gas_species):
                 # rate is per unit area, so the physical area of the surface turns it
                 # into particles per second. This integral is already over the surface
                 # and must not be normalised.
-                form -= kT / enclosure.volume * area * rate * q * self.ds(surface.id)
+                form -= (
+                    kT
+                    / enclosure.volume
+                    * area
+                    * weight
+                    * rate
+                    * q
+                    * self.ds(surface.id)
+                )
 
         for opening in enclosure.openings:
             if not opening.applies_to(gas_species):
@@ -2902,12 +2927,14 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     ]
                 )
             J_groups.append(J)
-        if len(groups) > 1:
+        if self.manifold_subdomains:
             # a block differentiated with respect to an unknown it does not depend on
             # would otherwise send DOLFINx looking for an entity map between two
-            # sibling submeshes, which does not exist
+            # sibling submeshes, which does not exist. A steady point manifold can
+            # have only coupling terms, so this also applies to a single group.
             J_groups = [prune_empty_blocks(J) for J in J_groups]
 
+        if len(groups) > 1:
             # the padded rows must still carry their function spaces: the blocked
             # matrix and the PETSc index sets are both built from this group alone, and
             # an all-None row leaves them with nothing to deduce the block from
@@ -3215,6 +3242,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         # filename: the first one to claim it truncates, the rest append as new blocks
         initialised_files = set()
         for export in self.exports:
+            if isinstance(export, exports.VolumeQuantity | exports.SurfaceQuantity):
+                export.coordinate_system = self.mesh.coordinate_system
             if isinstance(export, exports.FieldExportBase):
                 self._register_export_milestones(export)
                 functions, names, mesh = self._export_context(export)
@@ -3456,8 +3485,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 # a manifold mirrors a constant temperature onto its own submesh, and
                 # that mirror has to follow the parent constant
                 for subdomain in self.manifold_subdomains:
-                    # NOTE: current limitation for manifolds, temperature on the manifold
-                    # has to be homogeneous (ie. fem.Constant)
                     subdomain.sub_T.value = float(self.temperature_fenics)
 
     def iterate(self):

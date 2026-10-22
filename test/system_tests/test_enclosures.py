@@ -264,6 +264,169 @@ def test_closed_enclosure_conserves_particles(length, area):
     assert H2.value < P0
 
 
+@pytest.mark.parametrize("contact", ["inner", "outer"])
+def test_cylindrical_1d_conserves_particles(contact):
+    """A closed enclosure exchanging with a hollow cylinder through a surface reaction
+    2H <-> H2 must conserve hydrogen atoms exactly at every timestep.
+
+    The 1D cylindrical model is per unit axial length, so the invariant is
+    ``length * int(c_H 2 pi r) dr + 2*P*V/(k*T)``. The inner and outer surfaces have
+    different circumferences, so both are tested.
+    """
+    r_in, r_out, length = 0.5, 1.5, 2.0
+    V_enc, T, P0 = 1e-3, 500.0, 1e5
+    k_d0, k_r0 = 1e15, 1e-25
+    dt, final_time = 5.0, 200.0
+
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+    my_model.mesh = F.Mesh1D(
+        vertices=np.linspace(r_in, r_out, 41), coordinate_system="cylindrical"
+    )
+    material = F.Material(name="mat", D_0=1e-6, E_D=0.0)
+    volume = F.VolumeSubdomain1D(id=1, borders=[r_in, r_out], material=material)
+    inner = F.SurfaceSubdomain1D(id=1, x=r_in)
+    outer = F.SurfaceSubdomain1D(id=2, x=r_out)
+    surface = inner if contact == "inner" else outer
+    my_model.subdomains = [volume, inner, outer]
+    H = F.Species("H", subdomains=[volume])
+    my_model.species = [H]
+    my_model.temperature = T
+
+    H2 = F.GasSpecies(name="H2", initial_pressure=P0)
+    my_model.enclosures = [
+        F.Enclosure(
+            volume=V_enc, species=[H2], temperature=T, surfaces={surface: length}
+        )
+    ]
+    my_model.boundary_conditions = [
+        F.SurfaceReactionBC(
+            reactant=[H, H],
+            gas_pressure=H2,
+            k_r0=k_r0,
+            E_kr=0.0,
+            k_d0=k_d0,
+            E_kd=0.0,
+            subdomain=surface,
+        )
+    ]
+    my_model.initial_conditions = [
+        F.InitialConcentration(value=0.0, species=H, volume=volume)
+    ]
+    my_model.settings = F.Settings(
+        atol=1e-8,
+        rtol=1e-10,
+        transient=True,
+        final_time=final_time,
+        stepsize=F.Stepsize(dt),
+    )
+    my_model.show_progress_bar = False
+    my_model.initialise()
+
+    def total_hydrogen_atoms():
+        c = H.subdomain_to_post_processing_solution[volume]
+        r = ufl.SpatialCoordinate(volume.submesh)[0]
+        in_solid = length * volume.submesh.comm.allreduce(
+            dolfinx.fem.assemble_scalar(dolfinx.fem.form(c * 2 * np.pi * r * ufl.dx)),
+            op=MPI.SUM,
+        )
+        # 2 atoms per H2 molecule
+        in_gas = 2.0 * H2.value * V_enc / (F.k_B_SI * T)
+        return in_solid + in_gas
+
+    my_model.post_processing()
+    initial_inventory = total_hydrogen_atoms()
+
+    while my_model.t.value < final_time:
+        my_model.iterate()
+        assert total_hydrogen_atoms() == pytest.approx(initial_inventory, rel=1e-12)
+
+    # the gas must actually have been absorbed, otherwise the test is vacuous
+    assert H2.value < P0
+
+
+@pytest.mark.parametrize("contact", ["inner", "outer"])
+def test_spherical_1d_conserves_particles(contact):
+    """A closed enclosure exchanging with a hollow sphere through a surface reaction
+    2H <-> H2 must conserve hydrogen atoms.
+
+    The full area ``4 pi r^2`` of the surface is known from its radius, so the surfaces
+    are given as a plain list. The invariant is ``int(c_H 4 pi r^2) dr + 2*P*V/(k*T)``.
+
+    Unlike in cartesian and cylindrical coordinates, conservation is not exact here:
+    it would need ``r^2`` to be in the test space, which linear elements do not
+    contain. The drift is O(h^2), about 2e-5 on this mesh.
+    """
+    r_in, r_out = 0.5, 1.5
+    V_enc, T, P0 = 1e-3, 500.0, 1e5
+    k_d0, k_r0 = 1e15, 1e-25
+    dt, final_time = 5.0, 200.0
+
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+    my_model.mesh = F.Mesh1D(
+        vertices=np.linspace(r_in, r_out, 41), coordinate_system="spherical"
+    )
+    material = F.Material(name="mat", D_0=1e-6, E_D=0.0)
+    volume = F.VolumeSubdomain1D(id=1, borders=[r_in, r_out], material=material)
+    inner = F.SurfaceSubdomain1D(id=1, x=r_in)
+    outer = F.SurfaceSubdomain1D(id=2, x=r_out)
+    surface = inner if contact == "inner" else outer
+    my_model.subdomains = [volume, inner, outer]
+    H = F.Species("H", subdomains=[volume])
+    my_model.species = [H]
+    my_model.temperature = T
+
+    H2 = F.GasSpecies(name="H2", initial_pressure=P0)
+    my_model.enclosures = [
+        F.Enclosure(volume=V_enc, species=[H2], temperature=T, surfaces=[surface])
+    ]
+    my_model.boundary_conditions = [
+        F.SurfaceReactionBC(
+            reactant=[H, H],
+            gas_pressure=H2,
+            k_r0=k_r0,
+            E_kr=0.0,
+            k_d0=k_d0,
+            E_kd=0.0,
+            subdomain=surface,
+        )
+    ]
+    my_model.initial_conditions = [
+        F.InitialConcentration(value=0.0, species=H, volume=volume)
+    ]
+    my_model.settings = F.Settings(
+        atol=1e-8,
+        rtol=1e-10,
+        transient=True,
+        final_time=final_time,
+        stepsize=F.Stepsize(dt),
+    )
+    my_model.show_progress_bar = False
+    my_model.initialise()
+
+    def total_hydrogen_atoms():
+        c = H.subdomain_to_post_processing_solution[volume]
+        r = ufl.SpatialCoordinate(volume.submesh)[0]
+        in_solid = volume.submesh.comm.allreduce(
+            dolfinx.fem.assemble_scalar(
+                dolfinx.fem.form(c * 4 * np.pi * r**2 * ufl.dx)
+            ),
+            op=MPI.SUM,
+        )
+        # 2 atoms per H2 molecule
+        in_gas = 2.0 * H2.value * V_enc / (F.k_B_SI * T)
+        return in_solid + in_gas
+
+    my_model.post_processing()
+    initial_inventory = total_hydrogen_atoms()
+
+    while my_model.t.value < final_time:
+        my_model.iterate()
+        assert total_hydrogen_atoms() == pytest.approx(initial_inventory, rel=1e-4)
+
+    # the gas must actually have been absorbed, otherwise the test is vacuous
+    assert H2.value < P0
+
+
 def test_enclosure_on_2d_mesh_conserves_particles():
     """A closed enclosure on a 2D mesh, facing one wall through a surface reaction.
 
@@ -344,6 +507,86 @@ def test_enclosure_on_2d_mesh_conserves_particles():
 
     # the slab starts uniformly loaded and the gas empty
     initial_inventory = depth * c0 * (Lx * Ly)
+
+    while my_model.t.value < final_time:
+        my_model.iterate()
+        assert total_hydrogen_atoms() == pytest.approx(initial_inventory, rel=1e-10)
+
+    # a meaningful fraction must have crossed into the gas, else the test is vacuous
+    in_gas = 2.0 * H2.value * V_enc / (F.k_B_SI * T)
+    assert in_gas / initial_inventory > 0.1
+
+
+def test_cylindrical_2d_conserves_particles():
+    """A closed enclosure around an axisymmetric hollow cylinder, facing its outer wall
+    through a surface reaction.
+
+    On a 2D cylindrical mesh the wall is revolved around the axis, so its full area
+    ``2 pi r_out * height`` is known and the surfaces are given as a plain list.
+    Conservation is ``int(c 2 pi r) dr dz + 2*P*V/(k*T)``.
+    """
+    r_in, r_out, height = 0.5, 1.5, 2.0
+    V_enc, T = 30.0, 500.0
+    c0 = 1.0
+    k_d0, k_r0 = 1e-3, 1e-3
+    dt, final_time = 0.5, 100.0
+
+    mesh = dolfinx.mesh.create_rectangle(
+        MPI.COMM_WORLD,
+        [np.array([r_in, 0.0]), np.array([r_out, height])],
+        [12, 12],
+        dolfinx.mesh.CellType.triangle,
+    )
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+    my_model.mesh = F.Mesh(mesh=mesh, coordinate_system="cylindrical")
+    material = F.Material(name="mat", D_0=1.0, E_D=0.0)
+    volume = F.VolumeSubdomain(id=1, material=material)
+    outer = F.SurfaceSubdomain(id=2, locator=lambda x: np.isclose(x[0], r_out))
+    my_model.subdomains = [volume, outer]
+    H = F.Species("H", subdomains=[volume])
+    my_model.species = [H]
+    my_model.temperature = T
+
+    H2 = F.GasSpecies(name="H2", initial_pressure=0.0)
+    my_model.enclosures = [
+        F.Enclosure(volume=V_enc, species=[H2], temperature=T, surfaces=[outer])
+    ]
+    my_model.boundary_conditions = [
+        F.SurfaceReactionBC(
+            reactant=[H, H],
+            gas_pressure=H2,
+            k_r0=k_r0,
+            E_kr=0.0,
+            k_d0=k_d0,
+            E_kd=0.0,
+            subdomain=outer,
+        )
+    ]
+    my_model.initial_conditions = [
+        F.InitialConcentration(value=c0, species=H, volume=volume)
+    ]
+    my_model.settings = F.Settings(
+        atol=1e-10,
+        rtol=1e-10,
+        transient=True,
+        final_time=final_time,
+        stepsize=F.Stepsize(dt),
+    )
+    my_model.show_progress_bar = False
+    my_model.initialise()
+
+    def total_hydrogen_atoms():
+        c = H.subdomain_to_post_processing_solution[volume]
+        r = ufl.SpatialCoordinate(volume.submesh)[0]
+        in_solid = mesh.comm.allreduce(
+            dolfinx.fem.assemble_scalar(dolfinx.fem.form(c * 2 * np.pi * r * ufl.dx)),
+            op=MPI.SUM,
+        )
+        in_gas = 2.0 * H2.value * V_enc / (F.k_B_SI * T)
+        return in_solid + in_gas
+
+    # the cylinder starts uniformly loaded and the gas empty
+    initial_inventory = c0 * np.pi * (r_out**2 - r_in**2) * height
 
     while my_model.t.value < final_time:
         my_model.iterate()

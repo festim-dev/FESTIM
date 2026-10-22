@@ -9,6 +9,7 @@ import numpy as np
 import ufl
 from dolfinx import fem
 
+from festim.helpers import spatial_coordinate
 from festim.species import Species
 from festim.subdomain.volume_subdomain import VolumeSubdomain
 
@@ -146,7 +147,7 @@ class InitialConcentration(InitialConditionBase):
             temperature: the temperature
             function_space: the function space of the species
         """
-        x = ufl.SpatialCoordinate(mesh)
+        x = spatial_coordinate(mesh)
 
         if isinstance(self.value, int | float):
             self.expr_fenics = lambda x: np.full(x.shape[1], self.value)

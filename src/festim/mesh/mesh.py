@@ -1,3 +1,4 @@
+import math
 from enum import Enum
 
 import dolfinx
@@ -6,6 +7,8 @@ import ufl
 from dolfinx.mesh import Mesh as dolfinx_Mesh
 from dolfinx.mesh import meshtags
 
+from festim.helpers import spatial_coordinate
+
 __all__ = ["CoordinateSystem", "Mesh"]
 
 
@@ -13,6 +16,19 @@ class CoordinateSystem(Enum):
     CARTESIAN = 10
     CYLINDRICAL = 20
     SPHERICAL = 30
+
+    def integration_weight(self, mesh):
+        """Physical measure per unit mesh measure, assuming full angular coverage.
+
+        Use the integration domain's coordinates, including when it is a manifold
+        submesh. Cylindrical 1D quantities are per unit axial length.
+        """
+        if self == CoordinateSystem.CARTESIAN:
+            return 1
+        r = spatial_coordinate(mesh)[0]
+        if self == CoordinateSystem.CYLINDRICAL:
+            return 2 * math.pi * r
+        return 4 * math.pi * r**2
 
     @classmethod
     def from_string(cls, s: str):

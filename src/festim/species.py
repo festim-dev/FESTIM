@@ -3,7 +3,7 @@ from typing import Union
 import ufl
 from dolfinx import fem
 
-from festim.helpers import as_fenics_constant
+from festim.helpers import as_fenics_constant, spatial_coordinate
 from festim.subdomain.volume_subdomain import (
     VolumeSubdomain as _VolumeSubdomain,
 )
@@ -199,7 +199,7 @@ class ImplicitSpecies:
             mesh (dolfinx.mesh.Mesh) : the mesh
             t (dolfinx.fem.Constant): the time
         """
-        x = ufl.SpatialCoordinate(mesh)
+        x = spatial_coordinate(mesh)
 
         if isinstance(self.n, int | float):
             self.value_fenics = as_fenics_constant(mesh=mesh, value=self.n)

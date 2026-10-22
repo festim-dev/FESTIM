@@ -23,7 +23,8 @@ class AverageVolume(VolumeQuantity):
     def compute(self, u, dx, entity_maps=None):
         """Computes the average value of solution function within the defined volume
         subdomain, and appends it to the data list."""
+        weight = self.coordinate_system.integration_weight(dx.ufl_domain())
         self.value = assemble_scalar(
-            u * dx(self.volume.id), entity_maps=entity_maps
-        ) / assemble_scalar(1 * dx(self.volume.id))
+            weight * u * dx(self.volume.id), entity_maps=entity_maps
+        ) / assemble_scalar(weight * dx(self.volume.id))
         self.data.append(self.value)

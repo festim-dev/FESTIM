@@ -1,4 +1,5 @@
 import warnings
+from unittest.mock import Mock
 
 import numpy as np
 import pytest
@@ -11,6 +12,70 @@ from festim.mesh import CoordinateSystem
 
 test_mesh_1d = F.Mesh1D(vertices=np.linspace(0, 1, 20))
 test_functionspace = fem.functionspace(test_mesh_1d.mesh, ("Lagrange", 1))
+
+
+@pytest.mark.parametrize(
+    "term_type", [F.AdvectionTerm, F.SoretTerm, F.ElectromigrationTerm]
+)
+def test_drift_in_0D_warns_and_ignores(term_type, monkeypatch):
+    """A point warns about drift and retains its source-only evolution."""
+    mesh = F.Mesh1D(np.linspace(0, 1, 5), coordinate_system="cylindrical")
+    material = F.Material(D_0=1, E_D=0)
+    bulk = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=material)
+    point = F.VolumeSubdomain(
+        id=2, dim=0, material=material, locator=lambda x: np.isclose(x[0], 1)
+    )
+    left = F.SurfaceSubdomain1D(id=3, x=0)
+    bulk_species = F.Species("bulk", subdomains=[bulk])
+    point_species = F.Species("point", subdomains=[point])
+    if term_type is F.AdvectionTerm:
+        velocity = fem.Function(fem.functionspace(mesh.mesh, ("Lagrange", 1, (1,))))
+        velocity.x.array[:] = 2
+        kwargs = {"velocity": velocity}
+    elif term_type is F.SoretTerm:
+        kwargs = {"Q_star": 0.1}
+    else:
+        kwargs = {"charge": 1, "potential": 1.0}
+    term = term_type(species=point_species, subdomain=point, **kwargs)
+    drift_velocity = Mock(side_effect=AssertionError("0D drift must not be evaluated"))
+    monkeypatch.setattr(term, "drift_velocity", drift_velocity)
+    model = F.HydrogenTransportProblemDiscontinuous(
+        mesh=mesh,
+        subdomains=[bulk, point, left],
+        species=[bulk_species, point_species],
+        temperature=500,
+        drift_terms=[term],
+        sources=[F.ParticleSource(value=3, species=point_species, volume=point)],
+        boundary_conditions=[
+            F.FixedConcentrationBC(subdomain=left, species=bulk_species, value=0)
+        ],
+        settings=F.Settings(
+            transient=True,
+            final_time=0.1,
+            stepsize=F.Stepsize(0.1),
+            atol=1e-12,
+            rtol=1e-12,
+        ),
+    )
+    with pytest.warns(
+        UserWarning, match="ignored on volume subdomain 2 with dimension zero"
+    ) as caught:
+        model.initialise()
+    messages = [str(w.message) for w in caught if issubclass(w.category, UserWarning)]
+    expected = [
+        f"{term_type.__name__} is ignored on volume subdomain 2 with dimension zero."
+    ]
+    if term_type is F.AdvectionTerm:
+        expected.insert(
+            0,
+            "Advection velocity is ignored on volume subdomain 2 with dimension zero.",
+        )
+    assert messages == expected
+    assert point.submesh.topology.dim == 0
+    model.run()
+    drift_velocity.assert_not_called()
+    values = point_species.subdomain_to_post_processing_solution[point].x.array
+    assert np.allclose(values, 0.3, rtol=0, atol=1e-12)
 
 
 @pytest.mark.parametrize("cls", [F.SoretTerm, F.ElectromigrationTerm])
