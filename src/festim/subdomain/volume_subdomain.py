@@ -12,7 +12,7 @@ except ImportError:
     from scifem.mesh import transfer_meshtags_to_submesh
 
 from festim.material import Material
-from festim.subdomain.surface_subdomain import SurfaceSubdomain
+from festim.subdomain.surface_subdomain import SurfaceSubdomain, SurfaceSubdomain1D
 
 entity_map_type = EntityMap
 
@@ -217,6 +217,24 @@ class VolumeSubdomain1D(VolumeSubdomain):
             locator=lambda x: np.logical_and(x[0] >= borders[0], x[0] <= borders[1]),
         )
         self.borders = borders
+
+    @property
+    def left(self):
+        """The left surface of the 1D volume subdomain.
+
+        Returns:
+            festim.SurfaceSubdomain1D: the left surface subdomain
+        """
+        return SurfaceSubdomain1D(id=-1, x=self.borders[0])
+
+    @property
+    def right(self):
+        """The right surface of the 1D volume subdomain.
+
+        Returns:
+            festim.SurfaceSubdomain1D: the right surface subdomain
+        """
+        return SurfaceSubdomain1D(id=-2, x=self.borders[1])
 
 
 def find_volume_from_id(id: int, volumes: list):
