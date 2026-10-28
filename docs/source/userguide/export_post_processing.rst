@@ -2,6 +2,16 @@
 Post-processing
 ===============
 
+Surface fluxes
+--------------
+
+:class:`~festim.exports.SurfaceFlux` integrates the outward total particle flux over a
+surface. The diffusive contribution is
+:math:`-(\mathbf{D}\nabla c)\cdot\mathbf{n}` for a tensor diffusivity; any drift
+adds :math:`c\mathbf{v}\cdot\mathbf{n}`. Positive values leave the domain.
+See :ref:`anisotropic_diffusion` for an example and the distinction between this
+physical flux and a weak Dirichlet boundary's numerical flux.
+
 Exporting fields
 ----------------
 

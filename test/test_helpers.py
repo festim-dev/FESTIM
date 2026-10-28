@@ -35,6 +35,12 @@ def test_temperature_type_and_processing(value):
         assert isinstance(F.as_fenics_constant(value, test_mesh.mesh), fem.Constant)
 
 
+@pytest.mark.parametrize("value", [True, False])
+def test_as_fenics_constant_rejects_booleans(value):
+    with pytest.raises(TypeError, match="Boolean values are not supported"):
+        F.as_fenics_constant(value, test_mesh.mesh)
+
+
 @pytest.mark.parametrize(
     "input_value, expected_output_type", [(1.0, fem.Constant), (3, fem.Constant)]
 )
