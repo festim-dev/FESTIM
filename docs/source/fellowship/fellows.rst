@@ -81,6 +81,48 @@ Andrea Di Maio
 Previous Fellows
 ----------------
 
+Summer 2026
+^^^^^^^^^^^
+
+.. grid:: 1 2 3 3
+   :gutter: 3
+
+   .. grid-item-card:: Arpan Sircar
+      :img-top: /_static/fellowship/Arpan_Sircar_profile.png
+      :img-alt: Arpan Sircar, FESTIM Fellow, Oak Ridge National Laboratory
+      :class-card: festim-fellow-card
+
+      .. image:: /_static/fellowship/logos/oak-ridge-national-laboratory.svg
+         :alt: Oak Ridge National Laboratory logo
+         :class: festim-fellow-logo
+
+      *Modeling tritium uptake in sweep gases from lithium ceramic blankets*
+
+   .. grid-item-card:: Ian Wojtowicz
+      :img-top: /_static/fellowship/Ian_Wojtowicz_profile.jpg
+      :img-alt: Ian Wojtowicz, FESTIM Fellow, University of Minnesota
+      :class-card: festim-fellow-card
+
+      .. image:: /_static/fellowship/logos/university-of-minnesota.svg
+         :alt: University of Minnesota logo
+         :class: festim-fellow-logo
+
+      *Hydrogen retention in topologically complex multi-material geometries*
+
+   .. grid-item-card:: Emre Yildirim
+      :img-top: /_static/fellowship/Emre_Yildirim_profile.jpg
+      :img-alt: Emre Yildirim, FESTIM Fellow, Type One Energy
+      :class-card: festim-fellow-card
+
+      .. image:: /_static/fellowship/logos/type-one-energy.svg
+         :alt: Type One Energy logo
+         :class: festim-fellow-logo
+
+      *Macro2Micro: taking FESTIM through the length scales*
+
+Spring 2026
+^^^^^^^^^^^
+
 .. grid:: 1 2 3 3
    :gutter: 3
 
@@ -91,58 +133,14 @@ Previous Fellows
       :link: /fellowship/fellowship_tez
       :link-type: doc
 
-      UKAEA · 2026
-
-      *Mastering FESTIM v2 on a plasma-facing monoblock case*
-
-      +++
       .. image:: /_static/fellowship/logos/ukaea.svg
          :alt: UK Atomic Energy Authority logo
          :class: festim-fellow-logo
 
+      *Mastering FESTIM v2 on a plasma-facing monoblock case*
+
+      +++
       Read the interview with our very first Fellow →
-
-   .. grid-item-card:: Arpan Sircar
-      :img-top: /_static/fellowship/Arpan_Sircar_profile.png
-      :img-alt: Arpan Sircar, FESTIM Fellow, Oak Ridge National Laboratory
-      :class-card: festim-fellow-card
-
-      Oak Ridge National Laboratory · Summer 2026
-
-      *Modeling tritium uptake in sweep gases from lithium ceramic blankets*
-
-      +++
-      .. image:: /_static/fellowship/logos/oak-ridge-national-laboratory.svg
-         :alt: Oak Ridge National Laboratory logo
-         :class: festim-fellow-logo
-
-   .. grid-item-card:: Ian Wojtowicz
-      :img-top: /_static/fellowship/Ian_Wojtowicz_profile.jpg
-      :img-alt: Ian Wojtowicz, FESTIM Fellow, University of Minnesota
-      :class-card: festim-fellow-card
-
-      University of Minnesota · Summer 2026
-
-      *Hydrogen retention in topologically complex multi-material geometries*
-
-      +++
-      .. image:: /_static/fellowship/logos/university-of-minnesota.svg
-         :alt: University of Minnesota logo
-         :class: festim-fellow-logo
-
-   .. grid-item-card:: Emre Yildirim
-      :img-top: /_static/fellowship/Emre_Yildirim_profile.jpg
-      :img-alt: Emre Yildirim, FESTIM Fellow, Type One Energy
-      :class-card: festim-fellow-card
-
-      Type One Energy · Summer 2026
-
-      *Macro2Micro: taking FESTIM through the length scales*
-
-      +++
-      .. image:: /_static/fellowship/logos/type-one-energy.svg
-         :alt: Type One Energy logo
-         :class: festim-fellow-logo
 
 ----
 

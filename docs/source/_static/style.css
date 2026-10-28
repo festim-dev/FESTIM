@@ -145,25 +145,44 @@ h3 {
     font-weight: 600;
 }
 
-/* Institution logos are mostly dark-on-transparent, so they sit on a white
-   panel to stay legible in dark mode. */
+/* Institution logos are mostly dark-on-transparent, so they sit on a light
+   blue tile to stay legible in dark mode. */
+:root {
+    --festim-logo-tile: #eaf3f7;
+}
+
 img.festim-fellow-logo {
     height: 4rem;
     width: auto;
     max-width: 100%;
     object-fit: contain;
-    background: #fff;
+    background: var(--festim-logo-tile);
     padding: 0.5rem 0.75rem;
     border-radius: 0.5rem;
     margin-bottom: 1rem;
+    /* the profile column is a flex column, which would stretch the tile */
+    align-self: flex-start;
 }
 
-/* Previous-fellow cards: fixed-height logo band so names line up across a row */
-.festim-fellow-card .card-img-top {
-    height: 6rem;
-    object-fit: contain;
-    background: #fff;
-    padding: 1.25rem 1.5rem;
+/* pydata dims all images in dark mode; the tile must stay light for the logos */
+html[data-theme="dark"] img.festim-fellow-logo {
+    filter: none;
+}
+
+/* Previous-fellow cards: photos keep their own aspect ratio at full card width.
+   Overrides the global 52px .sd-card-img-top icon size above. */
+.sd-card.festim-fellow-card .sd-card-img-top {
+    width: 100%;
+    height: auto;
+}
+
+/* Centre logo and project title under the (already centred) name */
+.sd-card.festim-fellow-card .sd-card-body {
+    text-align: center;
+}
+
+.sd-card.festim-fellow-card img.festim-fellow-logo {
+    height: 3.5rem;
 }
 
 /* =============================================================
