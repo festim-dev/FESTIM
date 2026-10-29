@@ -8,6 +8,7 @@ Usage
    beginners_guide
    units
    subdomains
+   interfaces
    species
    boundary_conditions
    initial_conditions
