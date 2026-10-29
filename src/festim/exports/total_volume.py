@@ -29,5 +29,8 @@ class TotalVolume(VolumeQuantity):
             dx: volume measure of the model
             entity_maps: entity maps relating parent mesh and submesh
         """
-        self.value = assemble_scalar(u * dx(self.volume.id), entity_maps=entity_maps)
+        weight = self.coordinate_system.integration_weight(dx.ufl_domain())
+        self.value = assemble_scalar(
+            weight * u * dx(self.volume.id), entity_maps=entity_maps
+        )
         self.data.append(self.value)

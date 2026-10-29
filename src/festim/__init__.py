@@ -20,11 +20,13 @@ from .boundary_conditions.dirichlet_bc import (
 )
 from .boundary_conditions.flux_bc import FluxBCBase, HeatFluxBC, ParticleFluxBC
 from .boundary_conditions.henrys_bc import HenrysBC
+from .boundary_conditions.outflow_bc import OutflowBC
 from .boundary_conditions.sieverts_bc import SievertsBC
 from .boundary_conditions.surface_reaction import SurfaceReactionBC
 from .coupled_heat_hydrogen_problem import (
     CoupledTransientHeatTransferHydrogenTransport,
 )
+from .drift import DriftTermBase, ElectromigrationTerm, SoretTerm
 from .enclosure.enclosure import Enclosure
 from .enclosure.gas_species import GasSpecies
 from .enclosure.openings import (
@@ -38,6 +40,15 @@ from .exports.average_surface import AverageSurface
 from .exports.average_volume import AverageVolume
 from .exports.custom_quantity import CustomQuantity
 from .exports.derived_quantity import DerivedQuantity
+from .exports.field import (
+    CustomFieldExport,
+    FieldExportBase,
+    ReactionRateExport,
+    SpeciesExport,
+    TemperatureExport,
+    VTXSpeciesExport,
+    VTXTemperatureExport,
+)
 from .exports.gas_pressure import GasPressure
 from .exports.maximum_surface import MaximumSurface
 from .exports.maximum_volume import MaximumVolume
@@ -49,13 +60,6 @@ from .exports.surface_quantity import SurfaceQuantity
 from .exports.total_surface import TotalSurface
 from .exports.total_volume import TotalVolume
 from .exports.volume_quantity import VolumeQuantity
-from .exports.vtx import (
-    CustomFieldExport,
-    ExportBaseClass,
-    ReactionRateExport,
-    VTXSpeciesExport,
-    VTXTemperatureExport,
-)
 from .exports.xdmf import XDMFExport
 from .heat_transfer_problem import HeatTransferProblem
 from .helpers import (

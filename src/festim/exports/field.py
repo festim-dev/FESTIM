@@ -4,38 +4,102 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Union
 
+import dolfinx
 import ufl
-from dolfinx import fem, io
+from dolfinx import fem
 
 from festim import k_B as _k_B
 from festim.reaction import ArrheniusReaction
 from festim.species import ImplicitSpecies, Species
 from festim.subdomain.volume_subdomain import VolumeSubdomain
 
+from .writers import (
+    CheckpointFieldWriter,
+    FieldWriter,
+    VTKHDFFieldWriter,
+    VTXFieldWriter,
+    XDMFFieldWriter,
+)
 
-class ExportBaseClass:
-    """Export functions to VTX file.
+_FORMAT_TO_WRITER: dict[str, type[FieldWriter]] = {
+    "vtx": VTXFieldWriter,
+    "vtkhdf": VTKHDFFieldWriter,
+    "checkpoint": CheckpointFieldWriter,
+    "xdmf": XDMFFieldWriter,
+}
+
+
+def _extension_for(format: str, backend: str | None) -> str:
+    """Return the file extension a given format is written with."""
+    if format == "checkpoint":
+        return ".h5" if backend == "h5py" else ".bp"
+    return {"vtx": ".bp", "vtkhdf": ".vtkhdf", "xdmf": ".xdmf"}[format]
+
+
+def _resolve_checkpoint_kwarg(format: str, checkpoint: bool) -> str:
+    """Map the deprecated ``checkpoint=True`` argument onto ``format``."""
+    if not checkpoint:
+        return format
+    warnings.warn(
+        "`checkpoint=True` is deprecated, use `format='checkpoint'` instead.",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+    return "checkpoint"
+
+
+class FieldExportBase:
+    """Base class for exports of fields to a file.
 
     Args:
-        filename: The name of the output file
+        filename: The name of the output file. If its extension doesn't match the
+            chosen format, the correct one is substituted and a warning is issued.
         times: if provided, the field will be exported at these timesteps. Otherwise
             exports at all timesteps. Defaults to None.
+        format: the output format. One of:
+
+            - ``"vtx"``: ``.bp``, readable by ParaView (the default)
+            - ``"vtkhdf"``: ``.vtkhdf``, readable by ParaView. A single scalable HDF5
+              file; several exports sharing a filename become blocks of one file.
+            - ``"checkpoint"``: for reloading with
+              :func:`festim.read_function_from_file`, not readable by ParaView
+            - ``"xdmf"``: ``.xdmf`` + ``.h5``, readable by ParaView
+
+        backend: only used by ``format="checkpoint"``: ``"adios2"`` (default, ``.bp``)
+            or ``"h5py"`` (``.h5``).
 
     Attributes:
         filename: The name of the output file
-        times: if provided, the field will be exported at these timesteps. Otherwise
-            exports at all timesteps. Defaults to None.
+        times: The timesteps to export at, or None for all timesteps
+        format: The output format
+        backend: The io4dolfinx backend, for ``format="checkpoint"``
+        writer: The :class:`festim.exports.writers.FieldWriter` doing the writing
     """
 
-    _filename: Path | str
-    writer: io.VTXWriter
+    _filename: Path
+    format: str
+    backend: str | None
+    writer: FieldWriter | None
+    #: subdomain the export lives on, overridden by subclasses that have one
+    subdomain: VolumeSubdomain | None = None
 
     def __init__(
         self,
         filename: str | Path,
-        ext: str,
-        times: list[float] | list[int] | None | None = None,
+        times: list[float] | list[int] | None = None,
+        format: str = "vtx",
+        backend: str | None = None,
     ):
+        if format not in _FORMAT_TO_WRITER:
+            raise ValueError(
+                f"Unknown format {format!r}, expected one of "
+                f"{sorted(_FORMAT_TO_WRITER)}."
+            )
+        self.format = format
+        self.backend = backend
+        self.writer = None
+
+        ext = _extension_for(format, backend)
         name = Path(filename)
         if name.suffix != ext:
             warnings.warn(
@@ -53,70 +117,121 @@ class ExportBaseClass:
     def filename(self):
         return self._filename
 
+    def define_writer(
+        self,
+        functions: list[fem.Function],
+        names: list[str],
+        mesh: dolfinx.mesh.Mesh,
+        block_name: str = "mesh",
+        overwrite: bool = True,
+    ) -> None:
+        """Create the underlying writer for this export's format.
 
-class VTXTemperatureExport(ExportBaseClass):
-    """Export temperature field functions to VTX file.
+        Args:
+            functions: the functions to write at every timestep
+            names: the name to store each function under, one per function
+            mesh: the mesh the functions live on
+            block_name: name of the block, for formats holding several meshes per file
+            overwrite: `False` if another export already initialised this file
+        """
+        writer_cls = _FORMAT_TO_WRITER[self.format]
+        if self.format == "checkpoint":
+            self.writer = writer_cls(self.filename, backend=self.backend or "adios2")
+        else:
+            self.writer = writer_cls(self.filename)
+        self.writer.initialise(
+            functions, names, mesh, block_name=block_name, overwrite=overwrite
+        )
+
+    def update(self) -> None:
+        """Refresh the data to write. Called before each write; no-op by default."""
+
+    def write(self, t: float) -> None:
+        """Write the fields at time `t`."""
+        self.writer.write(t)
+
+    def close(self) -> None:
+        """Release the underlying file."""
+        if self.writer is not None:
+            self.writer.close()
+
+
+class TemperatureExport(FieldExportBase):
+    """Export the temperature field to a file.
 
     Args:
         filename: The name of the output file
+        format: The output format, see :class:`FieldExportBase`. Defaults to ``"vtx"``.
+        backend: The io4dolfinx backend, for ``format="checkpoint"``.
         times: if provided, the field will be exported at these timesteps. Otherwise
             exports at all timesteps. Defaults to None.
 
     Attributes:
         filename: The name of the output file
-        times: if provided, the field will be exported at these timesteps. Otherwise
-            exports at all timesteps. Defaults to None.
-        writer: The VTXWriter object used to write the file
+        times: The timesteps to export at, or None for all timesteps
+        writer: The writer object used to write the file
     """
-
-    writer: io.VTXWriter
-    _subdomain: VolumeSubdomain
 
     def __init__(
         self,
         filename: str | Path,
-        times: list[float] | list[int] | None | None = None,
+        format: str = "vtx",
+        backend: str | None = None,
+        times: list[float] | list[int] | None = None,
     ):
-        super().__init__(filename, ".bp", times)
+        super().__init__(filename, times=times, format=format, backend=backend)
 
 
-class VTXSpeciesExport(ExportBaseClass):
-    """Export species field functions to VTX file.
+class SpeciesExport(FieldExportBase):
+    """Export species concentration fields to a file.
 
     Args:
         filename: The name of the output file
         field: Set of species to export
         subdomain: A field can be defined on multiple domains. This arguments specifies
             what subdomains we export on. If `None` we export on all domains.
-        checkpoint: If True, the export will be a checkpoint file using io4dolfinx
-            and won't be readable by ParaView. Default is False.
+        format: The output format, see :class:`FieldExportBase`. Defaults to ``"vtx"``.
+        backend: The io4dolfinx backend, for ``format="checkpoint"``.
         times: if provided, the field will be exported at these timesteps. Otherwise
             exports at all timesteps. Defaults to None.
 
     Attributes:
         filename: The name of the output file
         field: Set of species to export
-        times: if provided, the field will be exported at these timesteps. Otherwise
-            exports at all timesteps. Defaults to None.
-        writer: The VTXWriter object used to write the file
-    """
+        subdomain: The subdomain the species are exported on
+        times: The timesteps to export at, or None for all timesteps
+        writer: The writer object used to write the file
 
-    _subdomain: VolumeSubdomain
-    _checkpoint: bool
-    writer: io.VTXWriter
+    Example:
+
+        .. code-block:: python
+
+            # one ParaView-readable .vtkhdf file
+            F.SpeciesExport("results.vtkhdf", field=[H], subdomain=vol,
+                            format="vtkhdf")
+
+            # a checkpoint, to restart from later
+            F.SpeciesExport("state.bp", field=[H], subdomain=vol,
+                            format="checkpoint")
+    """
 
     def __init__(
         self,
         filename: str | Path,
         field: Species | list[Species],
         subdomain: VolumeSubdomain = None,
-        checkpoint: bool = False,
-        times: list[float] | list[int] | None | None = None,
+        format: str = "vtx",
+        backend: str | None = None,
+        times: list[float] | list[int] | None = None,
     ):
-        super().__init__(filename, ".bp", times)
+        super().__init__(filename, times=times, format=format, backend=backend)
         self.field = field
-        self._subdomain = subdomain
-        self._checkpoint = checkpoint
+        self.subdomain = subdomain
+
+    @property
+    def _checkpoint(self) -> bool:
+        """Kept so the legacy problem classes keep working unchanged."""
+        return self.format == "checkpoint"
 
     @property
     def field(self) -> list[Species]:
@@ -131,9 +246,6 @@ class VTXSpeciesExport(ExportBaseClass):
 
         Raises:
             TypeError: If input field is not a Species or a list of Species
-
-        Note:
-            This also creates a new writer with the updated field.
         """
         # check that all elements of list are festim.Species
         if isinstance(value, list):
@@ -168,19 +280,19 @@ class VTXSpeciesExport(ExportBaseClass):
         if legacy_output:
             return [field.post_processing_solution for field in self._field]
         else:
-            if self._subdomain is None:
+            if self.subdomain is None:
                 raise ValueError("Subdomain must be specified")
             else:
                 outfiles = []
                 for field in self._field:
-                    if self._subdomain in field.subdomains:
+                    if self.subdomain in field.subdomains:
                         outfiles.append(
-                            field.subdomain_to_post_processing_solution[self._subdomain]
+                            field.subdomain_to_post_processing_solution[self.subdomain]
                         )
                 return outfiles
 
 
-class CustomFieldExport(ExportBaseClass):
+class CustomFieldExport(FieldExportBase):
     """Export a custom field to a VTX file
 
     Args:
@@ -194,29 +306,28 @@ class CustomFieldExport(ExportBaseClass):
             exports at all timesteps. Defaults to None.
         subdomain: The volume subdomain on which the custom
             field is evaluated. Defaults to None.
-        checkpoint: If True, the export will be a checkpoint file using
-            io4dolfinx and won't be readable by ParaView. Default is False.
+        format: The output format, see :class:`FieldExportBase`. Defaults to ``"vtx"``.
+        backend: The io4dolfinx backend, for ``format="checkpoint"``.
+        checkpoint: Deprecated, use ``format="checkpoint"``.
 
     Attributes:
         filename: The name of the output file
         expression: A function evaluating the custom field.
         species_dependent_value: A dictionary mapping argument names to Species objects.
         subdomain: The volume subdomain on which the custom field is evaluated.
-        checkpoint: If True, the export will be a checkpoint file.
+        checkpoint: True if the export is a checkpoint file.
         times: if provided, the field will be exported at these timesteps. Otherwise
             exports at all timesteps.
         function: the function containing the custom field values
-        writer: The VTXWriter object used to write the file
+        writer: The writer object used to write the file
         dolfinx_expression: the dolfinx expression used to evaluate the function
     """
 
     function: fem.Function
-    writer: io.VTXWriter
     dolfinx_expression: fem.Expression
     expression: Callable
     species_dependent_value: dict[str, Species]
     subdomain: VolumeSubdomain
-    checkpoint: bool
 
     def __init__(
         self,
@@ -225,17 +336,28 @@ class CustomFieldExport(ExportBaseClass):
         species_dependent_value: Union[dict[str, Species], None] = None,
         times: Union[list[float], list[int], None] = None,
         subdomain: VolumeSubdomain = None,
+        format: str = "vtx",
+        backend: str | None = None,
         checkpoint: bool = False,
     ):
+        format = _resolve_checkpoint_kwarg(format, checkpoint)
         super().__init__(
             filename=filename,
             times=times,
-            ext=".bp",
+            format=format,
+            backend=backend,
         )
         self.expression = expression
         self.species_dependent_value = species_dependent_value or {}
-        self.checkpoint = checkpoint
         self.subdomain = subdomain
+
+    @property
+    def checkpoint(self) -> bool:
+        return self.format == "checkpoint"
+
+    def update(self):
+        """Re-evaluate the custom field before writing."""
+        self.function.interpolate(self.dolfinx_expression)
 
     @property
     def mixed_domain(self) -> bool:
@@ -356,8 +478,9 @@ class ReactionRateExport(CustomFieldExport):
             exports at all timesteps. Defaults to None.
         subdomain: The volume subdomain on which the reaction
             rate is evaluated. Defaults to None.
-        checkpoint: If True, the export will be a checkpoint file using
-            io4dolfinx and won't be readable by ParaView. Default is False.
+        format: The output format, see :class:`FieldExportBase`. Defaults to ``"vtx"``.
+        backend: The io4dolfinx backend, for ``format="checkpoint"``.
+        checkpoint: Deprecated, use ``format="checkpoint"``.
     """
 
     def __init__(
@@ -367,6 +490,8 @@ class ReactionRateExport(CustomFieldExport):
         direction: str = "both",
         times: list[float] | None = None,
         subdomain: VolumeSubdomain | None = None,
+        format: str = "vtx",
+        backend: str | None = None,
         checkpoint: bool = False,
     ):
 
@@ -413,6 +538,8 @@ class ReactionRateExport(CustomFieldExport):
             },
             times=times,
             subdomain=subdomain,
+            format=format,
+            backend=backend,
             checkpoint=checkpoint,
         )
 
@@ -447,4 +574,65 @@ class ReactionRateExport(CustomFieldExport):
             "expression has arguments "
             f"{inspect.signature(expression).parameters.keys()} but should have "
             f"arguments T and {reactant_names + product_names}."
+        )
+
+
+class VTXTemperatureExport(TemperatureExport):
+    """Export the temperature field to a VTX (``.bp``) file.
+
+    .. deprecated::
+        Use :class:`TemperatureExport`, which supports other formats, instead. This
+        class will be removed in a future release.
+    """
+
+    def __init__(
+        self,
+        filename: str | Path,
+        times: list[float] | list[int] | None = None,
+    ):
+        warnings.warn(
+            "VTXTemperatureExport is deprecated and will be removed in a future "
+            "release, use TemperatureExport(..., format='vtx') instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(filename, format="vtx", times=times)
+
+
+class VTXSpeciesExport(SpeciesExport):
+    """Export species fields to a VTX (``.bp``) file.
+
+    .. deprecated::
+        Use :class:`SpeciesExport`, which supports other formats, instead. This class
+        will be removed in a future release.
+
+    Args:
+        filename: The name of the output file
+        field: Set of species to export
+        subdomain: The subdomain to export on
+        checkpoint: If True, write a checkpoint instead of a VTX file. Equivalent to
+            ``SpeciesExport(..., format="checkpoint")``.
+        times: The timesteps to export at, or None for all timesteps
+    """
+
+    def __init__(
+        self,
+        filename: str | Path,
+        field: Species | list[Species],
+        subdomain: VolumeSubdomain = None,
+        checkpoint: bool = False,
+        times: list[float] | list[int] | None = None,
+    ):
+        warnings.warn(
+            "VTXSpeciesExport is deprecated and will be removed in a future release, "
+            "use SpeciesExport(..., format='vtx') instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(
+            filename,
+            field,
+            subdomain=subdomain,
+            format="checkpoint" if checkpoint else "vtx",
+            times=times,
         )

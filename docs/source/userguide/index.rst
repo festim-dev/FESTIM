@@ -13,6 +13,7 @@ Usage
    initial_conditions
    sources
    temperature
+   drift
    mesh
    settings
    stepsize

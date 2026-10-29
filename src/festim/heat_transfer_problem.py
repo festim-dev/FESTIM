@@ -1,7 +1,6 @@
 import basix
 import ufl
 from dolfinx import fem
-from dolfinx.io import VTXWriter
 
 from festim import boundary_conditions, exports, helpers, problem
 from festim import source as _source
@@ -221,18 +220,29 @@ class HeatTransferProblem(problem.ProblemBase):
         """Defines the export writers of the model, if field is given as a string, find
         species object in self.species."""
 
+        initialised_files = set()
         for export in self.exports:
-            if isinstance(export, exports.XDMFExport):
+            if not isinstance(export, exports.FieldExportBase):
+                continue
+            if isinstance(export, exports.TemperatureExport):
+                functions, names = [self.u], [self.u.name]
+            elif isinstance(export, exports.CustomFieldExport):
+                export.function = fem.Function(self.function_space)
+                export.set_dolfinx_expression(temperature=self.u, time=self.t)
+                functions, names = [export.function], [export.filename.stem]
+            else:
                 raise NotImplementedError(
-                    "XDMF export is not implemented yet for heat transfer problems"
+                    f"{type(export).__name__} is not implemented for heat transfer "
+                    "problems"
                 )
-            if isinstance(export, exports.VTXTemperatureExport):
-                export.writer = VTXWriter(
-                    self.u.function_space.mesh.comm,
-                    export.filename,
-                    [self.u],
-                    engine="BP5",
-                )
+            self._register_export_milestones(export)
+            export.define_writer(
+                functions,
+                names,
+                functions[0].function_space.mesh,
+                overwrite=export.filename not in initialised_files,
+            )
+            initialised_files.add(export.filename)
 
     def post_processing(self):
         """Post processes the model."""
@@ -260,13 +270,11 @@ class HeatTransferProblem(problem.ProblemBase):
                 # if filename given write export data to file
                 if export.filename is not None:
                     export.write(t=float(self.t))
-            if isinstance(export, exports.XDMFExport):
+            if isinstance(export, exports.FieldExportBase):
+                export.update()
                 export.write(float(self.t))
-
-            if isinstance(export, exports.VTXTemperatureExport):
-                export.writer.write(float(self.t))
 
     def __del__(self):
         for export in self.exports:
-            if isinstance(export, exports.VTXTemperatureExport):
-                export.writer.close()
+            if isinstance(export, exports.FieldExportBase):
+                export.close()

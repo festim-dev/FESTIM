@@ -302,14 +302,38 @@ class TestValidation:
         with pytest.raises(NotImplementedError, match="Discontinuous"):
             my_model.initialise()
 
-    def test_cylindrical_coordinates_raise(self):
+    def test_cylindrical_1d_requires_length(self):
+        """A 1D cylindrical model is per unit axial length: the metric factor only
+        gives the circumference of the surface, so the user must give the length."""
         H2 = make_gas_species()
-        my_model, *_ = make_model(enclosures=[make_enclosure(species=[H2])])
+        my_model, _volume, _left, right = make_model()
         my_model.mesh = F.Mesh1D(
             vertices=np.linspace(0, 1, 9), coordinate_system="cylindrical"
         )
-        with pytest.raises(NotImplementedError, match="cartesian"):
+        # a plain list means no axial length was given
+        my_model.enclosures = [make_enclosure(species=[H2], surfaces=[right])]
+        with pytest.raises(ValueError, match="axial length"):
             my_model.initialise()
+
+    def test_cylindrical_1d_accepts_length(self):
+        H2 = make_gas_species()
+        my_model, _volume, _left, right = make_model()
+        my_model.mesh = F.Mesh1D(
+            vertices=np.linspace(0, 1, 9), coordinate_system="cylindrical"
+        )
+        my_model.enclosures = [make_enclosure(species=[H2], surfaces={right: 2.0})]
+        my_model.initialise()
+
+    def test_spherical_1d_requires_no_area(self):
+        """In spherical coordinates the metric factor gives the full area of the
+        sphere, so nothing is missing and a plain list of surfaces is enough."""
+        H2 = make_gas_species()
+        my_model, _volume, _left, right = make_model()
+        my_model.mesh = F.Mesh1D(
+            vertices=np.linspace(0, 1, 9), coordinate_system="spherical"
+        )
+        my_model.enclosures = [make_enclosure(species=[H2], surfaces=[right])]
+        my_model.initialise()
 
 
 @requires_dolfinx_011

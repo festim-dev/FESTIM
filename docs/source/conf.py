@@ -5,7 +5,6 @@
 
 # -- Path setup --------------------------------------------------------------
 
-import datetime
 import os
 import sys
 

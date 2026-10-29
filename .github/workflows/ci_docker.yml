@@ -27,17 +27,23 @@ jobs:
       #   if: ${{ matrix.container_version == 'nightly' }}
         run: python3 -m pip install git+https://github.com/scientificcomputing/io4dolfinx.git --no-build-isolation
 
-      - name: Run tests
-        run: |
-          python3 -m pytest test/ --cov festim --cov-report xml --cov-report term
+      # the .vtkhdf writer goes through h5py and needs the MPI build to write from
+      # more than one process; surface it here rather than in a confusing test failure
+      - name: Report h5py MPI support
+        run: python3 -c "import h5py; print('h5py', h5py.__version__, 'mpi:', h5py.get_config().mpi)"
 
-      - name: Install curl
+      - name: Install additional dependencies
         run: |
           apt-get update
-          apt-get install -y curl
+          apt-get install -y xvfb libgl1 libglx-mesa0 libxrender1 libxcursor1 libxinerama1 curl gnupg ca-certificates
 
+      - name: Run tests
+        run: |
+          xvfb-run -a python3 -m pytest test/ --cov festim --cov-report xml --cov-report term
+      
       - name: Upload to codecov
         uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
+          flags: dolfinx-${{ matrix.container_version }}

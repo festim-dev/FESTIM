@@ -649,3 +649,64 @@ def test_update_time_dependent_values_HeatFluxBC(bc_value, expected_values):
         if isinstance(my_model.boundary_conditions[0].value_fenics, fem.Constant):
             computed_value = float(my_model.boundary_conditions[0].value_fenics)
             assert np.isclose(computed_value, expected_values[i])
+
+
+def test_custom_field_export_in_heat_transfer(tmp_path):
+    """A CustomFieldExport can be used with a HeatTransferProblem."""
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=dummy_mat)
+    left = F.SurfaceSubdomain1D(id=1, x=0)
+    right = F.SurfaceSubdomain1D(id=2, x=1)
+
+    filename = str(tmp_path / "twice_the_temperature.bp")
+    my_export = F.CustomFieldExport(filename=filename, expression=lambda T: 2 * T)
+
+    my_problem = F.HeatTransferProblem(
+        mesh=F.Mesh1D(np.linspace(0, 1, num=100)),
+        subdomains=[my_vol, left, right],
+        boundary_conditions=[
+            F.FixedTemperatureBC(subdomain=left, value=300),
+            F.FixedTemperatureBC(subdomain=right, value=500),
+        ],
+        settings=F.Settings(atol=1e-8, rtol=1e-10, transient=False),
+        exports=[my_export],
+    )
+
+    my_problem.initialise()
+    my_problem.run()
+
+    assert os.path.exists(filename)
+    assert np.allclose(my_export.function.x.array, 2 * my_problem.u.x.array)
+
+
+def test_unsupported_field_export_in_heat_transfer():
+    """Field exports other than temperature and custom fields are rejected."""
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=dummy_mat)
+    left = F.SurfaceSubdomain1D(id=1, x=0)
+
+    my_problem = F.HeatTransferProblem(
+        mesh=F.Mesh1D(np.linspace(0, 1, num=10)),
+        subdomains=[my_vol, left],
+        boundary_conditions=[F.FixedTemperatureBC(subdomain=left, value=300)],
+        settings=F.Settings(atol=1e-8, rtol=1e-10, transient=False),
+        exports=[F.SpeciesExport("H.bp", field=F.Species("H"), subdomain=my_vol)],
+    )
+
+    with pytest.raises(NotImplementedError, match="SpeciesExport is not implemented"):
+        my_problem.initialise()
+
+
+def test_export_times_on_steady_state_problem_raises():
+    """`times` needs a stepsize to add milestones to, so steady state is an error."""
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=dummy_mat)
+    left = F.SurfaceSubdomain1D(id=1, x=0)
+
+    my_problem = F.HeatTransferProblem(
+        mesh=F.Mesh1D(np.linspace(0, 1, num=10)),
+        subdomains=[my_vol, left],
+        boundary_conditions=[F.FixedTemperatureBC(subdomain=left, value=300)],
+        settings=F.Settings(atol=1e-8, rtol=1e-10, transient=False),
+        exports=[F.TemperatureExport("T.bp", times=[1, 2])],
+    )
+
+    with pytest.raises(ValueError, match="steady state"):
+        my_problem.initialise()

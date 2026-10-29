@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 from dolfinx import fem
 
@@ -64,6 +66,67 @@ def test_run_MMS_spherical():
     L2_error = error_L2(computed_solution, u_exact)
 
     assert L2_error < 1e-6
+
+
+def test_surface_flux_spherical():
+    """Tests that SurfaceFlux computes the correct flux in spherical coordinates.
+
+    Uses the analytical solution for steady-state diffusion through a spherical
+    shell with no source: u(r) = A/r + B, solved for fixed concentrations u1, u2
+    at the inner and outer radii r1, r2. The total flux through any spherical
+    shell, Q = 4 * pi * D * A, is constant in r (steady-state conservation with no
+    source), so the inner and outer surface fluxes should be equal and opposite.
+    """
+
+    r1, r2 = 1.0, 2.0
+    c1, c2 = 10.0, 2.0
+    D = 2.0
+
+    my_mesh = F.Mesh1D(
+        vertices=np.linspace(r1, r2, 1000), coordinate_system="spherical"
+    )
+
+    my_mat = F.Material(D_0=D, E_D=0)
+
+    left = F.SurfaceSubdomain1D(id=1, x=r1)
+    right = F.SurfaceSubdomain1D(id=2, x=r2)
+    my_vol = F.VolumeSubdomain1D(id=3, borders=[r1, r2], material=my_mat)
+
+    H = F.Species("H")
+
+    my_bcs = [
+        F.FixedConcentrationBC(subdomain=left, value=c1, species=H),
+        F.FixedConcentrationBC(subdomain=right, value=c2, species=H),
+    ]
+
+    flux_left = F.SurfaceFlux(field=H, surface=left)
+    flux_right = F.SurfaceFlux(field=H, surface=right)
+
+    my_settings = F.Settings(
+        atol=1e-10,
+        rtol=1e-9,
+        max_iterations=50,
+        transient=False,
+    )
+
+    my_sim = F.HydrogenTransportProblem(
+        mesh=my_mesh,
+        species=[H],
+        subdomains=[my_vol, left, right],
+        boundary_conditions=my_bcs,
+        temperature=500,
+        exports=[flux_left, flux_right],
+        settings=my_settings,
+    )
+
+    my_sim.initialise()
+    my_sim.run()
+
+    A = (c1 - c2) * r1 * r2 / (r2 - r1)
+    expected_flux_magnitude = 4 * math.pi * D * A
+
+    assert np.isclose(flux_left.value, -expected_flux_magnitude, rtol=1e-2)
+    assert np.isclose(flux_right.value, expected_flux_magnitude, rtol=1e-2)
 
 
 def test_run_MMS_spherical_mixed_domain():

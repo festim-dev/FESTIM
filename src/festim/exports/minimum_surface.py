@@ -4,6 +4,7 @@ import dolfinx
 import numpy as np
 
 from festim.exports.surface_quantity import SurfaceQuantity
+from festim.subdomain.volume_subdomain import VolumeSubdomain
 
 
 class MinimumSurface(SurfaceQuantity):
@@ -17,27 +18,59 @@ class MinimumSurface(SurfaceQuantity):
 
     Attributes:
         see `festim.SurfaceQuantity`
+        facet_meshtags: the facet meshtags of the parent mesh
+        volume: the volume subdomain the surface bounds. Set by the problem;
+            ``None`` outside `festim.HydrogenTransportProblemDiscontinuous`
     """
 
-    facet_meshtags: dolfinx.mesh.MeshTags
+    facet_meshtags: dolfinx.mesh.MeshTags | None = None
+    volume: VolumeSubdomain | None = None
 
     @property
     def title(self):
         return f"Minimum {self.field.name} surface {self.surface.id}"
 
-    def compute(self):
-        """Computes the minimum value of the field on the defined surface subdomain, and
-        appends it to the data list."""
-        solution = self.field.post_processing_solution
-        entities = self.facet_meshtags.find(self.surface.id)
-        if isinstance(solution, dolfinx.fem.Function):
-            V = solution.function_space
-        else:
-            V = self.field.sub_function_space
-        mesh = V.mesh
-        dofs = dolfinx.fem.locate_dofs_topological(
-            V=V, entity_dim=mesh.topology.dim - 1, entities=entities
+    @property
+    def is_submesh(self) -> bool:
+        """Whether the field's solution lives on the submesh of ``volume``, as in
+        ``festim.HydrogenTransportProblemDiscontinuous``. See issue #1191."""
+        return (
+            self.volume is not None
+            and self.volume in self.field.subdomain_to_post_processing_solution
         )
 
-        self.value = mesh.comm.allreduce(np.min(solution.x.array[dofs]), op=MPI.MIN)
+    @property
+    def solution(self):
+        if self.is_submesh:
+            return self.field.subdomain_to_post_processing_solution[self.volume]
+        return self.field.post_processing_solution
+
+    @property
+    def meshtags(self):
+        """Facet meshtags of whichever mesh ``solution`` lives on."""
+        return self.volume.ft if self.is_submesh else self.facet_meshtags
+
+    def compute(self):
+        """Computes the minimum value of the field on the defined surface subdomain, and
+        appends it to the data list.
+        """
+        assert self.meshtags is not None, (
+            "facet meshtags must be set before computing the min surface value"
+        )
+        solution = self.solution
+        V = (
+            solution.function_space
+            if isinstance(solution, dolfinx.fem.Function)
+            else self.field.sub_function_space
+        )
+        mesh = V.mesh
+        fdim = mesh.topology.dim - 1
+        mesh.topology.create_connectivity(fdim, mesh.topology.dim)
+        dofs = dolfinx.fem.locate_dofs_topological(
+            V=V, entity_dim=fdim, entities=self.meshtags.find(self.surface.id)
+        )
+        values = solution.x.array[dofs]
+
+        local_min = np.min(values) if values.size > 0 else np.inf
+        self.value = mesh.comm.allreduce(local_min, op=MPI.MIN)
         self.data.append(self.value)

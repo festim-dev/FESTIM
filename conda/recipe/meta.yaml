@@ -28,6 +28,9 @@ requirements:
     - fenics-dolfinx >=0.10,<=0.11
     - scifem >=0.2.13
     - io4dolfinx
+    # the .vtkhdf writer goes through h5py; the mpi build is
+    # required to write from more than one process
+    - h5py =*=mpi_*
     - tqdm
 
 test:

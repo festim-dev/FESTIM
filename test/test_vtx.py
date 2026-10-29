@@ -84,7 +84,7 @@ def test_vtx_DG(tmpdir):
     my_model.initialise()
     assert len(my_export.get_functions()) == 2
 
-    all_vtx = [e for e in my_model.exports if isinstance(e, F.ExportBaseClass)]
+    all_vtx = [e for e in my_model.exports if isinstance(e, F.FieldExportBase)]
 
     assert len(all_vtx) == 1
 
@@ -109,7 +109,7 @@ def test_vtx_mixed_domain_temperature(tmpdir):
     my_model.settings.stepsize = F.Stepsize(initial_value=1)
 
     my_model.initialise()
-    all_vtx = [e for e in my_model.exports if isinstance(e, F.ExportBaseClass)]
+    all_vtx = [e for e in my_model.exports if isinstance(e, F.FieldExportBase)]
 
     assert len(all_vtx) == 1
 
@@ -140,7 +140,7 @@ def test_vtx_integration_with_h_transport_problem(tmpdir, checkpoint):
     my_model.initialise()
     assert len(my_export.get_functions()) == 1
 
-    all_vtx = [e for e in my_model.exports if isinstance(e, F.ExportBaseClass)]
+    all_vtx = [e for e in my_model.exports if isinstance(e, F.FieldExportBase)]
 
     assert len(all_vtx) == 1
 
@@ -174,7 +174,7 @@ def test_vtx_temperature(T, tmpdir):
     my_model.settings = F.Settings(atol=1, rtol=0.1, final_time=2)
     my_model.settings.stepsize = F.Stepsize(initial_value=1)
 
-    all_vtx = [e for e in my_model.exports if isinstance(e, F.ExportBaseClass)]
+    all_vtx = [e for e in my_model.exports if isinstance(e, F.FieldExportBase)]
 
     assert len(all_vtx) == 1
 
@@ -526,11 +526,13 @@ def test_reaction_rate_override_signature():
 
 def test_export_base_class_times_and_extension(tmp_path):
     """
-    Test that ExportBaseClass sorts times and warns when wrong extension is given.
+    Test that FieldExportBase sorts times and warns when wrong extension is given.
     """
     with pytest.warns(UserWarning, match="does not have .bp extension"):
-        export = F.ExportBaseClass(
-            filename=tmp_path / "wrong_extension.txt", ext=".bp", times=[3.0, 1.0, 2.0]
+        export = F.FieldExportBase(
+            filename=tmp_path / "wrong_extension.txt",
+            format="vtx",
+            times=[3.0, 1.0, 2.0],
         )
 
     assert export.filename.suffix == ".bp"
@@ -538,5 +540,7 @@ def test_export_base_class_times_and_extension(tmp_path):
 
 
 def test_export_base_class_no_times(tmp_path):
-    export = F.ExportBaseClass(filename=tmp_path / "correct.bp", ext=".bp", times=None)
+    export = F.FieldExportBase(
+        filename=tmp_path / "correct.bp", format="vtx", times=None
+    )
     assert export.times is None

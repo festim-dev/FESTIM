@@ -129,3 +129,36 @@ def test_velocity_field_update():
     for t in t_values:
         test_value.velocity.update(t)
         assert np.isclose(np.max(test_value.velocity.fenics_object.x.array), 2 * t)
+
+
+def test_velocity_field_shape_is_the_geometric_dimension():
+    """On a manifold submesh the velocity must be an ambient vector.
+
+    The cells of a codim-1 submesh have a lower topological dimension than the space
+    they live in (a line in 2D has ``topology.dim == 1``, ``geometry.dim == 2``), while
+    the velocity -- like the tangential gradient it is dotted with -- is ambient.
+    """
+    test_mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 10, 10)
+    fdim = test_mesh.topology.dim - 1
+    facets = dolfinx.mesh.locate_entities_boundary(
+        test_mesh, fdim, lambda x: np.isclose(x[0], 0.0)
+    )
+    submesh, _, _, _ = dolfinx.mesh.create_submesh(test_mesh, fdim, facets)
+    assert submesh.topology.dim == 1 and submesh.geometry.dim == 2
+
+    V_parent = fem.functionspace(test_mesh, ("Lagrange", 1, (2,)))
+    velocity = fem.Function(V_parent)
+    velocity.interpolate(
+        lambda x: np.vstack([np.ones_like(x[0]), 2 * np.ones_like(x[0])])
+    )
+
+    term = F.AdvectionTerm(
+        velocity=velocity,
+        subdomain=F.VolumeSubdomain(id=1, material="dummy_mat", dim=1),
+        species=F.Species("H"),
+    )
+    term.velocity.convert_input_value(
+        function_space=fem.functionspace(submesh, ("Lagrange", 1))
+    )
+
+    assert term.velocity.fenics_object.ufl_shape == (2,)

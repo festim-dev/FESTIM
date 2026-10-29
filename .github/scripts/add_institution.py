@@ -1,7 +1,8 @@
 import os
 import re
-import requests
 import urllib.parse
+
+import requests
 
 
 def main():
@@ -53,7 +54,7 @@ def main():
 
     # Update index.rst
     index_path = os.path.join("docs", "source", "index.rst")
-    with open(index_path, "r") as f:
+    with open(index_path) as f:
         content = f.read()
 
     # Build the new logo HTML line

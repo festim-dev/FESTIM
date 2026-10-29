@@ -3,6 +3,7 @@ import ufl
 from dolfinx import fem
 
 import festim as F
+from festim.helpers import solution_on
 from festim.subdomain.surface_subdomain import SurfaceSubdomain
 
 
@@ -245,9 +246,7 @@ class ParticleFluxBC(FluxBCBase):
                     if species.concentration is not None:
                         kwargs[name] = species.concentration
                     else:  # discontinuous case: one solution per subdomain
-                        kwargs[name] = species.subdomain_to_solution[
-                            self._volume_subdomain
-                        ]
+                        kwargs[name] = solution_on(species, self._volume_subdomain)
 
                 self.value_fenics = self.value(**kwargs)
 
