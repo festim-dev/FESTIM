@@ -101,7 +101,6 @@ from .species import ImplicitSpecies, Species, find_species_from_name
 from .stepsize import Stepsize
 from .subdomain.interface import (
     Interface,
-    InterfaceFlux,
     InterfaceMethod,
     InterfaceReaction,
 )

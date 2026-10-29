@@ -34,7 +34,14 @@ my_model.species = [A]
 
 
 my_model.interfaces = [
-    F.InterfaceFlux(id=1, subdomains=[vol1, vol2], k_plus=100000, k_minus=0.0000000001),
+    F.InterfaceReaction(
+        id=1,
+        subdomains=[vol1, vol2],
+        k_plus=100000,
+        k_minus=0.0000000001,
+        reactants=[A],
+        products=[A],
+    ),
     # F.Interface(
     #     id=2,
     #     subdomains=[vol1, vol2],
