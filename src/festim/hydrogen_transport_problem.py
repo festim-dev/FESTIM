@@ -1978,6 +1978,14 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         manifold -- both integrals end up in that subdomain's ``F``. So the data of
         every interior-facet integral goes into one list, and the measure built from it
         is handed to all of them, each indexing it by its own id.
+
+        Several interfaces can share an id (eg. several
+        :class:`festim.InterfaceReaction` on the same facets), but the measure takes a
+        single entry per id. The first interface declared on an id fixes which
+        subdomain is on ``"+"``, and an interface declared with its subdomains the
+        other way round gets its restrictions swapped to match. Interfaces sharing an
+        id on different pairs of subdomains are rejected when the integration data of
+        the first one is computed, as its facets do not all separate its subdomains.
         """
         self._allocate_manifold_side_ids()
         integral_data = [
@@ -1986,14 +1994,15 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             if self.manifold_is_interior(manifold)
             for entry in self._manifold_integration_data(manifold)
         ]
-        # we only need one integral_data entry per _subdomain_ not per Interface object
-        # as you can have several InterfaceReaction objects on the same subdomain
-        seen = set()
+        first_on_id = {}
         for interface in self.interfaces:
-            data = interface.compute_mapped_interior_facet_data(self.volume_meshtags)
-            if data[0] not in seen:
-                seen.add(data[0])
-                integral_data.append(data)
+            first = first_on_id.setdefault(interface.id, interface)
+            if first is interface:
+                integral_data.append(
+                    interface.compute_mapped_interior_facet_data(self.volume_meshtags)
+                )
+            swapped = interface.subdomains == first.subdomains[::-1]
+            interface.restriction = ("-", "+") if swapped else ("+", "-")
         self.interior_facet_measure = ufl.Measure(
             "dS", domain=self.mesh.mesh, subdomain_data=integral_data
         )
