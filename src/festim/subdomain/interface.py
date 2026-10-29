@@ -656,11 +656,22 @@ class InterfaceReaction(InterfaceBase):
             Variational forms to be added to each subdomain.
 
         Raises:
-            AssertionError: If the interface method is unknown or species is not
-                defined in both subdomains.
+            ValueError: If a reactant is not defined in the first subdomain or a
+                product is not defined in the second subdomain.
         """
 
         subdomain_0, subdomain_1 = self.subdomains
+        for side, subdomain, species_on_side in (
+            ("reactant", subdomain_0, self.reactants),
+            ("product", subdomain_1, self.products),
+        ):
+            for spe in species_on_side:
+                if subdomain not in (spe.subdomains or []):
+                    raise ValueError(
+                        f"{side} {spe.name} of the reaction on interface {self.id} "
+                        f"must be defined in subdomain {subdomain.id}"
+                    )
+
         F_0, F_1 = dolfinx.fem.form(0), dolfinx.fem.form(0)
 
         R = self.reaction_term()
