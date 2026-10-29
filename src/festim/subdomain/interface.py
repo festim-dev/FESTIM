@@ -598,19 +598,19 @@ class InterfaceReaction(InterfaceBase):
         k_minus: The backward rate coefficient :math:`k_-`. Its units depend on the
             number of products. Detailed balance requires ``k_plus / k_minus`` to
             equal the equilibrium constant of the reaction; this is not checked.
-        reactants: The reactant(s), defined in the first subdomain. A species
-            listed twice appears squared in the rate and is consumed at rate
-            ``2 R`` (eg. ``2 H --> H2``).
+        reactants: The reactant(s), defined in the first subdomain: at least one
+            festim.Species. A species listed twice appears squared in the rate and
+            is consumed at rate ``2 R`` (eg. ``2 H --> H2``).
         products: The product(s), defined in the second subdomain, following the
-            same rule.
+            same rule. ``None`` or an empty list for an irreversible reaction.
 
     Attributes:
         id: Tag of the interface facets in the parent mesh facet tags.
         subdomains: The two volume subdomains sharing the interface.
         k_plus: The forward rate coefficient.
         k_minus: The backward rate coefficient.
-        reactants: The reactant(s), defined in the first subdomain.
-        products: The product(s), defined in the second subdomain.
+        reactants: The reactant(s), as a list.
+        products: The product(s), as a list (empty for an irreversible reaction).
         restriction: The restrictions of the first and second subdomains on the
             interface, ``("+", "-")``.
 
@@ -657,14 +657,57 @@ class InterfaceReaction(InterfaceBase):
         subdomains: list[VolumeSubdomain],
         k_plus: float,
         k_minus: float,
-        reactants: list["Species"],
-        products: list["Species"],
+        reactants: "Species | list[Species]",
+        products: "Species | list[Species] | None",
     ) -> None:
         super().__init__(id, subdomains)
         self.k_plus = k_plus
         self.k_minus = k_minus
         self.reactants = reactants
         self.products = products
+
+    @property
+    def reactants(self) -> list["Species"]:
+        return self._reactants
+
+    @reactants.setter
+    def reactants(self, value: "Species | list[Species]") -> None:
+        # imported here as festim.species imports this module's package
+        from festim.species import Species
+
+        if not isinstance(value, list):
+            value = [value]
+        if not value:
+            raise ValueError("reactants must contain at least one festim.Species")
+        for spe in value:
+            if not isinstance(spe, Species):
+                raise TypeError(
+                    "reactants must be a festim.Species or a list of festim.Species, "
+                    f"not {type(spe).__name__}"
+                )
+        self._reactants = value
+
+    @property
+    def products(self) -> list["Species"]:
+        return self._products
+
+    @products.setter
+    def products(self, value: "Species | list[Species] | None") -> None:
+        # imported here as festim.species imports this module's package
+        from festim.species import Species
+
+        # stored as a list, empty for an irreversible reaction
+        if value is None:
+            value = []
+        elif not isinstance(value, list):
+            value = [value]
+        for spe in value:
+            if not isinstance(spe, Species):
+                raise TypeError(
+                    "products must be a festim.Species, a list of festim.Species, or "
+                    f"None, not {type(spe).__name__}"
+                )
+        self._products = value
 
     def get_formulation(
         self,
@@ -721,9 +764,6 @@ class InterfaceReaction(InterfaceBase):
             The net rate :math:`R`, with the reactants restricted to the first
             subdomain and the products to the second subdomain.
         """
-        # make sure products is a list
-        products = self.products if isinstance(self.products, list) else [self.products]
-
         # multiply all concentrations to be used in the term
 
         reactant_concentrations = [
@@ -732,14 +772,14 @@ class InterfaceReaction(InterfaceBase):
         ]
         product_concentrations = [
             spe.subdomain_to_solution[self.subdomains[1]](self.restriction[1])
-            for spe in products
+            for spe in self.products
         ]
 
         product_of_reactants = reactant_concentrations[0]
         for reactant_conc in reactant_concentrations[1:]:
             product_of_reactants *= reactant_conc
 
-        if products:
+        if self.products:
             product_of_products = product_concentrations[0]
             for product_conc in product_concentrations[1:]:
                 product_of_products *= product_conc
