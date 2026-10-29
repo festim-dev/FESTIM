@@ -571,7 +571,85 @@ class Interface(InterfaceBase):
 
 
 class InterfaceReaction(InterfaceBase):
-    restriction: list[str, str] = ("+", "-")
+    """A reversible reaction across an interface between two volume subdomains,
+    following a mass-action net rate
+
+    .. math::
+
+        R = k_+ \\prod_i c_{0,i} - k_- \\prod_j c_{1,j}
+
+    where :math:`c_{0,i}` are the concentrations of the reactants on the first
+    subdomain and :math:`c_{1,j}` the concentrations of the products on the second
+    subdomain, both evaluated on the interface. :math:`R` is a flux: each
+    appearance in ``reactants`` leaves the first subdomain at rate ``R`` and each
+    appearance in ``products`` enters the second subdomain at rate ``R``.
+
+    Several InterfaceReaction objects can share the same ``id``, in which case
+    their contributions are summed. This replaces the local thermodynamic
+    equilibrium imposed by :class:`Interface`, which is recovered when ``k_plus``
+    and ``k_minus`` tend to infinity with a fixed ratio.
+
+    Args:
+        id: Tag of the interface facets in the parent mesh facet tags.
+        subdomains: The two volume subdomains sharing the interface. The first one
+            hosts the reactants and the second one the products.
+        k_plus: The forward rate coefficient :math:`k_+`. Its units depend on the
+            number of reactants.
+        k_minus: The backward rate coefficient :math:`k_-`. Its units depend on the
+            number of products. Detailed balance requires ``k_plus / k_minus`` to
+            equal the equilibrium constant of the reaction; this is not checked.
+        reactants: The reactant(s), defined in the first subdomain. A species
+            listed twice appears squared in the rate and is consumed at rate
+            ``2 R`` (eg. ``2 H --> H2``).
+        products: The product(s), defined in the second subdomain, following the
+            same rule.
+
+    Attributes:
+        id: Tag of the interface facets in the parent mesh facet tags.
+        subdomains: The two volume subdomains sharing the interface.
+        k_plus: The forward rate coefficient.
+        k_minus: The backward rate coefficient.
+        reactants: The reactant(s), defined in the first subdomain.
+        products: The product(s), defined in the second subdomain.
+        restriction: The restrictions of the first and second subdomains on the
+            interface, ``("+", "-")``.
+
+    Examples:
+
+        .. testcode:: InterfaceReaction
+
+            import festim as F
+
+            material = F.Material(D_0=1, E_D=0)
+            metal = F.VolumeSubdomain1D(id=1, material=material, borders=[0, 1])
+            salt = F.VolumeSubdomain1D(id=2, material=material, borders=[1, 2])
+
+            H = F.Species("H", subdomains=[metal])
+            H2 = F.Species("H2", subdomains=[salt])
+
+            # 2 H (metal) <=> H2 (salt), R = k_plus * c_H**2 - k_minus * c_H2
+            recombination = F.InterfaceReaction(
+                id=3,
+                subdomains=[metal, salt],
+                k_plus=2.0,
+                k_minus=1.0,
+                reactants=[H, H],
+                products=[H2],
+            )
+            print(recombination.reactants, recombination.products)
+
+        .. testoutput:: InterfaceReaction
+
+            [Species(H), Species(H)] [Species(H2)]
+    """
+
+    id: int
+    subdomains: tuple[VolumeSubdomain, VolumeSubdomain]
+    k_plus: float
+    k_minus: float
+    reactants: list["Species"]
+    products: list["Species"]
+    restriction: tuple[str, str] = ("+", "-")
 
     def __init__(
         self,
@@ -581,7 +659,7 @@ class InterfaceReaction(InterfaceBase):
         k_minus: float,
         reactants: list["Species"],
         products: list["Species"],
-    ):
+    ) -> None:
         super().__init__(id, subdomains)
         self.k_plus = k_plus
         self.k_minus = k_minus
@@ -592,15 +670,14 @@ class InterfaceReaction(InterfaceBase):
         self,
         dS: ufl.Measure,
         species: list["Species"],
-        temperature,
+        temperature: dolfinx.fem.Constant | dolfinx.fem.Function,
     ) -> tuple[ufl.Form, ufl.Form]:
-        """Generate the interface formulation for all species.
+        """Generate the interface formulation of the reaction.
 
         Args:
             dS: Integration measure for the interface, with correct integration data.
-            species: Species for which interface conditions should be applied.
-                Must be defined in both subdomains of the interface.
-            temperature: Temperature field/function for temperature-dependent laws.
+            species: Unused, the species involved are the reactants and products.
+            temperature: Unused, the rate coefficients do not depend on temperature.
 
         Returns:
             Variational forms to be added to each subdomain.
@@ -637,8 +714,13 @@ class InterfaceReaction(InterfaceBase):
 
         return F_0, F_1
 
-    def reaction_term(self):
+    def reaction_term(self) -> ufl.core.expr.Expr:
+        """Compute the net reaction rate on the interface.
 
+        Returns:
+            The net rate :math:`R`, with the reactants restricted to the first
+            subdomain and the products to the second subdomain.
+        """
         # make sure products is a list
         products = self.products if isinstance(self.products, list) else [self.products]
 
