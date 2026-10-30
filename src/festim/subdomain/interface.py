@@ -568,3 +568,263 @@ class Interface(InterfaceBase):
         F_1 += -stabilisation * jump * v_1 * dS(self.id)
 
         return F_0, F_1
+
+
+class InterfaceReaction(InterfaceBase):
+    """A reversible reaction across an interface between two volume subdomains,
+    following a mass-action net rate
+
+    .. math::
+
+        R = k_+ \\prod_i c_{0,i} - k_- \\prod_j c_{1,j}
+
+    where :math:`c_{0,i}` are the concentrations of the reactants on the first
+    subdomain and :math:`c_{1,j}` the concentrations of the products on the second
+    subdomain, both evaluated on the interface. :math:`R` is a flux: each
+    appearance in ``reactants`` leaves the first subdomain at rate ``R`` and each
+    appearance in ``products`` enters the second subdomain at rate ``R``.
+
+    Several InterfaceReaction objects can share the same ``id``, in which case
+    their contributions are summed. This replaces the local thermodynamic
+    equilibrium imposed by :class:`Interface`, which is recovered when ``k_plus``
+    and ``k_minus`` tend to infinity with a fixed ratio.
+
+    Args:
+        id: Tag of the interface facets in the parent mesh facet tags.
+        subdomains: The two volume subdomains sharing the interface. The first one
+            hosts the reactants and the second one the products.
+        k_plus: The forward rate coefficient :math:`k_+`, non-negative. Its units
+            depend on the number of reactants.
+        k_minus: The backward rate coefficient :math:`k_-`, non-negative. Its units
+            depend on the number of products. Detailed balance requires
+            ``k_plus / k_minus`` to equal the equilibrium constant of the reaction;
+            this is not checked.
+        reactants: The reactant(s), defined in the first subdomain: at least one
+            festim.Species. A species listed twice appears squared in the rate and
+            is consumed at rate ``2 R`` (eg. ``2 H --> H2``).
+        products: The product(s), defined in the second subdomain, following the
+            same rule. ``None`` (default) or an empty list for an irreversible
+            reaction.
+
+    Attributes:
+        id: Tag of the interface facets in the parent mesh facet tags.
+        subdomains: The two volume subdomains sharing the interface.
+        k_plus: The forward rate coefficient.
+        k_minus: The backward rate coefficient.
+        reactants: The reactant(s), as a list.
+        products: The product(s), as a list (empty for an irreversible reaction).
+        restriction: The restrictions of the first and second subdomains on the
+            interface, ``("+", "-")``.
+
+    Examples:
+
+        .. testcode:: InterfaceReaction
+
+            import festim as F
+
+            material = F.Material(D_0=1, E_D=0)
+            metal = F.VolumeSubdomain1D(id=1, material=material, borders=[0, 1])
+            salt = F.VolumeSubdomain1D(id=2, material=material, borders=[1, 2])
+
+            H = F.Species("H", subdomains=[metal])
+            H2 = F.Species("H2", subdomains=[salt])
+
+            # 2 H (metal) <=> H2 (salt), R = k_plus * c_H**2 - k_minus * c_H2
+            recombination = F.InterfaceReaction(
+                id=3,
+                subdomains=[metal, salt],
+                k_plus=2.0,
+                k_minus=1.0,
+                reactants=[H, H],
+                products=[H2],
+            )
+            print(recombination.reactants, recombination.products)
+
+        .. testoutput:: InterfaceReaction
+
+            [Species(H), Species(H)] [Species(H2)]
+    """
+
+    id: int
+    subdomains: tuple[VolumeSubdomain, VolumeSubdomain]
+    k_plus: float
+    k_minus: float
+    reactants: list["Species"]
+    products: list["Species"]
+    restriction: tuple[str, str] = ("+", "-")
+
+    def __init__(
+        self,
+        id: int,
+        subdomains: list[VolumeSubdomain],
+        k_plus: float,
+        k_minus: float,
+        reactants: "Species | list[Species]",
+        products: "Species | list[Species] | None" = None,
+    ) -> None:
+        super().__init__(id, subdomains)
+        self.k_plus = k_plus
+        self.k_minus = k_minus
+        self.reactants = reactants
+        self.products = products
+
+    @staticmethod
+    def _check_rate(name: str, value: float | int) -> float | int:
+        """Check that a rate coefficient is a non-negative number.
+
+        Args:
+            name: The name of the attribute, for the error messages.
+            value: The rate coefficient.
+
+        Returns:
+            The unchanged rate coefficient.
+
+        Raises:
+            TypeError: If the value is not a float or an int.
+            ValueError: If the value is negative.
+        """
+        if not isinstance(value, float | int):
+            raise TypeError(
+                f"{name} must be a float or an int, not {type(value).__name__}"
+            )
+        if value < 0:
+            raise ValueError(f"{name} must be non-negative, not {value}")
+        return value
+
+    @property
+    def k_plus(self) -> float | int:
+        return self._k_plus
+
+    @k_plus.setter
+    def k_plus(self, value: float | int) -> None:
+        self._k_plus = self._check_rate("k_plus", value)
+
+    @property
+    def k_minus(self) -> float | int:
+        return self._k_minus
+
+    @k_minus.setter
+    def k_minus(self, value: float | int) -> None:
+        self._k_minus = self._check_rate("k_minus", value)
+
+    @property
+    def reactants(self) -> list["Species"]:
+        return self._reactants
+
+    @reactants.setter
+    def reactants(self, value: "Species | list[Species]") -> None:
+        # imported here as festim.species imports this module's package
+        from festim.species import Species
+
+        if not isinstance(value, list):
+            value = [value]
+        if not value:
+            raise ValueError("reactants must contain at least one festim.Species")
+        for spe in value:
+            if not isinstance(spe, Species):
+                raise TypeError(
+                    "reactants must be a festim.Species or a list of festim.Species, "
+                    f"not {type(spe).__name__}"
+                )
+        self._reactants = value
+
+    @property
+    def products(self) -> list["Species"]:
+        return self._products
+
+    @products.setter
+    def products(self, value: "Species | list[Species] | None") -> None:
+        # imported here as festim.species imports this module's package
+        from festim.species import Species
+
+        # stored as a list, empty for an irreversible reaction
+        if value is None:
+            value = []
+        elif not isinstance(value, list):
+            value = [value]
+        for spe in value:
+            if not isinstance(spe, Species):
+                raise TypeError(
+                    "products must be a festim.Species, a list of festim.Species, or "
+                    f"None, not {type(spe).__name__}"
+                )
+        self._products = value
+
+    def get_formulation(
+        self,
+        dS: ufl.Measure,
+        species: list["Species"],
+        temperature: dolfinx.fem.Constant | dolfinx.fem.Function,
+    ) -> tuple[ufl.Form, ufl.Form]:
+        """Generate the interface formulation of the reaction.
+
+        Args:
+            dS: Integration measure for the interface, with correct integration data.
+            species: Unused, the species involved are the reactants and products.
+            temperature: Unused, the rate coefficients do not depend on temperature.
+
+        Returns:
+            Variational forms to be added to each subdomain.
+
+        Raises:
+            ValueError: If a reactant is not defined in the first subdomain or a
+                product is not defined in the second subdomain.
+        """
+
+        subdomain_0, subdomain_1 = self.subdomains
+        for side, subdomain, species_on_side in (
+            ("reactant", subdomain_0, self.reactants),
+            ("product", subdomain_1, self.products),
+        ):
+            for spe in species_on_side:
+                if subdomain not in (spe.subdomains or []):
+                    raise ValueError(
+                        f"{side} {spe.name} of the reaction on interface {self.id} "
+                        f"must be defined in subdomain {subdomain.id}"
+                    )
+
+        F_0, F_1 = dolfinx.fem.form(0), dolfinx.fem.form(0)
+
+        R = self.reaction_term()
+
+        for spe in self.reactants:
+            v_0 = spe.subdomain_to_test_function[subdomain_0](self.restriction[0])
+
+            F_0 += ufl.inner(R, v_0) * dS(self.id)
+
+        for spe in self.products:
+            v_1 = spe.subdomain_to_test_function[subdomain_1](self.restriction[1])
+            F_1 += -ufl.inner(R, v_1) * dS(self.id)
+
+        return F_0, F_1
+
+    def reaction_term(self) -> ufl.core.expr.Expr:
+        """Compute the net reaction rate on the interface.
+
+        Returns:
+            The net rate :math:`R`, with the reactants restricted to the first
+            subdomain and the products to the second subdomain.
+        """
+        # multiply all concentrations to be used in the term
+
+        reactant_concentrations = [
+            spe.subdomain_to_solution[self.subdomains[0]](self.restriction[0])
+            for spe in self.reactants
+        ]
+        product_concentrations = [
+            spe.subdomain_to_solution[self.subdomains[1]](self.restriction[1])
+            for spe in self.products
+        ]
+
+        product_of_reactants = reactant_concentrations[0]
+        for reactant_conc in reactant_concentrations[1:]:
+            product_of_reactants *= reactant_conc
+
+        if self.products:
+            product_of_products = product_concentrations[0]
+            for product_conc in product_concentrations[1:]:
+                product_of_products *= product_conc
+        else:
+            product_of_products = 0
+
+        return self.k_plus * product_of_reactants - (self.k_minus * product_of_products)
