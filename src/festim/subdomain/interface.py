@@ -101,9 +101,11 @@ def compute_one_sided_interior_facet_data(
     topology = cell_tags.topology
     topology.create_connectivity(topology.dim - 1, topology.dim)
 
-    # MeshTags.topology is already the C++ object compute_integration_domains wants
+    # MeshTags.topology is the C++ object itself before dolfinx 0.12
     data = compute_integration_domains(
-        dolfinx.fem.IntegralType.interior_facet, topology, facets
+        dolfinx.fem.IntegralType.interior_facet,
+        getattr(topology, "_cpp_object", topology),
+        facets,
     ).reshape(-1, 4)
 
     # cell index -> volume subdomain id. MeshTags are not necessarily ordered by cell,
