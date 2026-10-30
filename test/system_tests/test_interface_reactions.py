@@ -183,3 +183,12 @@ def test_interfaces_sharing_id_on_different_subdomains_raise():
     # RUN & TEST
     with pytest.raises(ValueError, match="do not all separate"):
         model.initialise()
+
+
+@pytest.mark.filterwarnings("error:.*lives on volume subdomain")
+def test_reaction_with_one_sided_species_runs_without_warning():
+    """Test that a model whose species are one-sided by design, coupled only by an
+    InterfaceReaction, does not warn that they are missing a subdomain."""
+    model, _, _ = build_two_slabs([(True, 1, 0.5)])
+    model.initialise()
+    model.run()
