@@ -593,11 +593,12 @@ class InterfaceReaction(InterfaceBase):
         id: Tag of the interface facets in the parent mesh facet tags.
         subdomains: The two volume subdomains sharing the interface. The first one
             hosts the reactants and the second one the products.
-        k_plus: The forward rate coefficient :math:`k_+`. Its units depend on the
-            number of reactants.
-        k_minus: The backward rate coefficient :math:`k_-`. Its units depend on the
-            number of products. Detailed balance requires ``k_plus / k_minus`` to
-            equal the equilibrium constant of the reaction; this is not checked.
+        k_plus: The forward rate coefficient :math:`k_+`, non-negative. Its units
+            depend on the number of reactants.
+        k_minus: The backward rate coefficient :math:`k_-`, non-negative. Its units
+            depend on the number of products. Detailed balance requires
+            ``k_plus / k_minus`` to equal the equilibrium constant of the reaction;
+            this is not checked.
         reactants: The reactant(s), defined in the first subdomain: at least one
             festim.Species. A species listed twice appears squared in the rate and
             is consumed at rate ``2 R`` (eg. ``2 H --> H2``).
@@ -666,6 +667,45 @@ class InterfaceReaction(InterfaceBase):
         self.k_minus = k_minus
         self.reactants = reactants
         self.products = products
+
+    @staticmethod
+    def _check_rate(name: str, value: float | int) -> float | int:
+        """Check that a rate coefficient is a non-negative number.
+
+        Args:
+            name: The name of the attribute, for the error messages.
+            value: The rate coefficient.
+
+        Returns:
+            The unchanged rate coefficient.
+
+        Raises:
+            TypeError: If the value is not a float or an int.
+            ValueError: If the value is negative.
+        """
+        if not isinstance(value, float | int):
+            raise TypeError(
+                f"{name} must be a float or an int, not {type(value).__name__}"
+            )
+        if value < 0:
+            raise ValueError(f"{name} must be non-negative, not {value}")
+        return value
+
+    @property
+    def k_plus(self) -> float | int:
+        return self._k_plus
+
+    @k_plus.setter
+    def k_plus(self, value: float | int) -> None:
+        self._k_plus = self._check_rate("k_plus", value)
+
+    @property
+    def k_minus(self) -> float | int:
+        return self._k_minus
+
+    @k_minus.setter
+    def k_minus(self, value: float | int) -> None:
+        self._k_minus = self._check_rate("k_minus", value)
 
     @property
     def reactants(self) -> list["Species"]:

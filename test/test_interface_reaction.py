@@ -50,15 +50,15 @@ A = F.Species("A", subdomains=[vol_0])
 B = F.Species("B", subdomains=[vol_1])
 
 
-def make_reaction(reactants=(A,), products=(B,)):
-    """An InterfaceReaction between vol_0 and vol_1 with unit rate coefficients."""
+def make_reaction(reactants=(A,), products=(B,), k_plus=1, k_minus=1):
+    """An InterfaceReaction between vol_0 and vol_1, with unit rates by default."""
     reactants = list(reactants) if isinstance(reactants, tuple) else reactants
     products = list(products) if isinstance(products, tuple) else products
     return F.InterfaceReaction(
         id=3,
         subdomains=[vol_0, vol_1],
-        k_plus=1,
-        k_minus=1,
+        k_plus=k_plus,
+        k_minus=k_minus,
         reactants=reactants,
         products=products,
     )
@@ -110,6 +110,36 @@ def test_products_are_optional():
         id=3, subdomains=[vol_0, vol_1], k_plus=1, k_minus=0, reactants=[A]
     )
     assert reaction.products == []
+
+
+@pytest.mark.parametrize("value", [0, 1, 2.5, np.float64(3.0)])
+@pytest.mark.parametrize("rate", ["k_plus", "k_minus"])
+def test_valid_rate_is_stored(rate, value):
+    """Test that a non-negative number is accepted as a rate coefficient."""
+    assert getattr(make_reaction(**{rate: value}), rate) == value
+
+
+@pytest.mark.parametrize("value", ["1", None, [1], lambda T: T])
+@pytest.mark.parametrize("rate", ["k_plus", "k_minus"])
+def test_rate_of_wrong_type_raises(rate, value):
+    """Test that a rate coefficient that is not a number raises a TypeError."""
+    with pytest.raises(TypeError, match=f"{rate} must be a float or an int"):
+        make_reaction(**{rate: value})
+
+
+@pytest.mark.parametrize("rate", ["k_plus", "k_minus"])
+def test_negative_rate_raises(rate):
+    """Test that a negative rate coefficient raises a ValueError."""
+    with pytest.raises(ValueError, match=f"{rate} must be non-negative"):
+        make_reaction(**{rate: -1})
+
+
+@pytest.mark.parametrize("rate", ["k_plus", "k_minus"])
+def test_rate_is_validated_on_assignment(rate):
+    """Test that setting a rate coefficient after construction is validated too."""
+    reaction = make_reaction()
+    with pytest.raises(ValueError, match=f"{rate} must be non-negative"):
+        setattr(reaction, rate, -1)
 
 
 DECOY = 1e3  # value a field takes on the wrong side of the interface
