@@ -602,7 +602,8 @@ class InterfaceReaction(InterfaceBase):
             festim.Species. A species listed twice appears squared in the rate and
             is consumed at rate ``2 R`` (eg. ``2 H --> H2``).
         products: The product(s), defined in the second subdomain, following the
-            same rule. ``None`` or an empty list for an irreversible reaction.
+            same rule. ``None`` (default) or an empty list for an irreversible
+            reaction.
 
     Attributes:
         id: Tag of the interface facets in the parent mesh facet tags.
@@ -658,7 +659,7 @@ class InterfaceReaction(InterfaceBase):
         k_plus: float,
         k_minus: float,
         reactants: "Species | list[Species]",
-        products: "Species | list[Species] | None",
+        products: "Species | list[Species] | None" = None,
     ) -> None:
         super().__init__(id, subdomains)
         self.k_plus = k_plus

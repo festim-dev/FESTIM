@@ -104,6 +104,14 @@ def test_products_of_wrong_type_raise(products):
         make_reaction(products=products)
 
 
+def test_products_are_optional():
+    """Test that an InterfaceReaction built without products has none."""
+    reaction = F.InterfaceReaction(
+        id=3, subdomains=[vol_0, vol_1], k_plus=1, k_minus=0, reactants=[A]
+    )
+    assert reaction.products == []
+
+
 DECOY = 1e3  # value a field takes on the wrong side of the interface
 K_PLUS, K_MINUS = 11, 13
 
