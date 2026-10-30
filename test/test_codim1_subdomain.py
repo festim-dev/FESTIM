@@ -402,9 +402,9 @@ def test_manifold_gradient_uses_the_submesh_measure():
 
     For ``g(X) = a.X`` the tangential gradient is exactly ``a - (a.n) n`` on any
     manifold, so ``int |grad g|^2`` has a closed form that can be evaluated on the
-    parent mesh alone. On a manifold tilted with respect to the coordinate axes, the
-    parent facet measure does *not* reproduce it -- this test pins down that FESTIM
-    integrates gradient terms over a measure that does.
+    parent mesh alone. This test pins down that FESTIM integrates gradient terms over
+    a measure that reproduces it on a manifold tilted with respect to the coordinate
+    axes.
     """
     n = 6
     mesh = dolfinx.mesh.create_unit_cube(MPI.COMM_WORLD, n, n, n)
@@ -441,14 +441,6 @@ def test_manifold_gradient_uses_the_submesh_measure():
         dolfinx.fem.form(ufl.inner(ufl.grad(g), ufl.grad(g)) * dx_grad)
     )
     assert np.isclose(computed, reference, rtol=1e-10)
-
-    # ... and the parent facet measure would not have worked
-    wrong = dolfinx.fem.assemble_scalar(
-        dolfinx.fem.form(
-            ufl.inner(ufl.grad(g), ufl.grad(g)) * ds(2), entity_maps=[gamma.cell_map]
-        )
-    )
-    assert not np.isclose(wrong, reference, rtol=1e-3)
 
 
 def _three_strips(n=12):

@@ -31,6 +31,12 @@ from dolfinx.fem.assemble import (
 from dolfinx.fem.bcs import bcs_by_block as _bcs_by_block
 from dolfinx.fem.petsc import _extract_function_spaces, apply_lifting, assign, set_bc
 
+try:
+    # dolfinx >= 0.12: the C++ assembler takes dof markers, not boundary conditions
+    from dolfinx.fem.assemble import _bc_dof_markers, _owned_marked_rows
+except ImportError:
+    _bc_dof_markers = None
+
 __all__ = [
     "custom_assemble_jacobian",
     "custom_assemble_residual",
@@ -71,9 +77,11 @@ def prune_empty_blocks(blocks):
 def _get_dofmap(V):
     try:
         # dolfinx >= 0.11
-        return V.dofmaps[0]
+        dofmap = V.dofmaps[0]
     except TypeError:
-        return V.dofmaps(0)
+        dofmap = V.dofmaps(0)
+    # the C++ dofmap gives the C++ index map that the index sets need
+    return getattr(dofmap, "_cpp_object", dofmap)
 
 
 def make_index_sets(a):
@@ -127,6 +135,29 @@ def _assemble_blocked_vector(b, L):
     return b
 
 
+def _bc_constraints(
+    a: dolfinx.fem.Form, bcs: list[dolfinx.fem.DirichletBC]
+) -> list | tuple:
+    """``bcs`` in the form that the C++ matrix assembler takes."""
+    if _bc_dof_markers is None:
+        return [bc._cpp_object for bc in bcs]
+    return tuple(_bc_dof_markers(V, bcs) for V in a.function_spaces)
+
+
+def _insert_block_diagonal(
+    Asub: PETSc.Mat,
+    V: dolfinx.fem.FunctionSpace,
+    bcs: list[dolfinx.fem.DirichletBC],
+    diag: float,
+) -> None:
+    """Insert ``diag`` on the rows of ``Asub`` constrained by ``bcs``."""
+    if _bc_dof_markers is None:
+        _cpp_fem_petsc.insert_diagonal(Asub, V, [bc._cpp_object for bc in bcs], diag)
+    else:
+        rows = _owned_marked_rows(V, _bc_dof_markers(V, bcs))
+        dolfinx.la.petsc.set_diagonal(Asub, rows, diag)
+
+
 def _assemble_blocked_matrix(A, a, bcs, is0, is1):
     """Add one group of blocked bilinear forms into ``A`` in ADD mode.
 
@@ -137,14 +168,18 @@ def _assemble_blocked_matrix(A, a, bcs, is0, is1):
     """
     consts = [pack_constants(row) for row in a]
     coeffs = [pack_coefficients(row) for row in a]
-    _bcs = [bc._cpp_object for bc in bcs]
     for i, a_row in enumerate(a):
         for j, a_sub in enumerate(a_row):
             if a_sub is None:
                 continue
             Asub = A.getLocalSubMatrix(is0[i], is1[j])
             _cpp_fem_petsc.assemble_matrix(
-                Asub, a_sub._cpp_object, consts[i][j], coeffs[i][j], _bcs, True
+                Asub,
+                a_sub._cpp_object,
+                consts[i][j],
+                coeffs[i][j],
+                _bc_constraints(a_sub, bcs),
+                True,
             )
             A.restoreLocalSubMatrix(is0[i], is1[j], Asub)
 
@@ -154,16 +189,13 @@ def _insert_blocked_diagonal(A, a, bcs, diag, is0, is1):
 
     Uses INSERT, so it must follow a FLUSH assembly.
     """
-    _bcs = [bc._cpp_object for bc in bcs]
     for i, a_row in enumerate(a):
         for j, a_sub in enumerate(a_row):
             if a_sub is None:
                 continue
             Asub = A.getLocalSubMatrix(is0[i], is1[j])
             if a_sub.function_spaces[0] is a_sub.function_spaces[1]:
-                _cpp_fem_petsc.insert_diagonal(
-                    Asub, a_sub.function_spaces[0], _bcs, diag
-                )
+                _insert_block_diagonal(Asub, a_sub.function_spaces[0], bcs, diag)
             A.restoreLocalSubMatrix(is0[i], is1[j], Asub)
 
 
