@@ -470,3 +470,19 @@ def test_bc_temperature_dependent_attribute(input, expected_value):
     my_bc = F.DirichletBC(subdomain, input, species)
 
     assert my_bc.temperature_dependent is expected_value
+
+
+def test_define_surface_subdomain_dofs_rejects_meshtags_of_another_mesh():
+    """Meshtags built on another mesh than the function space's raise ValueError."""
+    # BUILD
+    other_mesh = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, 10)
+    facets = np.array([0], dtype=np.int32)
+    tags = dolfinx.mesh.meshtags(other_mesh, 0, facets, np.ones_like(facets))
+    V = fem.functionspace(mesh, ("Lagrange", 1))
+    bc = F.FixedConcentrationBC(
+        subdomain=F.SurfaceSubdomain1D(id=1, x=0), value=1, species=F.Species("H")
+    )
+
+    # RUN / TEST
+    with pytest.raises(ValueError, match="Mesh of function-space is not the same"):
+        bc.define_surface_subdomain_dofs(tags, V)
