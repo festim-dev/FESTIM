@@ -30,7 +30,7 @@ Christopher Soika
    .. grid-item::
       :columns: 12 4 4 4
 
-      .. image:: /_static/fellowship/placeholder_fellow.svg
+      .. image:: /_static/fellowship/Christopher-Soika_profile.png
          :alt: Christopher Soika, FESTIM Fellow, Gauss Fusion
          :width: 100%
 
@@ -41,9 +41,19 @@ Christopher Soika
          :alt: Gauss Fusion logo
          :class: festim-fellow-logo
 
-      Bio coming soon.
+      I hold an M.Sc. in Mechanical Engineering from the Karlsruhe Institute
+      of Technology, specialising in Fusion Technology and Thermohydraulics.
 
-**Project:** *HCPB breeding blanket tritium transport model in FESTIM 2*
+      I joined Gauss Fusion in May 2025 as an intern focusing on the
+      thermohydraulics of tritium breeding blankets. During my master's
+      thesis at Gauss Fusion, I developed a component-level tritium transport
+      model of a helium-cooled pebble bed blanket using FESTIM v1.
+
+      I have since joined Gauss Fusion full-time as a Tritium Breeding
+      Blanket Engineer. Through the FESTIM Fellowship, I am building on this
+      work using FESTIM v2.
+
+**Project:** *Tritium Transport Modelling in HCPB Blankets with FESTIM v2*
 
 ----
 
@@ -80,8 +90,8 @@ Andrea Di Maio
       and its interaction with the fuel cycle.
 
       During the fellowship, he will work on coupling FESTIM with
-      `PathSim <https://docs.pathsim.org>`_, a system-level tool for tritium transport and fuel cycle modelling. The
-      aim is to model a section of a breeding blanket unit with FESTIM and
+      `PathSim <https://docs.pathsim.org>`_, a system-level tool for tritium
+      transport and fuel cycle modelling. The aim is to model a section of a breeding blanket unit with FESTIM and
       integrate it into a simplified fuel cycle including the Tritium
       Extraction System (TES) and Coolant Purification System (CPS). The
       coupled model will be used to investigate how tritium concentration in
