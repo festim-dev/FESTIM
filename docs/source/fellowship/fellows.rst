@@ -30,7 +30,7 @@ Christopher Soika
    .. grid-item::
       :columns: 12 4 4 4
 
-      .. image:: /_static/fellowship/Christopher-Soika_profile.png
+      .. image:: /_static/fellowship/Christopher_Soika_profile.png
          :alt: Christopher Soika, FESTIM Fellow, Gauss Fusion
          :width: 100%
 
