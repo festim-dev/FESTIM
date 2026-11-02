@@ -12,9 +12,7 @@ import scifem
 import tqdm.auto
 import ufl
 from dolfinx import fem
-from dolfinx.cpp.fem import compute_integration_domains
 from dolfinx.fem.petsc import NonlinearProblem
-from packaging.version import Version
 
 from festim import (
     boundary_conditions,
@@ -75,6 +73,15 @@ def _warn_advection_terms_deprecated():
         DeprecationWarning,
         stacklevel=3,
     )
+
+
+def _collapsed_dofs(dofs: npt.NDArray[np.int32] | list) -> npt.NDArray[np.int32]:
+    """The dof map from ``FunctionSpace.collapse`` as a single 1D index array.
+
+    DOLFINx 0.11 returns it as a list of arrays, one per cell type, and 0.10 as one
+    array.
+    """
+    return np.concatenate(dofs) if isinstance(dofs, list) else dofs
 
 
 class HydrogenTransportProblem(problem.ProblemBase):
@@ -1272,11 +1279,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 # computing dofs at each time step is costly so storing it in the export
                 if export._dofs is None:
                     index = self.species.index(export.field)
-                    V0, export._dofs = self.u.function_space.sub(index).collapse()
-                    # dolfinx >=0.11 returns the collapse dof map as a list of
-                    # arrays; flatten it back to a 1D index array
-                    if Version(dolfinx.__version__) >= Version("0.11"):
-                        export._dofs = np.concatenate(export._dofs)
+                    V0, dofs = self.u.function_space.sub(index).collapse()
+                    export._dofs = _collapsed_dofs(dofs)
                     coords = V0.tabulate_dof_coordinates()[:, 0]
                     export._sort_coords = np.argsort(coords)
                     x = coords[export._sort_coords]
@@ -2079,9 +2083,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         return [
             (
                 manifold.id,
-                compute_integration_domains(
-                    dolfinx.fem.IntegralType.interior_facet,
-                    self.mesh.mesh.topology._cpp_object,
+                fem.compute_integration_domains(
+                    fem.IntegralType.interior_facet,
+                    self.mesh.mesh.topology,
                     self.facet_meshtags.find(manifold.id),
                 ),
             )
@@ -3477,11 +3481,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     index = self.subdomain_to_species[export.subdomain].index(
                         export.field
                     )
-                    V0, export._dofs = u.function_space.sub(index).collapse()
-                    # dolfinx >=0.11 returns the collapse dof map as a list of
-                    # arrays; flatten it back to a 1D index array
-                    if Version(dolfinx.__version__) >= Version("0.11"):
-                        export._dofs = np.concatenate(export._dofs)
+                    V0, dofs = u.function_space.sub(index).collapse()
+                    export._dofs = _collapsed_dofs(dofs)
                     coords = V0.tabulate_dof_coordinates()[:, 0]
                     export._sort_coords = np.argsort(coords)
                     x = coords[export._sort_coords]

@@ -4,9 +4,9 @@ from typing import TYPE_CHECKING
 import dolfinx
 import numpy as np
 import ufl
-from dolfinx.cpp.fem import compute_integration_domains
 from scifem.mesh import compute_interface_data
 
+from festim.helpers import meshtags_topology
 from festim.material import SolubilityLaw
 from festim.subdomain.volume_subdomain import VolumeSubdomain
 
@@ -98,11 +98,10 @@ def compute_one_sided_interior_facet_data(
         a flat array of ``(cell_plus, local_facet_plus, cell_minus, local_facet_minus)``
         quadruples, the form accepted by ``ufl.Measure("dS", subdomain_data=...)``
     """
-    topology = cell_tags.topology
+    topology = meshtags_topology(cell_tags)
     topology.create_connectivity(topology.dim - 1, topology.dim)
 
-    # MeshTags.topology is already the C++ object compute_integration_domains wants
-    data = compute_integration_domains(
+    data = dolfinx.fem.compute_integration_domains(
         dolfinx.fem.IntegralType.interior_facet, topology, facets
     ).reshape(-1, 4)
 
