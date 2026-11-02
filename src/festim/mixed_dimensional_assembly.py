@@ -74,14 +74,17 @@ def prune_empty_blocks(blocks):
     return out
 
 
-def _get_dofmap(V):
-    try:
-        # dolfinx >= 0.11
-        dofmap = V.dofmaps[0]
-    except TypeError:
-        dofmap = V.dofmaps(0)
-    # the C++ dofmap gives the C++ index map that the index sets need
-    return getattr(dofmap, "_cpp_object", dofmap)
+def _block_map(
+    V: dolfinx.fem.FunctionSpace,
+) -> tuple[dolfinx.cpp.common.IndexMap, int]:
+    """The C++ index map and block size of ``V``, as PETSc index sets need them.
+
+    ``V.dofmap`` is the same on every supported DOLFINx version for a single cell type.
+    The index map is wrapped in a Python class from DOLFINx PR #4496 on, as
+    ``fenicsx_compat.unwrap_index_map`` handles.
+    """
+    index_map = V.dofmap.index_map
+    return getattr(index_map, "_cpp_object", index_map), V.dofmap.index_map_bs
 
 
 def make_index_sets(a):
@@ -99,16 +102,10 @@ def make_index_sets(a):
         A ``(is0, is1)`` tuple of row and column index sets
     """
     is0 = _cpp_la_petsc.create_index_sets(
-        [
-            (_get_dofmap(V).index_map, _get_dofmap(V).index_map_bs)
-            for V in _extract_function_spaces(a, 0)
-        ]
+        [_block_map(V) for V in _extract_function_spaces(a, 0)]
     )
     is1 = _cpp_la_petsc.create_index_sets(
-        [
-            (_get_dofmap(V).index_map, _get_dofmap(V).index_map_bs)
-            for V in _extract_function_spaces(a, 1)
-        ]
+        [_block_map(V) for V in _extract_function_spaces(a, 1)]
     )
     return is0, is1
 
