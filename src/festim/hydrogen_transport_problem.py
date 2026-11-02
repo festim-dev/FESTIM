@@ -12,7 +12,6 @@ import scifem
 import tqdm.auto
 import ufl
 from dolfinx import fem
-from dolfinx.cpp.fem import compute_integration_domains
 from dolfinx.fem.petsc import NonlinearProblem
 from packaging.version import Version
 
@@ -2079,9 +2078,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         return [
             (
                 manifold.id,
-                compute_integration_domains(
-                    dolfinx.fem.IntegralType.interior_facet,
-                    self.mesh.mesh.topology._cpp_object,
+                fem.compute_integration_domains(
+                    fem.IntegralType.interior_facet,
+                    self.mesh.mesh.topology,
                     self.facet_meshtags.find(manifold.id),
                 ),
             )
