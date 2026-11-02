@@ -1,5 +1,6 @@
 from .interface import (
     Interface,
+    InterfaceReaction,
     compute_one_sided_interior_facet_data,
     compute_ordered_interior_facet_data,
 )
@@ -13,6 +14,7 @@ from .volume_subdomain import (
 
 __all__ = [
     "Interface",
+    "InterfaceReaction",
     "Subdomain",
     "SurfaceSubdomain",
     "SurfaceSubdomain1D",

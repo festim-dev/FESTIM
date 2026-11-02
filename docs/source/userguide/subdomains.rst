@@ -407,9 +407,9 @@ Diffusivity is automatically computed using these parameters based on the Arrhen
 Additional parameters are required for specific simulations. When considering chemical potential conservation at material interfaces, hydrogen solubility must be specified using:
 
 * :code:`name`: Name for the material.
-* :code:`S_0`: The solubility pre-exponential factor (units depend on the solubility law: Sievert's or Henry's).
-* :code:`E_S`: The solubility activation energy (eV).
-* :code:`solubility_law`: The solubility law, either :code:`"festim.SolubilityLaw.HENRY"` or :code:`festim.SolubilityLaw.SIEVERT`.
+* :code:`K_S_0`: The solubility pre-exponential factor (units depend on the solubility law: Sievert's or Henry's).
+* :code:`E_K_S`: The solubility activation energy (eV).
+* :code:`solubility_law`: The solubility law, either :code:`"sievert"` or :code:`"henry"` (see :doc:`Interfaces <interfaces>`).
 
 For transient heat transfer simulations, thermal conductivity, heat capacity, and density must be defined:
 
