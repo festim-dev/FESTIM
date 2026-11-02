@@ -79,8 +79,8 @@ Andrea Di Maio
       component- and system-level modelling to investigate tritium behaviour
       and its interaction with the fuel cycle.
 
-      During the fellowship, he will work on coupling FESTIM with PATHSIM, a
-      system-level tool for tritium transport and fuel cycle modelling. The
+      During the fellowship, he will work on coupling FESTIM with
+      `PathSim <https://docs.pathsim.org>`_, a system-level tool for tritium transport and fuel cycle modelling. The
       aim is to model a section of a breeding blanket unit with FESTIM and
       integrate it into a simplified fuel cycle including the Tritium
       Extraction System (TES) and Coolant Purification System (CPS). The
@@ -88,7 +88,7 @@ Andrea Di Maio
       the purge gas and coolant influences extraction efficiency and tritium
       behaviour across the system.
 
-**Project:** *Coupling FESTIM and PATHSIM: From Component-Level Breeding Blanket Modelling to System-Level Integration*
+**Project:** *Coupling FESTIM and PathSim: From Component-Level Breeding Blanket Modelling to System-Level Integration*
 
 ----
 
