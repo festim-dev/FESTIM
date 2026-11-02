@@ -1,4 +1,4 @@
-"""Drift terms: advection, Soret and electromigration.
+"""Drift terms: advection, Soret, electromigration and stress-assisted diffusion.
 
 The physical tests here assert closed forms rather than regression baselines. Two of
 them are specifically about the divergence form ``-div(c v)``:
@@ -409,6 +409,57 @@ def test_electromigration_equilibrium_is_boltzmann():
     assert np.max(np.abs(computed - exact)) / np.max(exact) < 1e-5
     # positive charge accumulates where the potential is low, i.e. at x = L
     assert computed[-1] > computed[0]
+
+
+def test_stress_drift_equilibrium_is_boltzmann():
+    r"""No-flux slab under a stress gradient relaxes to ``c = A exp(V_H sigma_h / RT)``.
+
+    Setting ``J = -D grad(c) + D c V_H / (R T) grad(sigma_h)`` to zero gives
+    ``grad(c)/c = grad(V_H sigma_h / (R T))``. Isothermal, so the stress is the only
+    drift. The stress span is chosen so that ``V_H sigma_h / (R T)`` reaches about 1,
+    i.e. the tensile end holds about e times the unstressed one.
+    """
+    length, V_H, temperature, n = 1.0, 2e-6, 500.0, 400
+    sigma_max = F.R * temperature / V_H
+
+    material = F.Material(D_0=1.0, E_D=0.0)
+    volume = F.VolumeSubdomain1D(id=1, borders=[0.0, length], material=material)
+    left = F.SurfaceSubdomain1D(id=1, x=0.0)
+    right = F.SurfaceSubdomain1D(id=2, x=length)
+    H = F.Species("H", mobile=True)
+
+    model = F.HydrogenTransportProblem(
+        mesh=F.Mesh1D(np.linspace(0.0, length, n + 1)),
+        subdomains=[volume, left, right],
+        species=[H],
+        temperature=temperature,
+        initial_conditions=[
+            F.InitialConcentration(value=1.0, volume=volume, species=H)
+        ],
+        drift_terms=[
+            F.StressDriftTerm(
+                species=H,
+                partial_molar_volume=V_H,
+                hydrostatic_stress=lambda x: sigma_max * x[0] / length,
+                subdomain=volume,
+            )
+        ],
+        settings=F.Settings(atol=1e-12, rtol=1e-12, transient=True, final_time=20.0),
+    )
+    model.settings.stepsize = F.Stepsize(0.1)
+
+    model.initialise()
+    model.run()
+
+    x, computed = _profile(H)
+
+    sigma_h = sigma_max * x / length
+    shape = np.exp(V_H * sigma_h / (F.R * temperature))
+    exact = shape * length / np.trapezoid(shape, x)
+
+    assert np.max(np.abs(computed - exact)) / np.max(exact) < 1e-5
+    # hydrogen collects on the tensile side, by a factor of e
+    assert np.isclose(computed[-1] / computed[0], np.e, rtol=1e-3)
 
 
 @pytest.mark.parametrize(
