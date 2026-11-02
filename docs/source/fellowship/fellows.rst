@@ -60,7 +60,7 @@ Andrea Di Maio
    .. grid-item::
       :columns: 12 4 4 4
 
-      .. image:: /_static/fellowship/placeholder_fellow.svg
+      .. image:: /_static/fellowship/Andrea_Di_Maio_profile.png
          :alt: Andrea Di Maio, FESTIM Fellow, Karlsruhe Institute of Technology
          :width: 100%
 
@@ -71,9 +71,24 @@ Andrea Di Maio
          :alt: Karlsruhe Institute of Technology logo
          :class: festim-fellow-logo
 
-      Bio coming soon.
+      Andrea Di Maio is a researcher in the DAF group at the Karlsruhe
+      Institute of Technology (KIT). He holds a Master's degree in Nuclear
+      Engineering from Politecnico di Torino. His research focuses on tritium
+      transport in fusion reactor breeding blankets, with particular interest
+      in tritium trapping and retention in materials. His work involves both
+      component- and system-level modelling to investigate tritium behaviour
+      and its interaction with the fuel cycle.
 
-**Project:** *Periodic boundary conditions and component-to-system coupling with PathSim*
+      During the fellowship, he will work on coupling FESTIM with PATHSIM, a
+      system-level tool for tritium transport and fuel cycle modelling. The
+      aim is to model a section of a breeding blanket unit with FESTIM and
+      integrate it into a simplified fuel cycle including the Tritium
+      Extraction System (TES) and Coolant Purification System (CPS). The
+      coupled model will be used to investigate how tritium concentration in
+      the purge gas and coolant influences extraction efficiency and tritium
+      behaviour across the system.
+
+**Project:** *Coupling FESTIM and PATHSIM: From Component-Level Breeding Blanket Modelling to System-Level Integration*
 
 ----
 
