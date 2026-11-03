@@ -17,7 +17,15 @@ The diffusion of mobile particles is governed by Fick’s law of diffusion where
     
     J = -D \nabla c_\mathrm{m}
 
-where :math:`D=D(T)\,[\mathrm{m}^{2}\,\mathrm{s}^{-1}]` is the diffusivity. 
+where :math:`D=D(T)\,[\mathrm{m}^{2}\,\mathrm{s}^{-1}]` is the diffusivity.
+For isotropic transport it is a scalar; for anisotropic transport it is a
+second-rank tensor :math:`\mathbf{D}`, and :math:`\mathbf{D}\nabla c_\mathrm{m}`
+is a matrix-vector product. A tensor prefactor follows
+:math:`\mathbf{D}(T)=\mathbf{D}_0\exp[-E_D/(k_B T)]`, with a scalar activation
+energy shared by all components. In principal coordinates it is diagonal;
+rotation into mesh coordinates gives
+:math:`\mathbf{D}_0=\mathbf{R}\,\mathrm{diag}(D_{0,1},\ldots,D_{0,d})\mathbf{R}^T`.
+See :ref:`anisotropic_diffusion` for inputs and examples.
 Each trap :math:`i` is associated with a trapping and a detrapping rate :math:`k_i\,[\mathrm{m}^{3}\,\mathrm{s}^{-1}]` and :math:`p_i\,[\mathrm{s}^{-1}]`, respectively, as well as a trap density :math:`n_i\,[\mathrm{m}^{-3}]`.
 
 The temporal evolution of :math:`c_\mathrm{m}` and :math:`c_{\mathrm{t}, i}` are then given by:
@@ -44,7 +52,7 @@ Hydrogen can be carried by something other than its own concentration gradient. 
 
     J = -D \nabla c_\mathrm{m} + c_\mathrm{m} \mathbf{v}
 
-The transport equation :eq:`eq_mobile_conc` becomes :math:`\partial c_\mathrm{m} / \partial t = -\nabla \cdot J + \dots`, so a drift term is assembled in **divergence form**, :math:`\nabla \cdot (c_\mathrm{m} \mathbf{v})`. This leaves behind the natural boundary condition (i.e. it's automatically satisfied by the weak formulation of the problem). Correspondingly, the flux boundary condition constrains the *total* flux, drift included, and a boundary with no condition on it is genuinely no-flux (:math:`\nabla c_\mathrm{m} = 0`).
+The transport equation :eq:`eq_mobile_conc` becomes :math:`\partial c_\mathrm{m} / \partial t = -\nabla \cdot J + \dots`, so a drift term is assembled in **divergence form**, :math:`\nabla \cdot (c_\mathrm{m} \mathbf{v})`. This leaves behind the natural boundary condition (i.e. it's automatically satisfied by the weak formulation of the problem). Correspondingly, the flux boundary condition constrains the *total* flux, drift included, and a boundary with no condition on it has :math:`J\cdot\mathbf{n}=0`. For diffusion alone with a tensor coefficient this is :math:`(\mathbf{D}\nabla c_\mathrm{m})\cdot\mathbf{n}=0`.
 
 What sets :math:`\mathbf{v}` depends on the physics.
 

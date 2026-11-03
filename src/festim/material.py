@@ -1,5 +1,6 @@
 from enum import Enum
 
+import numpy as np
 import ufl
 from dolfinx import fem
 
@@ -32,10 +33,14 @@ class Material:
     """Material class.
 
     Args:
-        D_0: the pre-exponential factor of the
-            diffusion coefficient (m2/s)
-        E_D: the activation energy of the diffusion
-            coeficient (eV)
+        D_0: diffusion pre-exponential factor (m2/s), as a scalar or a square
+            array-like tensor in mesh coordinates. Tensor shape must match the
+            mesh geometric dimension. For species-dependent properties, use a
+            dictionary keyed by species objects or names, with scalar or tensor
+            values. Cannot be supplied together with D.
+        E_D: scalar activation energy of diffusion (eV), or a species dictionary
+            with the same keys and insertion order as D_0. For a tensor D_0,
+            the same Arrhenius factor scales every component.
         K_S_0: the pre-exponential factor of the
             solubility coefficient (H/m3/Pa0.5)
         E_K_S: the activation energy of the solubility
@@ -48,13 +53,20 @@ class Material:
             For single material problems one can use NONE. This does not work for
             multi-material problems
 
-        D: the diffusion coefficient of the material (m2/s)
+        D: complete diffusion coefficient (m2/s), as a fem.Function,
+            fem.Constant or numeric square array-like tensor. Numeric arrays
+            are converted to constants. Direct UFL expressions, arrays with
+            symbolic entries and species dictionaries are not supported. No
+            Arrhenius factor is applied; update the supplied coefficient yourself
+            if its values change. A plain scalar constant should use D_0=value
+            and E_D=0 instead. In HydrogenTransportProblem, this option supports
+            only one volume subdomain.
 
     Attributes:
-        D_0: the pre-exponential factor of the
-            diffusion coefficient (m2/s)
-        E_D: the activation energy of the diffusion
-            coeficient (eV)
+        D_0: scalar or tensor diffusion pre-exponential factor (m2/s), or a
+            species dictionary of these values
+        E_D: scalar diffusion activation energy (eV), or a species dictionary
+        D: complete scalar or tensor diffusivity, used directly when supplied
         K_S_0: the pre-exponential factor of the
             solubility coefficient (H/m3/Pa0.5)
         E_K_S: the activation energy of the solubility
@@ -83,12 +95,20 @@ class Material:
                 E_D={"Species_1": 0.2, "Species_2": 0.3},
                 name="my_mat"
             )
+
+            # Anisotropic diffusion in 2D: one activation energy for both axes.
+            Material(D_0=[[5e-7, 0.0], [0.0, 5e-8]], E_D=0.2)
+
+            # A complete, temperature-independent tensor.
+            Material(D=[[5e-7, 1e-8], [1e-8, 5e-8]])
+
+    See :ref:`anisotropic_diffusion` for tensor inputs and rotation examples.
     """
 
     def __init__(
         self,
-        D_0: float | int | fem.Function | dict[float, int] | None = None,
-        E_D: float | int | fem.Function | dict[float, int] | None = None,
+        D_0: float | int | np.ndarray | list | tuple | dict | None = None,
+        E_D: float | int | dict | None = None,
         K_S_0: float | int | dict[float, int] | None = None,
         E_K_S: float | int | dict[float, int] | None = None,
         thermal_conductivity: float | None = None,
@@ -96,7 +116,7 @@ class Material:
         heat_capacity: float | None = None,
         name: str | None = None,
         solubility_law: SolubilityLaw | str = SolubilityLaw.NONE,
-        D: fem.Function | None = None,
+        D: fem.Function | fem.Constant | np.ndarray | list | tuple | None = None,
     ) -> None:
         self.D_0 = D_0
         self.E_D = E_D
@@ -110,7 +130,7 @@ class Material:
         self.solubility_law = solubility_law
         self.D = D
 
-        if self.D_0 and self.D:
+        if self.D_0 is not None and self.D is not None:
             raise ValueError(
                 "D_0 and D cannot be set at the same time. Please set only one of them."
             )
@@ -140,10 +160,56 @@ class Material:
     def D(self, value):
         if value is None:
             self._D = None
-        elif isinstance(value, fem.Function):
+        elif isinstance(value, fem.Function | fem.Constant) or self._is_square_matrix(
+            value
+        ):
+            # array-like values are held as given and turned into a tensor constant
+            # in get_diffusion_coefficient, which is the first point a mesh is known
             self._D = value
         else:
-            raise TypeError("D must be of type fem.Function")
+            raise TypeError(
+                "D must be a fem.Function, fem.Constant or a numeric "
+                f"square array-like (for an anisotropic tensor), not {type(value)}"
+            )
+
+    @staticmethod
+    def _is_square_matrix(value) -> bool:
+        """Whether ``value`` is an array-like that could be a diffusivity tensor.
+
+        Square and two-dimensional: a flat list is a typo, not an anisotropic
+        material, and must keep raising the error it always did.
+        """
+        if not isinstance(value, np.ndarray | list | tuple):
+            return False
+        array = np.asarray(value)
+        return array.ndim == 2 and array.shape[0] == array.shape[1]
+
+    @classmethod
+    def _is_tensor(cls, value) -> bool:
+        if isinstance(value, np.ndarray | list | tuple):
+            return cls._is_square_matrix(value)
+        shape = getattr(value, "ufl_shape", None)
+        return bool(shape) and len(shape) == 2
+
+    def is_tensor_valued(self, species=None) -> bool:
+        """Whether this material's diffusivity is a tensor rather than a scalar.
+
+        Used to select the function spaces for the global diffusion coefficient.
+        This checks the representation: a scalar multiple of the identity given
+        as a matrix also returns True. It does not validate positive definiteness.
+
+        Args:
+            species: species object used to select a dictionary entry in D_0
+
+        Returns:
+            True when D or the selected D_0 has rank two.
+        """
+        if self.D is not None:
+            return self._is_tensor(self.D)
+        try:
+            return self._is_tensor(self.get_D_0(species=species))
+        except (ValueError, TypeError):
+            return False
 
     def get_D_0(self, species=None):
         """Returns the pre-exponential factor of the diffusion coefficient.
@@ -154,10 +220,10 @@ class Material:
                 D_0 is a dict.
 
         Returns:
-            float: the pre-exponential factor of the diffusion coefficient
+            Scalar or square array-like tensor: the selected diffusion prefactor.
         """
 
-        if isinstance(self.D_0, float | int):
+        if isinstance(self.D_0, float | int) or self._is_square_matrix(self.D_0):
             return self.D_0
 
         elif isinstance(self.D_0, dict):
@@ -260,17 +326,26 @@ class Material:
             raise TypeError("E_K_S must be either a float, int or a dict")
 
     def get_diffusion_coefficient(self, mesh=None, temperature=None, species=None):
-        """Defines the diffusion coefficient.
+        """Returns D directly, or computes D_0 * exp(-E_D / (k_B * T)).
+
+        A tensor D_0 is multiplied by one scalar Arrhenius factor;
+        direction-dependent activation energies are not part of this model.
+        D accepts a fem.Function, fem.Constant or numeric square array-like,
+        which is converted to fem.Constant. Direct UFL expressions and symbolic
+        array entries are not supported as inputs.
 
         Args:
 
-            mesh (dolfinx.mesh.Mesh): the domain mesh
-            temperature (dolfinx.fem.Constant): the temperature
+            mesh (dolfinx.mesh.Mesh, optional): domain mesh; required for
+                Arrhenius coefficients and array-like D
+            temperature: temperature in K, as a FEniCS coefficient or UFL
+                expression; required when using D_0 and E_D
             species (festim.Species, optional): the species we want the diffusion
                 coefficient of. Only needed if D_0 and E_D are dicts.
 
         Returns:
-            ufl.algebra.Product: the diffusion coefficient
+            Scalar or tensor UFL expression, fem.Constant or fem.Function:
+            the diffusion coefficient in m2/s.
         """
         # TODO use get_D_0 and get_E_D to refactore this method, something like:
         # D_0 = self.get_D_0(species=species)
@@ -281,11 +356,18 @@ class Material:
 
         # return D_0 * ufl.exp(-E_D / k_B / temperature)
 
-        if self.D:
-            assert isinstance(self.D, fem.Function)
+        if self.D is not None:
+            if isinstance(self.D, np.ndarray | list | tuple):
+                return as_fenics_constant(self.D, mesh)
             return self.D
 
-        if isinstance(self.D_0, float | int) and isinstance(self.E_D, float | int):
+        if (
+            isinstance(self.D_0, float | int) or self._is_square_matrix(self.D_0)
+        ) and isinstance(self.E_D, float | int):
+            # an array-like D_0 becomes a tensor constant, so the returned
+            # coefficient multiplies grad(u) as a matrix and the material is
+            # anisotropic. E_D stays a scalar: one activation energy shared by
+            # every direction.
             D_0 = as_fenics_constant(self.D_0, mesh)
             E_D = as_fenics_constant(self.E_D, mesh)
 
