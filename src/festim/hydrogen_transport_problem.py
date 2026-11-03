@@ -1087,7 +1087,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     D = vol.material.get_diffusion_coefficient(
                         self.mesh.mesh, self.temperature_fenics, bc.species
                     )
-                    self.formulation += bc.weak_formulation(u, v, self.ds, D)
+                    self.formulation += bc.weak_formulation(
+                        u, v, self.ds, D, self.mesh.coordinate_system
+                    )
 
         for drift_term in self.drift_terms:
             vol = drift_term.subdomain
@@ -2515,7 +2517,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     D = subdomain.material.get_diffusion_coefficient(
                         self.mesh.mesh, self.temperature_fenics, bc.species
                     )
-                    form_coupling += bc.weak_formulation(u, v, self.ds, D)
+                    form_coupling += bc.weak_formulation(
+                        u, v, self.ds, D, self.mesh.coordinate_system
+                    )
 
             # let drift carry the species out where the user says it flows out
             if isinstance(bc, boundary_conditions.OutflowBC):

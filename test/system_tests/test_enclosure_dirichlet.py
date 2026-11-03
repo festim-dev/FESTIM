@@ -404,3 +404,93 @@ def test_dirichlet_coupling_agrees_with_surface_reaction():
     # have settled: the fast-exchange limit is an approximation, so this is not expected
     # to be exact. It agrees far better than that in practice (~1e-6).
     assert H2_d.value == pytest.approx(H2_r.value, rel=5e-3)
+
+
+@pytest.mark.parametrize("law, stoichiometry", [("henry", 1), ("sieverts", 2)])
+def test_dirichlet_coupled_enclosure_conserves_particles_cylindrical(
+    law, stoichiometry
+):
+    """A closed enclosure exchanging with a hollow cylinder through a weakly enforced
+    Henry's or Sieverts' BC must conserve hydrogen atoms at every timestep.
+
+    The 1D model is per unit axial length, so the invariant is
+    ``length * int(c 2 pi r) dr + s*P*V/(k*T)``.
+    """
+    r_in, r_out, axial_length = 0.5, 1.5, 2.0
+    V_enc, T, P0 = 1e-6, 500.0, 1e5
+
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+    my_model.mesh = F.Mesh1D(
+        vertices=np.linspace(r_in, r_out, 61), coordinate_system="cylindrical"
+    )
+    material = F.Material(name="mat", D_0=1e-1, E_D=0.0)
+    vol = F.VolumeSubdomain1D(id=1, borders=[r_in, r_out], material=material)
+    inner = F.SurfaceSubdomain1D(id=1, x=r_in)
+    outer = F.SurfaceSubdomain1D(id=2, x=r_out)
+    my_model.subdomains = [vol, inner, outer]
+
+    H = F.Species("H", subdomains=[vol])
+    my_model.species = [H]
+    my_model.temperature = T
+
+    H2 = F.GasSpecies(name="H2", initial_pressure=P0)
+    my_model.enclosures = [
+        F.Enclosure(
+            volume=V_enc, species=[H2], temperature=T, surfaces={inner: axial_length}
+        )
+    ]
+    if law == "henry":
+        coupling_bc = F.HenrysBC(
+            subdomain=inner,
+            H_0=1e15,
+            E_H=0.0,
+            pressure=H2,
+            species=H,
+            enforce_weakly=True,
+            penalty=100,
+        )
+    else:
+        coupling_bc = F.SievertsBC(
+            subdomain=inner,
+            S_0=1e15,
+            E_S=0.0,
+            pressure=H2,
+            species=H,
+            enforce_weakly=True,
+            penalty=100,
+        )
+    my_model.boundary_conditions = [coupling_bc]
+    my_model.initial_conditions = [
+        F.InitialConcentration(value=0.0, species=H, volume=vol)
+    ]
+    # same reasoning as in build_slab_with_enclosure for the tolerances
+    my_model.settings = F.Settings(
+        atol=1e8,
+        rtol=1e-8,
+        transient=True,
+        final_time=200.0,
+        stepsize=F.Stepsize(10.0),
+    )
+    my_model.show_progress_bar = False
+    my_model.initialise()
+
+    r = ufl.SpatialCoordinate(vol.submesh)[0]
+
+    def total_hydrogen_atoms():
+        my_model.post_processing()
+        c = H.subdomain_to_post_processing_solution[vol]
+        in_solid = axial_length * MPI.COMM_WORLD.allreduce(
+            dolfinx.fem.assemble_scalar(dolfinx.fem.form(c * 2 * np.pi * r * ufl.dx)),
+            op=MPI.SUM,
+        )
+        in_gas = stoichiometry * H2.value * V_enc / (F.k_B_SI * T)
+        return in_solid + in_gas
+
+    initial_inventory = total_hydrogen_atoms()
+
+    while my_model.t.value < my_model.settings.final_time:
+        my_model.iterate()
+        assert total_hydrogen_atoms() == pytest.approx(initial_inventory, rel=1e-10)
+
+    # the gas must actually have been absorbed, otherwise the test is vacuous
+    assert H2.value < P0

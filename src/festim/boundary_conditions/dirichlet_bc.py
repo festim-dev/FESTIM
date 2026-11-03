@@ -12,6 +12,7 @@ from dolfinx import mesh as _mesh
 
 from festim import helpers
 from festim import subdomain as _subdomain
+from festim.mesh import CoordinateSystem
 from festim.species import Species
 
 
@@ -217,6 +218,7 @@ class DirichletBCBase:
         v: ufl.argument.Argument | ufl.indexed.Indexed,
         ds: ufl.Measure,
         D: ufl.core.expr.Expr | fem.Function | fem.Constant,
+        coordinate_system: CoordinateSystem = CoordinateSystem.CARTESIAN,
     ) -> ufl.core.expr.Expr:
         """
         Returns the symmetric Nitsche weak formulation for the BC
@@ -231,9 +233,14 @@ class DirichletBCBase:
             D: the diffusion coefficient of the species at this surface. It multiplies
                 the consistency and symmetry terms, without which the scheme is only
                 consistent when ``D == 1``.
+            coordinate_system: the coordinate system of the mesh. The symmetry term
+                must be written like the diffusion term of the bulk.
 
         Returns:
             the weak formulation
+
+        Raises:
+            NotImplementedError: for an unknown coordinate system
         """
         mesh = ds.ufl_domain()
         n = ufl.FacetNormal(mesh)
@@ -243,8 +250,24 @@ class DirichletBCBase:
         # scheme conserves is defined in a single place
         form = self.numerical_flux(u, D, mesh) * v * ds_bc
 
-        # symmetry term, making the bilinear form symmetric (and the L2 error optimal)
-        form += -D * ufl.inner(n, ufl.grad(v)) * (u - self.value_fenics) * ds_bc
+        # symmetry term, making the bilinear form symmetric (and the L2 error optimal).
+        # Written like the diffusion term in HydrogenTransportProblem.create_formulation
+        # and in festim.drift.drift_form: r * grad(v / r) in cylindrical and
+        # r**2 * grad(v / r**2) in spherical.
+        match coordinate_system:
+            case CoordinateSystem.CARTESIAN:
+                grad_v = ufl.grad(v)
+            case CoordinateSystem.CYLINDRICAL:
+                r = ufl.SpatialCoordinate(mesh)[0]
+                grad_v = r * ufl.grad(v / r)
+            case CoordinateSystem.SPHERICAL:
+                r = ufl.SpatialCoordinate(mesh)[0]
+                grad_v = r**2 * ufl.grad(v / r**2)
+            case _:
+                raise NotImplementedError(
+                    f"Unknown coordinate system {coordinate_system!s}"
+                )
+        form += -D * ufl.inner(n, grad_v) * (u - self.value_fenics) * ds_bc
 
         return form
 
