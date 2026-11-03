@@ -113,7 +113,6 @@ venv.bak/
 *.xdmf
 *.h5
 *.txt
-*.png
 *.csv
 
 # Docs files

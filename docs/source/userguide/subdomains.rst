@@ -528,7 +528,7 @@ Additional parameters are required for specific simulations. When considering ch
 * :code:`name`: Name for the material.
 * :code:`K_S_0`: The solubility pre-exponential factor (units depend on the solubility law: Sievert's or Henry's).
 * :code:`E_K_S`: The solubility activation energy (eV).
-* :code:`solubility_law`: The solubility law, either :code:`festim.SolubilityLaw.HENRY` or :code:`festim.SolubilityLaw.SIEVERT` (also accepted as ``"henry"`` or ``"sievert"``).
+* :code:`solubility_law`: The solubility law, either :code:`"sievert"` or :code:`"henry"` (see :doc:`Interfaces <interfaces>`).
 
 For transient heat transfer simulations, thermal conductivity, heat capacity, and density must be defined:
 
