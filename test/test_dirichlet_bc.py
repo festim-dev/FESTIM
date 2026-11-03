@@ -470,3 +470,21 @@ def test_bc_temperature_dependent_attribute(input, expected_value):
     my_bc = F.DirichletBC(subdomain, input, species)
 
     assert my_bc.temperature_dependent is expected_value
+
+
+def test_weak_formulation_unknown_coordinate_system_raises():
+    subdomain = F.SurfaceSubdomain1D(1, x=0)
+    bc = F.FixedConcentrationBC(
+        subdomain, value=1.0, species="test", enforce_weakly=True, penalty=10
+    )
+    bc.value_fenics = fem.Constant(mesh, default_scalar_type(1.0))
+    V = fem.functionspace(mesh, ("Lagrange", 1))
+
+    with pytest.raises(NotImplementedError, match="Unknown coordinate system"):
+        bc.weak_formulation(
+            u=fem.Function(V),
+            v=ufl.TestFunction(V),
+            ds=ufl.Measure("ds", domain=mesh),
+            D=fem.Constant(mesh, default_scalar_type(1.0)),
+            coordinate_system="not a coordinate system",
+        )

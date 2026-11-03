@@ -1,6 +1,7 @@
 import math
 
 import numpy as np
+import pytest
 from dolfinx import fem
 
 import festim as F
@@ -214,3 +215,65 @@ def test_run_MMS_spherical_mixed_domain():
 
     assert L2_error_l < 1e-06
     assert L2_error_r < 1e-06
+
+
+@pytest.mark.parametrize(
+    "model_class",
+    [F.HydrogenTransportProblem, F.HydrogenTransportProblemDiscontinuous],
+)
+def test_run_MMS_spherical_weak_dirichlet(model_class):
+    """Tests that festim produces the correct concentration field in spherical
+    coordinates when the Dirichlet BCs are enforced weakly."""
+
+    my_model = model_class()
+    my_model.mesh = F.Mesh1D(
+        vertices=np.linspace(1, 2, 1000), coordinate_system="spherical"
+    )
+
+    def u_exact(x):
+        return 3 + 2 * x[0] ** 2
+
+    f = -12
+
+    my_mat = F.Material(D_0=1.0, E_D=0)
+
+    left = F.SurfaceSubdomain1D(id=1, x=1)
+    right = F.SurfaceSubdomain1D(id=2, x=2)
+    my_vol = F.VolumeSubdomain1D(id=3, borders=[1, 2], material=my_mat)
+    my_model.subdomains = [my_vol, left, right]
+
+    H = F.Species("H")
+    if model_class is F.HydrogenTransportProblemDiscontinuous:
+        H.subdomains = [my_vol]
+    my_model.species = [H]
+
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(
+            subdomain=surface,
+            value=u_exact,
+            species=H,
+            enforce_weakly=True,
+            penalty=100,
+        )
+        for surface in [left, right]
+    ]
+
+    my_model.temperature = 500
+
+    my_model.sources = [F.ParticleSource(value=f, volume=my_vol, species=H)]
+
+    my_model.settings = F.Settings(
+        atol=1e-10, rtol=1e-9, max_iterations=50, transient=False
+    )
+
+    my_model.initialise()
+    my_model.run()
+
+    if model_class is F.HydrogenTransportProblemDiscontinuous:
+        computed_solution = H.subdomain_to_post_processing_solution[my_vol]
+    else:
+        computed_solution = H.post_processing_solution
+
+    L2_error = error_L2(computed_solution, u_exact)
+
+    assert L2_error < 1e-6
