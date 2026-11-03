@@ -4,6 +4,7 @@ from mpi4py import MPI
 
 import dolfinx
 import numpy as np
+import pytest
 import ufl
 
 import festim as F
@@ -331,3 +332,65 @@ def test_surface_flux_cylindrical_2d_oblique_surface():
     net_flux = sum(flux.value for flux in fluxes.values())
 
     assert np.isclose(net_flux, -6 * D * volume, rtol=1e-6)
+
+
+@pytest.mark.parametrize(
+    "model_class",
+    [F.HydrogenTransportProblem, F.HydrogenTransportProblemDiscontinuous],
+)
+def test_run_MMS_cylindrical_weak_dirichlet(model_class):
+    """Tests that festim produces the correct concentration field in cylindrical
+    coordinates when the Dirichlet BCs are enforced weakly."""
+
+    my_model = model_class()
+    my_model.mesh = F.Mesh1D(
+        vertices=np.linspace(1, 2, 500), coordinate_system="cylindrical"
+    )
+
+    def u_exact(x):
+        return 1 + x[0] ** 2
+
+    f = -4
+
+    my_mat = F.Material(D_0=1.0, E_D=0)
+
+    left = F.SurfaceSubdomain1D(id=1, x=1)
+    right = F.SurfaceSubdomain1D(id=2, x=2)
+    my_vol = F.VolumeSubdomain1D(id=3, borders=[1, 2], material=my_mat)
+    my_model.subdomains = [my_vol, left, right]
+
+    H = F.Species("H")
+    if model_class is F.HydrogenTransportProblemDiscontinuous:
+        H.subdomains = [my_vol]
+    my_model.species = [H]
+
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(
+            subdomain=surface,
+            value=u_exact,
+            species=H,
+            enforce_weakly=True,
+            penalty=100,
+        )
+        for surface in [left, right]
+    ]
+
+    my_model.temperature = 500
+
+    my_model.sources = [F.ParticleSource(value=f, volume=my_vol, species=H)]
+
+    my_model.settings = F.Settings(
+        atol=1e-10, rtol=1e-9, max_iterations=50, transient=False
+    )
+
+    my_model.initialise()
+    my_model.run()
+
+    if model_class is F.HydrogenTransportProblemDiscontinuous:
+        computed_solution = H.subdomain_to_post_processing_solution[my_vol]
+    else:
+        computed_solution = H.post_processing_solution
+
+    L2_error = error_L2(computed_solution, u_exact)
+
+    assert L2_error < 1e-6
