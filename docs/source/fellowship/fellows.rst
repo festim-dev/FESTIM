@@ -30,7 +30,7 @@ Christopher Soika
    .. grid-item::
       :columns: 12 4 4 4
 
-      .. image:: /_static/fellowship/placeholder_fellow.svg
+      .. image:: /_static/fellowship/Christopher_Soika_profile.png
          :alt: Christopher Soika, FESTIM Fellow, Gauss Fusion
          :width: 100%
 
@@ -41,9 +41,19 @@ Christopher Soika
          :alt: Gauss Fusion logo
          :class: festim-fellow-logo
 
-      Bio coming soon.
+      I hold an M.Sc. in Mechanical Engineering from the Karlsruhe Institute
+      of Technology, specialising in Fusion Technology and Thermohydraulics.
 
-**Project:** *HCPB breeding blanket tritium transport model in FESTIM 2*
+      I joined Gauss Fusion in May 2025 as an intern focusing on the
+      thermohydraulics of tritium breeding blankets. During my master's
+      thesis at Gauss Fusion, I developed a component-level tritium transport
+      model of a helium-cooled pebble bed blanket using FESTIM v1.
+
+      I have since joined Gauss Fusion full-time as a Tritium Breeding
+      Blanket Engineer. Through the FESTIM Fellowship, I am building on this
+      work using FESTIM v2.
+
+**Project:** *Tritium Transport Modelling in HCPB Blankets with FESTIM v2*
 
 ----
 
@@ -60,7 +70,7 @@ Andrea Di Maio
    .. grid-item::
       :columns: 12 4 4 4
 
-      .. image:: /_static/fellowship/placeholder_fellow.svg
+      .. image:: /_static/fellowship/Andrea_Di_Maio_profile.png
          :alt: Andrea Di Maio, FESTIM Fellow, Karlsruhe Institute of Technology
          :width: 100%
 
@@ -71,9 +81,24 @@ Andrea Di Maio
          :alt: Karlsruhe Institute of Technology logo
          :class: festim-fellow-logo
 
-      Bio coming soon.
+      Andrea Di Maio is a researcher in the DAF group at the Karlsruhe
+      Institute of Technology (KIT). He holds a Master's degree in Nuclear
+      Engineering from Politecnico di Torino. His research focuses on tritium
+      transport in fusion reactor breeding blankets, with particular interest
+      in tritium trapping and retention in materials. His work involves both
+      component- and system-level modelling to investigate tritium behaviour
+      and its interaction with the fuel cycle.
 
-**Project:** *Periodic boundary conditions and component-to-system coupling with PathSim*
+      During the fellowship, he will work on coupling FESTIM with
+      `PathSim <https://docs.pathsim.org>`_, a system-level tool for tritium
+      transport and fuel cycle modelling. The aim is to model a section of a breeding blanket unit with FESTIM and
+      integrate it into a simplified fuel cycle including the Tritium
+      Extraction System (TES) and Coolant Purification System (CPS). The
+      coupled model will be used to investigate how tritium concentration in
+      the purge gas and coolant influences extraction efficiency and tritium
+      behaviour across the system.
+
+**Project:** *Coupling FESTIM and PathSim: From Component-Level Breeding Blanket Modelling to System-Level Integration*
 
 ----
 
@@ -81,49 +106,66 @@ Andrea Di Maio
 Previous Fellows
 ----------------
 
+Summer 2026
+^^^^^^^^^^^
+
+.. grid:: 1 2 3 3
+   :gutter: 3
+
+   .. grid-item-card:: Arpan Sircar
+      :img-top: /_static/fellowship/Arpan_Sircar_profile.png
+      :img-alt: Arpan Sircar, FESTIM Fellow, Oak Ridge National Laboratory
+      :class-card: festim-fellow-card
+
+      .. image:: /_static/fellowship/logos/oak-ridge-national-laboratory.svg
+         :alt: Oak Ridge National Laboratory logo
+         :class: festim-fellow-logo
+
+      *Modeling tritium uptake in sweep gases from lithium ceramic blankets*
+
+   .. grid-item-card:: Ian Wojtowicz
+      :img-top: /_static/fellowship/Ian_Wojtowicz_profile.jpg
+      :img-alt: Ian Wojtowicz, FESTIM Fellow, University of Minnesota
+      :class-card: festim-fellow-card
+
+      .. image:: /_static/fellowship/logos/university-of-minnesota.svg
+         :alt: University of Minnesota logo
+         :class: festim-fellow-logo
+
+      *Hydrogen retention in topologically complex multi-material geometries*
+
+   .. grid-item-card:: Emre Yildirim
+      :img-top: /_static/fellowship/Emre_Yildirim_profile.jpg
+      :img-alt: Emre Yildirim, FESTIM Fellow, Type One Energy
+      :class-card: festim-fellow-card
+
+      .. image:: /_static/fellowship/logos/type-one-energy.svg
+         :alt: Type One Energy logo
+         :class: festim-fellow-logo
+
+      *Macro2Micro: taking FESTIM through the length scales*
+
+Spring 2026
+^^^^^^^^^^^
+
 .. grid:: 1 2 3 3
    :gutter: 3
 
    .. grid-item-card:: Tez Orr
-      :img-top: /_static/fellowship/logos/ukaea.svg
-      :img-alt: UK Atomic Energy Authority logo
+      :img-top: /_static/fellowship/tez2.jpg
+      :img-alt: Tez Orr, FESTIM Fellow, UK Atomic Energy Authority
       :class-card: festim-fellow-card
       :link: /fellowship/fellowship_tez
       :link-type: doc
 
-      UKAEA · 2026
+      .. image:: /_static/fellowship/logos/ukaea.svg
+         :alt: UK Atomic Energy Authority logo
+         :class: festim-fellow-logo
 
       *Mastering FESTIM v2 on a plasma-facing monoblock case*
 
       +++
       Read the interview with our very first Fellow →
-
-   .. grid-item-card:: Arpan Sircar
-      :img-top: /_static/fellowship/logos/ornl.svg
-      :img-alt: Oak Ridge National Laboratory logo
-      :class-card: festim-fellow-card
-
-      Oak Ridge National Laboratory · Summer 2026
-
-      *Modeling tritium uptake in sweep gases from lithium ceramic blankets*
-
-   .. grid-item-card:: Ian Wojtowicz
-      :img-top: /_static/fellowship/logos/university-of-minnesota.svg
-      :img-alt: University of Minnesota logo
-      :class-card: festim-fellow-card
-
-      University of Minnesota · Summer 2026
-
-      *Hydrogen retention in topologically complex multi-material geometries*
-
-   .. grid-item-card:: Emre Yildirim
-      :img-top: /_static/fellowship/logos/type-one-energy.svg
-      :img-alt: Type One Energy logo
-      :class-card: festim-fellow-card
-
-      Type One Energy · Summer 2026
-
-      *Macro2Micro: taking FESTIM through the length scales*
 
 ----
 
