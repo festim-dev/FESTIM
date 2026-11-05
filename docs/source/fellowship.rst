@@ -181,7 +181,7 @@ Apply now using the form below:
 
 
 ---------
-FAQ's
+FAQs
 ---------
 
 .. dropdown:: How much interaction will I have with the FESTIM team?
