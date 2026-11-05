@@ -85,7 +85,7 @@ Rather than following a fixed curriculum, the programme is structured around gui
 - Exposure to advanced features and best practices
 - Opportunities to engage with related research at the PSFC
 
-Fellows may participate remotely or in person. The typical duration is 10 weeks, although this is flexible and can be adapted depending on the project and availability.
+Fellows may participate remotely or in person. The programme runs for 10 weeks; the specific dates are flexible and can be adapted depending on the project and availability.
 
 ---------------
 What you gain
@@ -205,7 +205,7 @@ FAQs
 .. dropdown:: How long does the programme last?
    :color: light
 
-   The suggested duration is 10 weeks. However, this time can be very flexible and can be adapted depending on the project and availability.
+   The programme runs for 10 weeks. The specific dates are flexible and can be adapted depending on the project and availability. For example, the start date can be moved, or a one-week break can be included partway through the programme.
 
 .. dropdown:: Are there any costs involved?
    :color: light
