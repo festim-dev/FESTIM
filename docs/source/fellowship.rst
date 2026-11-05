@@ -126,7 +126,7 @@ On-site participation at the MIT Plasma Science and Fusion Center (PSFC) is avai
 For participants from academia, limited support for travel and on-site participation may be available.
 
 ----------
-Key Dates 
+Key Dates
 ----------
 
 The programme is organised in cohorts throughout the year:
