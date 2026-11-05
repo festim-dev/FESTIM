@@ -55,7 +55,7 @@ What the programme is
 
 The FESTIM Fellowship Programme is a focused, hands-on programme designed for users with prior experience who want to develop a deeper, practical understanding of the code and its capabilities.
 
-Fellows work closely with the FESTIM development team, either remotely or in person at the MIT Plasma Science and Fusion Center (PSFC). Each Fellow brings a focused project, which serves as the main vehicle for exploring FESTIM through a real application.
+Fellows work closely with the FESTIM development team, ideally on-site at the MIT Plasma Science and Fusion Center (PSFC), with remote participation also an option. Each Fellow brings a focused project, which serves as the main vehicle for exploring FESTIM through a real application.
 
 The programme is centred on learning how to use FESTIM effectively and confidently: structuring simulations, leveraging advanced features, understanding how the code operates, and troubleshooting complex cases. The goal is for Fellows to return to their organisation as advanced FESTIM users, capable of independently developing and supporting simulation work.
 
@@ -85,7 +85,7 @@ Rather than following a fixed curriculum, the programme is structured around gui
 - Exposure to advanced features and best practices
 - Opportunities to engage with related research at the PSFC
 
-Fellows may participate remotely or in person. The programme runs for 10 weeks; the specific dates are flexible and can be adapted depending on the project and availability.
+Fellows are encouraged to participate on-site, although remote participation is also possible. The programme runs for 10 weeks; the specific dates are flexible and can be adapted depending on the project and availability.
 
 ---------------
 What you gain
@@ -190,7 +190,7 @@ FAQs
 
    All Fellows are welcome to join the weekly MIT-FESTIM meeting and will have at least one hour of dedicated time with the lead developers each week.
 
-   Fellows participating on site have access to dedicated office space near the development team and are encouraged to interact on a daily basis.
+   Fellows participating on-site have access to dedicated office space near the development team and are encouraged to interact on a daily basis.
 
 .. dropdown:: Can I participate alongside a full-time role?
    :color: light
@@ -200,7 +200,7 @@ FAQs
 .. dropdown:: Where does the fellowship take place?
    :color: light
 
-   Fellows may participate remotely or on site at the MIT Plasma Science and Fusion Center (PSFC).
+   We encourage Fellows to participate on-site at the MIT Plasma Science and Fusion Center (PSFC). Remote participation is also an option.
 
 .. dropdown:: How long does the programme last?
    :color: light
@@ -212,7 +212,7 @@ FAQs
 
    There are no programme fees.
 
-   For Fellows participating on site, the main costs are travel to and from MIT and accommodation. These are typically supported by the Fellow’s home organisation or employer.
+   For Fellows participating on-site, the main costs are travel to and from MIT and accommodation. These are typically supported by the Fellow’s home organisation or employer.
 
    For participants from academia, limited funding may be available to support some of these costs. Applicants are encouraged to contact us for further information.
 
