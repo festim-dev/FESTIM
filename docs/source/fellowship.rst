@@ -30,9 +30,9 @@ A selective, project-based programme for experienced FESTIM users to develop adv
 FESTIM Fellows: Current and previous
 ------------------------------------
 
-**Three Fellows** are currently working with the FESTIM development team, from Oak Ridge
-National Laboratory, the University of Minnesota, and Type One Energy. **One Fellow** has
-completed the programme to date.
+**Two Fellows** are currently working with the FESTIM development team, from Gauss Fusion
+and the Karlsruhe Institute of Technology. **Four Fellows** have completed the programme
+to date.
 
 .. grid:: 1
 
