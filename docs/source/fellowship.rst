@@ -13,7 +13,7 @@ A selective, project-based programme for experienced FESTIM users to develop adv
 .. raw:: html
 
    <div style="text-align: center;">
-      <a href="https://forms.gle/fMJr262vXDh9r71y7" target="_blank" style="
+      <a href="https://forms.gle/PTiBUrPdxJ9ecXor6" target="_blank" style="
          display:inline-block;
          background-color:#F7B000;
          color:#000000;
@@ -166,7 +166,7 @@ Apply now using the form below:
 .. raw:: html
 
    <div style="text-align: center;">
-      <a href="https://forms.gle/fMJr262vXDh9r71y7" target="_blank" style="
+      <a href="https://forms.gle/PTiBUrPdxJ9ecXor6" target="_blank" style="
          display:inline-block;
          background-color:#F7B000;
          color:#000000;
