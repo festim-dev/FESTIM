@@ -235,5 +235,4 @@ FAQ's
 
    If you have further questions about the programme, or would like to discuss whether your project is a good fit before applying, please contact:
 
-   - James Dark: darkj385@mit.edu
-   - Rémi Delaporte-Mathurin: remidm@mit.edu
+   James Dark: darkj385@mit.edu
