@@ -63,7 +63,7 @@ The programme is centred on learning how to use FESTIM effectively and confident
 Who the programme is for
 ----------------------------
 
-The programme is intended for students, researche`rs, engineers, and scientists who:
+The programme is intended for students, researchers, engineers, and scientists who:
 
 - Have prior hands-on experience using FESTIM (not complete beginners)
 - Are comfortable working in Python, including writing and modifying simulation scripts
@@ -131,21 +131,25 @@ Key Dates
 
 The programme is organised in cohorts throughout the year:
 
-**Summer cohort**:
-^^^^^^^^^^^^^^^^^^^
-- 1st April - Applications open  
-- 30th April - Application deadline  
-- 18th May - Decisions released  
-- 15th June* - Programme starts  
-- 14th August* - Programme ends  
+**Spring 2027 cohort**:
+^^^^^^^^^^^^^^^^^^^^^^^^
+- 5th November 2026 - Applications open
+- 31st December 2026 - Application deadline
+- 29th January 2027 - Decisions released
+- 1st March 2027* - Programme starts
+- 7th May 2027* - Programme ends
 
-**Fall cohort**:
-^^^^^^^^^^^^^^^^^
-- 1st April - Applications open  
-- 31st August - Application deadline  
-- 6th September - Decisions released  
-- 5th October* - Programme starts  
-- 11th December* - Programme ends  
+**Summer 2027 cohort**:
+^^^^^^^^^^^^^^^^^^^^^^^^
+- 1st April - Applications open
+- 14th May - Application deadline
+- 28th May - Decisions released
+- 28th June* - Programme starts
+- 27th August* - Programme ends
+
+**Fall 2027 cohort**:
+^^^^^^^^^^^^^^^^^^^^^^
+- Dates to be confirmed
 
 *\*Programme dates are flexible*
 
@@ -154,6 +158,8 @@ Apply
 ---------
 
 Interested in the FESTIM Fellowship Programme?
+
+Applications for the Spring 2027 cohort are open until 31st December 2026.
 
 Apply now using the form below:
 
