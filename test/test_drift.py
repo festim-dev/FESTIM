@@ -14,8 +14,18 @@ test_mesh_1d = F.Mesh1D(vertices=np.linspace(0, 1, 20))
 test_functionspace = fem.functionspace(test_mesh_1d.mesh, ("Lagrange", 1))
 
 
+def _kwargs(cls):
+    """Minimal constructor arguments of each concrete drift term besides advection."""
+    return {
+        F.SoretTerm: {"Q_star": 0.1},
+        F.ElectromigrationTerm: {"charge": 1, "potential": 1.0},
+        F.StressDriftTerm: {"partial_molar_volume": 2e-6, "hydrostatic_stress": 1e8},
+    }[cls]
+
+
 @pytest.mark.parametrize(
-    "term_type", [F.AdvectionTerm, F.SoretTerm, F.ElectromigrationTerm]
+    "term_type",
+    [F.AdvectionTerm, F.SoretTerm, F.ElectromigrationTerm, F.StressDriftTerm],
 )
 def test_drift_in_0D_warns_and_ignores(term_type, monkeypatch):
     """A point warns about drift and retains its source-only evolution."""
@@ -32,10 +42,8 @@ def test_drift_in_0D_warns_and_ignores(term_type, monkeypatch):
         velocity = fem.Function(fem.functionspace(mesh.mesh, ("Lagrange", 1, (1,))))
         velocity.x.array[:] = 2
         kwargs = {"velocity": velocity}
-    elif term_type is F.SoretTerm:
-        kwargs = {"Q_star": 0.1}
     else:
-        kwargs = {"charge": 1, "potential": 1.0}
+        kwargs = _kwargs(term_type)
     term = term_type(species=point_species, subdomain=point, **kwargs)
     drift_velocity = Mock(side_effect=AssertionError("0D drift must not be evaluated"))
     monkeypatch.setattr(term, "drift_velocity", drift_velocity)
@@ -78,11 +86,13 @@ def test_drift_in_0D_warns_and_ignores(term_type, monkeypatch):
     assert np.allclose(values, 0.3, rtol=0, atol=1e-12)
 
 
-@pytest.mark.parametrize("cls", [F.SoretTerm, F.ElectromigrationTerm])
+@pytest.mark.parametrize(
+    "cls", [F.SoretTerm, F.ElectromigrationTerm, F.StressDriftTerm]
+)
 @pytest.mark.parametrize("value", ["coucou", 1.0, 1, F.SurfaceSubdomain(id=1)])
 def test_subdomain_setter(cls, value):
     """The base class validation applies to every drift term."""
-    kwargs = {"Q_star": 0.1} if cls is F.SoretTerm else {"charge": 1, "potential": 0.0}
+    kwargs = _kwargs(cls)
     with pytest.raises(
         TypeError,
         match=f"Subdomain must be a festim.Subdomain object, not {type(value)}",
@@ -90,18 +100,22 @@ def test_subdomain_setter(cls, value):
         cls(species=F.Species("H"), subdomain=value, **kwargs)
 
 
-@pytest.mark.parametrize("cls", [F.SoretTerm, F.ElectromigrationTerm])
+@pytest.mark.parametrize(
+    "cls", [F.SoretTerm, F.ElectromigrationTerm, F.StressDriftTerm]
+)
 def test_species_setter(cls):
-    kwargs = {"Q_star": 0.1} if cls is F.SoretTerm else {"charge": 1, "potential": 0.0}
+    kwargs = _kwargs(cls)
     with pytest.raises(
         TypeError, match=r"elements of species must be of type festim\.Species"
     ):
         cls(species="H", subdomain=F.VolumeSubdomain(id=1, material="m"), **kwargs)
 
 
-@pytest.mark.parametrize("cls", [F.SoretTerm, F.ElectromigrationTerm])
+@pytest.mark.parametrize(
+    "cls", [F.SoretTerm, F.ElectromigrationTerm, F.StressDriftTerm]
+)
 def test_species_is_wrapped_in_a_list(cls):
-    kwargs = {"Q_star": 0.1} if cls is F.SoretTerm else {"charge": 1, "potential": 0.0}
+    kwargs = _kwargs(cls)
     species = F.Species("H")
     term = cls(
         species=species, subdomain=F.VolumeSubdomain(id=1, material="m"), **kwargs
@@ -116,6 +130,12 @@ def test_every_drift_term_shares_the_base_class():
         F.SoretTerm(species=F.Species("H"), Q_star=0.1, subdomain=vol),
         F.ElectromigrationTerm(
             species=F.Species("H"), charge=1, potential=0.0, subdomain=vol
+        ),
+        F.StressDriftTerm(
+            species=F.Species("H"),
+            partial_molar_volume=2e-6,
+            hydrostatic_stress=0.0,
+            subdomain=vol,
         ),
         F.AdvectionTerm(velocity=None, subdomain=vol, species=F.Species("H")),
     ]
@@ -405,3 +425,93 @@ def test_base_class_cannot_be_instantiated_without_a_drift_velocity():
         F.DriftTermBase(
             subdomain=F.VolumeSubdomain(id=1, material="m"), species=F.Species("H")
         )
+
+
+def test_uniform_stress_gives_no_stress_drift_velocity():
+    T = fem.Constant(test_mesh_1d.mesh, 500.0)
+    D = fem.Constant(test_mesh_1d.mesh, 1.0)
+    term = F.StressDriftTerm(
+        species=F.Species("H"),
+        partial_molar_volume=2e-6,
+        hydrostatic_stress=3e8,
+        subdomain=F.VolumeSubdomain(id=1, material="m"),
+    )
+    term.convert_inputs(function_space=test_functionspace, temperature=T)
+
+    assert is_zero_velocity(term.drift_velocity(D=D, temperature=T))
+
+
+def test_uniform_stress_warns_that_stress_drift_does_nothing():
+    material = F.Material(D_0=1.0, E_D=0.0)
+    volume = F.VolumeSubdomain1D(id=1, borders=[0.0, 1.0], material=material)
+    H = F.Species("H", mobile=True)
+
+    model = F.HydrogenTransportProblem(
+        mesh=F.Mesh1D(np.linspace(0.0, 1.0, 20)),
+        subdomains=[volume, F.SurfaceSubdomain1D(id=1, x=0.0)],
+        species=[H],
+        temperature=500.0,
+        drift_terms=[
+            F.StressDriftTerm(
+                species=H,
+                partial_molar_volume=2e-6,
+                hydrostatic_stress=3e8,
+                subdomain=volume,
+            )
+        ],
+        settings=F.Settings(atol=1e-10, rtol=1e-10, transient=False),
+    )
+
+    with pytest.warns(UserWarning, match="the hydrostatic stress is spatially uniform"):
+        model.initialise()
+
+
+def test_stress_drift_velocity_expression():
+    """D V_H / (R T) grad(sigma_h), eq. (stress drift) of the theory guide."""
+    V = fem.functionspace(test_mesh_1d.mesh, ("Lagrange", 1))
+    sigma_h = fem.Function(V)
+    sigma_h.interpolate(lambda x: 1e8 + 5e8 * x[0])
+    T = fem.Function(V)
+    T.interpolate(lambda x: 300.0 + 100.0 * x[0])
+    D = fem.Constant(test_mesh_1d.mesh, 2.0)
+
+    term = F.StressDriftTerm(
+        species=F.Species("H"),
+        partial_molar_volume=2e-6,
+        hydrostatic_stress=sigma_h,
+        subdomain=F.VolumeSubdomain(id=1, material="m"),
+    )
+    term.convert_inputs(function_space=V, temperature=T)
+    velocity = term.drift_velocity(D=D, temperature=T)
+
+    expected = D * 2e-6 / (F.R * T) * ufl.grad(sigma_h)
+    difference = fem.assemble_scalar(
+        fem.form(ufl.dot(velocity - expected, velocity - expected) * ufl.dx)
+    )
+    assert np.isclose(difference, 0.0)
+
+
+def test_stress_drift_points_towards_tension():
+    """A positive partial molar volume drives the species up the stress gradient."""
+    V = fem.functionspace(test_mesh_1d.mesh, ("Lagrange", 1))
+    T = fem.Constant(test_mesh_1d.mesh, 500.0)
+    sigma_h = fem.Function(V)
+    sigma_h.interpolate(lambda x: 1e9 * x[0])  # tension grows with x
+    D = fem.Constant(test_mesh_1d.mesh, 1.0)
+
+    velocities = {}
+    for V_H in (+2e-6, -2e-6):
+        term = F.StressDriftTerm(
+            species=F.Species("H"),
+            partial_molar_volume=V_H,
+            hydrostatic_stress=sigma_h,
+            subdomain=F.VolumeSubdomain(id=1, material="m"),
+        )
+        term.convert_inputs(function_space=V, temperature=T)
+        velocity = term.drift_velocity(D=D, temperature=T)
+        velocities[V_H] = fem.assemble_scalar(
+            fem.form(velocity[0] * ufl.dx(domain=test_mesh_1d.mesh))
+        )
+
+    assert velocities[+2e-6] > 0
+    assert np.isclose(velocities[+2e-6], -velocities[-2e-6])

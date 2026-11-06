@@ -26,7 +26,7 @@ from .boundary_conditions.surface_reaction import SurfaceReactionBC
 from .coupled_heat_hydrogen_problem import (
     CoupledTransientHeatTransferHydrogenTransport,
 )
-from .drift import DriftTermBase, ElectromigrationTerm, SoretTerm
+from .drift import DriftTermBase, ElectromigrationTerm, SoretTerm, StressDriftTerm
 from .enclosure.enclosure import Enclosure
 from .enclosure.gas_species import GasSpecies
 from .enclosure.openings import (

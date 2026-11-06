@@ -7,7 +7,9 @@ A drift term adds a velocity to the species flux::
 Different physics differ only in what sets ``v``: a fluid carries the species along
 (:class:`festim.AdvectionTerm`), a temperature gradient drives thermodiffusion
 (:class:`SoretTerm`), an electric potential drives charged defects
-(:class:`ElectromigrationTerm`). They share the assembly in :func:`drift_form`.
+(:class:`ElectromigrationTerm`), and a hydrostatic stress gradient pulls interstitials
+towards tension (:class:`StressDriftTerm`). They share the assembly in
+:func:`drift_form`.
 """
 
 import warnings
@@ -16,7 +18,7 @@ from abc import ABC, abstractmethod
 import ufl
 from dolfinx import fem
 
-from festim import k_B
+from festim import R, k_B
 from festim.helpers import Value
 from festim.mesh import CoordinateSystem
 from festim.species import Species
@@ -266,6 +268,89 @@ class ElectromigrationTerm(DriftTermBase):
         return (
             "the potential is spatially uniform, so grad(phi) is zero. Give the "
             "potential as a function of x"
+        )
+
+
+class StressDriftTerm(DriftTermBase):
+    r"""Stress-assisted diffusion: drift along a hydrostatic stress gradient.
+
+    Adds the stress term of the flux
+
+    .. math::
+
+        J = -D \nabla c + \frac{D c V_H}{R T} \nabla \sigma_h
+
+    after Sofronis and McMeeking (1989), with :math:`\sigma_h = \mathrm{tr}(\sigma)/3`
+    the hydrostatic stress (positive in tension) and :math:`V_H` the partial molar
+    volume of the species in the lattice. A positive :math:`V_H` drives the species up
+    the stress gradient, so it accumulates where the lattice is dilated: ahead of a
+    crack tip, or on the tensile side of a bent or thermally mismatched joint. The term
+    vanishes when the hydrostatic stress is uniform.
+
+    FESTIM does not solve for the stress. Pass it in as an existing field, typically the
+    hydrostatic part of a stress computed by a separate mechanics solve on the same
+    mesh, e.g. ``ufl.tr(sigma) / 3`` interpolated into a ``dolfinx.fem.Function``.
+
+    Args:
+        species: the species the drift acts on
+        partial_molar_volume: the partial molar volume :math:`V_H` in m3/mol. A float,
+            a callable of ``x``, ``t`` and/or ``T``, or a fenics object
+        hydrostatic_stress: the hydrostatic stress :math:`\sigma_h` in Pa, positive in
+            tension. A float, a callable of ``x``, ``t`` and/or ``T``, or a fenics
+            object
+        subdomain: the volume subdomain where the drift applies
+
+    Attributes:
+        partial_molar_volume: :math:`V_H`, wrapped in a :class:`festim.helpers.Value`
+        hydrostatic_stress: :math:`\sigma_h`, wrapped in a
+            :class:`festim.helpers.Value`
+
+    Examples:
+        .. code-block:: python
+
+            import festim as F
+
+            F.StressDriftTerm(
+                species=mobile_H,
+                partial_molar_volume=2.0e-6,  # m3/mol, H in iron (Sofronis 1989)
+                hydrostatic_stress=sigma_h,  # a dolfinx Function from a mechanics solve
+                subdomain=my_volume,
+            )
+    """
+
+    def __init__(
+        self,
+        species: Species | list[Species],
+        partial_molar_volume,
+        hydrostatic_stress,
+        subdomain: VolumeSubdomain,
+    ):
+        super().__init__(subdomain=subdomain, species=species)
+        self.partial_molar_volume = Value(partial_molar_volume)
+        self.hydrostatic_stress = Value(hydrostatic_stress)
+
+    def convert_inputs(self, function_space, t=None, temperature=None):
+        for value in (self.partial_molar_volume, self.hydrostatic_stress):
+            value.convert_input_value(
+                function_space=function_space,
+                t=t,
+                temperature=temperature,
+                up_to_ufl_expr=True,
+            )
+
+    def time_dependent_inputs(self):
+        return [self.partial_molar_volume, self.hydrostatic_stress]
+
+    def drift_velocity(self, D, temperature):
+        V_H = self.partial_molar_volume.fenics_object
+        sigma_h = self.hydrostatic_stress.fenics_object
+        return D * V_H / (R * temperature) * ufl.grad(sigma_h)
+
+    def inert_reason(self) -> str:
+        return (
+            "the hydrostatic stress is spatially uniform, so grad(sigma_h) is zero. "
+            "Give the stress as a function of x, or pass the hydrostatic part of a "
+            "stress field computed by a mechanics solve"
         )
 
 
