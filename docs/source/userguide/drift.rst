@@ -50,6 +50,31 @@ FESTIM does not solve for the potential, so it must be passed in as an existing 
 callable of ``x``, ``t`` and/or ``T``, or a fenics object. As with the Soret term, a spatially uniform potential
 makes the term do nothing, and FESTIM sends a warning.
 
+Stress-assisted diffusion
+-------------------------
+
+Drift of an interstitial species along a hydrostatic stress gradient, with the partial
+molar volume :math:`V_H` in m3/mol and the hydrostatic stress :math:`\sigma_h` in Pa
+(positive in tension). Hydrogen collects where the lattice is dilated, for example
+ahead of a crack tip or on the tensile side of a thermally mismatched joint:
+
+.. code-block:: python
+
+    my_model.drift_terms = [
+        F.StressDriftTerm(
+            species=mobile_H,
+            partial_molar_volume=2.0e-6,
+            hydrostatic_stress=sigma_h,
+            subdomain=my_volume,
+        )
+    ]
+
+FESTIM does not solve for the stress. Compute it with a separate mechanics solve on the
+same mesh and pass its hydrostatic part, ``ufl.tr(sigma) / 3`` interpolated into a
+``dolfinx.fem.Function``, or give it as a float or a callable of ``x``, ``t`` and/or
+``T``. A spatially uniform stress makes the term do nothing, and FESTIM sends a
+warning.
+
 Advection
 ---------
 

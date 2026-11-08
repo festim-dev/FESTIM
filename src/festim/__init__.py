@@ -26,7 +26,7 @@ from .boundary_conditions.surface_reaction import SurfaceReactionBC
 from .coupled_heat_hydrogen_problem import (
     CoupledTransientHeatTransferHydrogenTransport,
 )
-from .drift import DriftTermBase, ElectromigrationTerm, SoretTerm
+from .drift import DriftTermBase, ElectromigrationTerm, SoretTerm, StressDriftTerm
 from .enclosure.enclosure import Enclosure
 from .enclosure.gas_species import GasSpecies
 from .enclosure.openings import (
@@ -99,7 +99,11 @@ from .settings import Settings
 from .source import HeatSource, ParticleSource, SourceBase
 from .species import ImplicitSpecies, Species, find_species_from_name
 from .stepsize import Stepsize
-from .subdomain.interface import Interface, InterfaceMethod
+from .subdomain.interface import (
+    Interface,
+    InterfaceMethod,
+    InterfaceReaction,
+)
 from .subdomain.surface_subdomain import (
     SurfaceSubdomain,
     SurfaceSubdomain1D,
