@@ -149,6 +149,23 @@ class ProblemBase:
         """Defines the facet and volume meshtags of the model which are used to define
         the measures fo the model, dx and ds."""
 
+        # auto-generated surfaces (e.g. VolumeSubdomain1D.left/right) carry id=None:
+        # allocate ids above every declared id so that they cannot clash with
+        # user-declared subdomains, following the same convention as
+        # _allocate_manifold_side_ids
+        declared = {v.id for v in self.volume_subdomains}
+        declared |= {s.id for s in self.surface_subdomains if s.id is not None}
+        declared |= {
+            i.id
+            for i in getattr(self, "interfaces", None) or []
+            if i.id is not None
+        }
+        next_id = max(declared, default=0) + 1
+        for surface in self.surface_subdomains:
+            if surface.id is None:
+                surface.id = next_id
+                next_id += 1
+
         if isinstance(self.mesh, F.MeshFromXDMF):
             # TODO: fix naming inconsistency between facet and surface meshtags
             self.facet_meshtags = self.mesh.define_surface_meshtags()
