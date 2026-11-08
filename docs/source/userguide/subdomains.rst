@@ -34,6 +34,18 @@ For 1D domains, use the :class:`festim.SurfaceSubdomain1D` class, which requires
 
     my_1D_surface = SurfaceSubdomain1D(id=1, x=10)
 
+When working with a :class:`festim.VolumeSubdomain1D` volume, its ``left`` and ``right`` surfaces can be obtained directly from the volume, without having to define them manually. Their ids are allocated automatically (above every id already declared in the model) when the model is initialised.
+
+.. testcode::
+
+    from festim import VolumeSubdomain1D, Material
+
+    my_material = Material(D_0=1, E_D=1)
+    my_1D_volume = VolumeSubdomain1D(id=1, material=my_material, borders=[0, 1])
+
+    left_surface = my_1D_volume.left
+    right_surface = my_1D_volume.right
+
 
 Custom surface subdomains can be created by subclassing the :class:`festim.SurfaceSubdomain` class. In this case we can use a custom unit square mesh, and would like to have a defined surface on the top of the domain where y=1.
 
