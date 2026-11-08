@@ -113,7 +113,8 @@ class SurfaceSubdomain1D(SurfaceSubdomain):
     """Surface subdomain class for 1D cases.
 
     Args:
-        id: the id of the surface subdomain
+        id: the id of the surface subdomain. If ``None``, it is automatically
+        allocated when the model is initialised
         x: the x coordinate of the surface subdomain
 
     Attributes:
@@ -132,10 +133,10 @@ class SurfaceSubdomain1D(SurfaceSubdomain):
     """
 
     # FIXME: Rename this to _id and use getter/setter
-    id: int
+    id: int | None
     x: float
 
-    def __init__(self, id: int, x: float) -> None:
+    def __init__(self, id: int | None, x: float) -> None:
         super().__init__(id, locator=lambda x_: np.isclose(x_[0], x))
         self.x = x
 

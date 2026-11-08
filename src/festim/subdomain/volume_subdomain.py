@@ -2,6 +2,7 @@ from collections.abc import Callable
 
 import dolfinx
 import numpy as np
+from functools import cached_property
 from dolfinx import fem
 from dolfinx.mesh import EntityMap, Mesh, locate_entities
 from numpy import typing as npt
@@ -218,23 +219,25 @@ class VolumeSubdomain1D(VolumeSubdomain):
         )
         self.borders = borders
 
-    @property
+    @cached_property
     def left(self):
         """The left surface of the 1D volume subdomain.
 
         Returns:
-            festim.SurfaceSubdomain1D: the left surface subdomain
+            festim.SurfaceSubdomain1D: the left surface subdomain. Its id is
+            automatically allocated when the model is initialised
         """
-        return SurfaceSubdomain1D(id=-1, x=self.borders[0])
+        return SurfaceSubdomain1D(id=None, x=self.borders[0])
 
-    @property
+    @cached_property
     def right(self):
         """The right surface of the 1D volume subdomain.
 
         Returns:
-            festim.SurfaceSubdomain1D: the right surface subdomain
+            festim.SurfaceSubdomain1D: the right surface subdomain. Its id is
+            automatically allocated when the model is initialised
         """
-        return SurfaceSubdomain1D(id=-2, x=self.borders[1])
+        return SurfaceSubdomain1D(id=None, x=self.borders[1])
 
 
 def find_volume_from_id(id: int, volumes: list):
