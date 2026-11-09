@@ -331,6 +331,31 @@ def test_is_it_time_to_export_when_times_not_given():
 
 
 @pytest.mark.parametrize(
+    "current_time, atol, rtol, expected",
+    [
+        # default relative tolerance: the window at t = 0.9e8 is 900 s wide,
+        # so a time 9 s early is accepted (issue #1074)
+        (0.9e8 - 9, 0, 1e-5, True),
+        # absolute tolerance only: 9 s early is refused, the requested time and
+        # anything within atol of it is accepted
+        (0.9e8 - 9, 1e-6, 0, False),
+        (0.9e8, 1e-6, 0, True),
+        (0.9e8 + 1e-7, 1e-6, 0, True),
+    ],
+)
+def test_is_it_time_to_export_tolerances(current_time, atol, rtol, expected):
+    """Checks that atol and rtol control how closely the current time has to match
+    an export time."""
+    times = [0.9e8]
+    assert (
+        F.helpers.is_it_time_to_export(
+            current_time=current_time, times=times, atol=atol, rtol=rtol
+        )
+        == expected
+    )
+
+
+@pytest.mark.parametrize(
     "input_dict, expected",
     [
         (None, {}),
