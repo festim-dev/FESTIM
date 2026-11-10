@@ -82,6 +82,15 @@ where :math:`Q^*\,[\mathrm{eV}]` is the Soret coefficient (also called heat of t
 
 where :math:`z` is the charge number and :math:`\varphi\,[\mathrm{V}]` is the electric potential. At equilibrium in a closed system, :math:`c_\mathrm{m} \propto \exp(-z\varphi/k_B T)` (the Boltzmann distribution).
 
+**Stress-assisted diffusion** (:class:`festim.StressDriftTerm`) :cite:`Sofronis1989` drives interstitial hydrogen up a hydrostatic stress gradient :math:`\nabla\sigma_h`:
+
+.. math::
+    :label: eq_stress_drift
+
+    J = -D \nabla c_\mathrm{m} + \frac{D c_\mathrm{m} V_H}{R T} \nabla \sigma_h
+
+where :math:`V_H\,[\mathrm{m^3\,mol^{-1}}]` is the partial molar volume of hydrogen in the lattice, :math:`\sigma_h = \mathrm{tr}(\sigma)/3\,[\mathrm{Pa}]` is the hydrostatic stress (positive in tension) and :math:`R` is the gas constant. Hydrogen accumulates in dilated regions; at equilibrium in a closed system, :math:`c_\mathrm{m} \propto \exp(V_H\sigma_h/R T)`.
+
 
 Conservation of chemical potential at interfaces
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

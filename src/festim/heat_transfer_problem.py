@@ -249,9 +249,12 @@ class HeatTransferProblem(problem.ProblemBase):
 
         for export in self.exports:
             # skip if it isn't time to export
-            if hasattr(export, "times"):
+            if getattr(export, "times", None) is not None:
                 if not helpers.is_it_time_to_export(
-                    current_time=float(self.t), times=export.times
+                    current_time=float(self.t),
+                    times=export.times,
+                    atol=self.settings.export_time_atol,
+                    rtol=self.settings.export_time_rtol,
                 ):
                     continue
             # TODO if export type derived quantity
