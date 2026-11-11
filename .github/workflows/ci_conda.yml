@@ -46,10 +46,16 @@ jobs:
         python3 -m pip install scikit-build-core
         python3 -m pip install .[test] --no-build-isolation
 
+    # TEMPORARY while debugging the plot-test crash: run only test_plot.py,
+    # uncaptured (-s) so VTK/Mesa messages reach the log even if the process dies
     - name: Run tests
       shell: bash -l {0}
+      env:
+        EGL_LOG_LEVEL: debug
       run: |
-        pytest test/ --cov festim --cov-report xml --cov-report term
+        conda list | grep -E "^(vtk|vtk-base|pyvista|mesalib|mesa-|libglvnd|libegl) "
+        echo "DISPLAY='${DISPLAY:-}'"; ls /dev/dri 2>&1 || true
+        pytest test/test_plot.py -v -s -p no:cacheprovider
     
     - name: Upload to codecov
       uses: codecov/codecov-action@v7
