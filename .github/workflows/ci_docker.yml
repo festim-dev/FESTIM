@@ -1,6 +1,12 @@
 name: Docker CI
 on: [pull_request, push]
 
+# a newer push to the same branch or PR cancels the run it replaces; runs on
+# main are never cancelled, so every merged commit gets a full CI result
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   run-tests:
     name: run-tests (fenics-dolfinx ${{ matrix.container_version }})

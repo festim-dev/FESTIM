@@ -2,6 +2,12 @@ name: Documentation test
 
 on: [push, pull_request]
 
+# a newer push to the same branch or PR cancels the run it replaces; runs on
+# main are never cancelled, so every merged commit gets a full CI result
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   docbuild:
     runs-on: ubuntu-latest
