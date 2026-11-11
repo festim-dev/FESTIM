@@ -209,3 +209,28 @@ def test_penalty_term_is_a_conductance_and_must_beat_the_bulk(case):
         # matching laws couple linearly in c/K, so the series algebra is exact and
         # the relative error is 1/(1 + penalty_term * R) to four figures
         assert np.allclose(errors, [1 / 2, 1 / 101, 1 / 10001], rtol=1e-3)
+
+
+@pytest.mark.parametrize("case", CASES, ids=lambda c: "-".join(c))
+def test_lagrange_multiplier_is_exact_in_si_units(case):
+    """The Lagrange multiplier has no parameter, and no units to get wrong.
+
+    The constraint is scaled by :meth:`Interface.equality_scale`, like Nitsche's
+    stabilisation, so the same formulation works at 1e25 H/m3. The profiles are
+    linear in each slab, so the discretisation is exact and so must be the flux --
+    both the one through the walls and the multiplier itself, which *is* the flux
+    through the interface.
+    """
+    model = build("lagrange_multiplier", None, case)
+    model.initialise()
+    model.run()
+    J_exact = exact_flux(case)
+    flux_in, flux_out = (export.data[-1] for export in model.exports)
+    assert np.isclose(abs(flux_in), J_exact, rtol=1e-8)
+    assert np.isclose(flux_in, -flux_out, rtol=1e-8)
+
+    interface = model.interfaces[0]
+    lam = interface.multipliers[model.species[0]]
+    # in 1D the interface is a point and the multiplier a single value, the flux
+    # leaving the upstream slab
+    assert np.allclose(lam.x.array, J_exact, rtol=1e-8)

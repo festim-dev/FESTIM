@@ -1,6 +1,10 @@
+import warnings
 from enum import Enum
 from typing import TYPE_CHECKING
 
+from mpi4py import MPI
+
+import basix
 import dolfinx
 import numpy as np
 import ufl
@@ -130,31 +134,42 @@ class InterfaceMethod(Enum):
             that uses average gradients and penalty stabilization.
         penalty: Pure penalty method - enforces continuity through a penalty term
             scaled by the penalty_term parameter.
+        lagrange_multiplier: the flux through the interface is an additional unknown
+            (a Lagrange multiplier living on the interface facets) and the interface
+            condition is imposed as a constraint. Exact up to the discretisation, with
+            no parameter to choose.
     """
 
     nitsche = 10
     penalty = 20
+    lagrange_multiplier = 30
 
     @classmethod
     def from_string(cls, s: str) -> "InterfaceMethod":
         """Convert string to InterfaceMethod enum.
 
         Args:
-            s: String representation ('nitsche' or 'penalty').
+            s: String representation ('nitsche', 'penalty' or
+                'lagrange_multiplier', also accepted as 'lagrange' or 'lm').
 
         Returns:
             InterfaceMethod: The corresponding enum value.
 
         Raises:
-            ValueError: If string is not 'nitsche' or 'penalty'.
+            ValueError: If the string does not name a method.
         """
         s = s.lower()
         if s == "nitsche":
             return cls.nitsche
         elif s == "penalty":
             return cls.penalty
+        elif s in ("lagrange_multiplier", "lagrange", "lm"):
+            return cls.lagrange_multiplier
         else:
-            raise ValueError("interface_method must be one of 'nitsche' or 'penalty'")
+            raise ValueError(
+                "interface_method must be one of 'nitsche', 'penalty' or "
+                "'lagrange_multiplier'"
+            )
 
 
 class InterfaceBase(ABC):
@@ -262,8 +277,22 @@ class Interface(InterfaceBase):
         restriction: FEniCS restriction operators for each side
             of the interface, defaults to ("+", "-").
         method: The method used to enforce interface conditions
-            (penalty or Nitsche).
-        penalty_term: Penalty parameter for the interface formulation.
+            (penalty, Nitsche or Lagrange multiplier).
+        penalty_term: Penalty parameter for the interface formulation. Not used by
+            the Lagrange multiplier method.
+        submesh: Lagrange multiplier method only: the submesh of the interface
+            facets the multipliers live on.
+        cell_map: Lagrange multiplier method only: the entity map between the
+            cells of ``submesh`` and the facets of the parent mesh.
+        parent_vertex_map: Lagrange multiplier method only: the entity map between
+            the vertices of ``submesh`` and those of the parent mesh.
+        multipliers: Lagrange multiplier method only: the multiplier of each
+            species, by species: the flux of that species through the interface,
+            from the first subdomain into the second one, in particles/m2/s.
+        multiplier_test_functions: Lagrange multiplier method only: their test
+            functions, by species.
+        multiplier_forms: Lagrange multiplier method only: their residuals (the
+            interface condition), by species.
     """
 
     id: int
@@ -272,6 +301,12 @@ class Interface(InterfaceBase):
     mt: dolfinx.mesh.MeshTags
     restriction: list[str, str] = ("+", "-")
     method: InterfaceMethod
+    submesh: dolfinx.mesh.Mesh | None
+    cell_map: "dolfinx.mesh.EntityMap | None"
+    parent_vertex_map: "dolfinx.mesh.EntityMap | None"
+    multipliers: dict
+    multiplier_test_functions: dict
+    multiplier_forms: dict
 
     def __init__(
         self,
@@ -293,6 +328,12 @@ class Interface(InterfaceBase):
         super().__init__(id, subdomains)
         self.penalty_term = penalty_term
         self.method = method
+        self.submesh = None
+        self.cell_map = None
+        self.parent_vertex_map = None
+        self.multipliers = {}
+        self.multiplier_test_functions = {}
+        self.multiplier_forms = {}
 
     @property
     def method(self) -> InterfaceMethod:
@@ -464,6 +505,7 @@ class Interface(InterfaceBase):
         method_to_function = {
             InterfaceMethod.penalty: self.penalty_method,
             InterfaceMethod.nitsche: self.nitsche_method,
+            InterfaceMethod.lagrange_multiplier: self.lagrange_multiplier_method,
         }
         assert self.method in method_to_function, (
             f"Unknown interface method {self.method}"
@@ -566,6 +608,209 @@ class Interface(InterfaceBase):
         # stabilisation
         F_0 += stabilisation * jump * v_0 * dS(self.id)
         F_1 += -stabilisation * jump * v_1 * dS(self.id)
+
+        return F_0, F_1
+
+    def create_submesh(self):
+        """Create the submesh of the interface facets the multipliers live on.
+
+        Requires ``parent_mesh`` and ``mt`` (the facet meshtags of the parent mesh).
+        """
+        fdim = self.parent_mesh.topology.dim - 1
+        facets = self.mt.find(self.id)
+        self.submesh, self.cell_map, self.parent_vertex_map, _ = (
+            dolfinx.mesh.create_submesh(self.parent_mesh, fdim, facets)
+        )
+
+    def multiplier_bcs(
+        self, species: "Species", prescribed_facets: list[np.ndarray]
+    ) -> list[dolfinx.fem.DirichletBC]:
+        """Pin the multiplier of ``species`` where both sides are prescribed.
+
+        Where the interface meets the boundary at a point (an edge in 3D) on which the
+        concentration is fixed strongly on *both* sides, the multiplier there is
+        controlled by no free equation and the Jacobian is singular. It is set to zero
+        at those points, which costs some accuracy in the interface flux on the facets
+        touching them, and a warning is raised. Nothing is pinned when only one side,
+        or neither, is prescribed there.
+
+        Args:
+            species: the species of the multiplier
+            prescribed_facets: for each of the two subdomains, the facets of the parent
+                mesh on which the concentration of ``species`` is fixed strongly
+
+        Returns:
+            the Dirichlet conditions on the multiplier (empty, or one)
+        """
+        if self.submesh.topology.dim == 0:
+            # 1D: the interface is a single point inside the domain, it cannot meet
+            # the boundary
+            return []
+
+        prescribed_on_both_sides = self._vertices_prescribed_on_both_sides(
+            prescribed_facets
+        )
+        pinned_vertices = self._submesh_vertices_among(prescribed_on_both_sides)
+
+        V = self.multipliers[species].function_space
+        dofs = dolfinx.fem.locate_dofs_topological(V, 0, pinned_vertices)
+
+        # collective: every process must take the same decision
+        comm = self.parent_mesh.comm
+        if comm.allreduce(len(dofs), op=MPI.SUM) == 0:
+            return []
+
+        warnings.warn(
+            f"interface {self.id} meets a boundary where the concentration of "
+            f"{species.name} is fixed on both sides: its Lagrange multiplier (the "
+            "interface flux) is set to zero there, which is inaccurate on the facets "
+            "touching that boundary. Fixing the concentration on one side only avoids "
+            "this.",
+            stacklevel=2,
+        )
+        zero = dolfinx.default_scalar_type(0)
+        return [dolfinx.fem.dirichletbc(zero, dofs, V)]
+
+    def _vertices_prescribed_on_both_sides(
+        self, prescribed_facets: list[np.ndarray]
+    ) -> np.ndarray:
+        """The vertices of the parent mesh that belong to a prescribed facet on both
+        sides of the interface, as *global* indices.
+
+        Global, because the two boundary facets meeting at an end of the interface
+        need not be on the same process: each side's vertices are gathered from all
+        processes before the intersection is taken.
+
+        Args:
+            prescribed_facets: for each of the two subdomains, the prescribed facets
+                of the parent mesh (local indices)
+
+        Returns:
+            the global indices of the vertices prescribed on both sides
+        """
+        topology = self.parent_mesh.topology
+        topology.create_connectivity(topology.dim - 1, 0)
+        facet_to_vertices = topology.connectivity(topology.dim - 1, 0)
+        vertex_map = topology.index_map(0)
+        comm = self.parent_mesh.comm
+
+        vertices_of_each_side = []
+        for facets in prescribed_facets:
+            local_vertices = set()
+            for facet in facets:
+                local_vertices.update(facet_to_vertices.links(facet).tolist())
+            local_vertices = np.array(sorted(local_vertices), dtype=np.int32)
+            global_vertices = vertex_map.local_to_global(local_vertices)
+            all_processes = np.concatenate(comm.allgather(global_vertices))
+            vertices_of_each_side.append(all_processes)
+
+        return np.intersect1d(vertices_of_each_side[0], vertices_of_each_side[1])
+
+    def _submesh_vertices_among(self, parent_vertices: np.ndarray) -> np.ndarray:
+        """The vertices of the interface submesh that are among ``parent_vertices``.
+
+        Args:
+            parent_vertices: global indices of vertices of the parent mesh
+
+        Returns:
+            the matching vertices of the submesh (local indices)
+        """
+        sub_topology = self.submesh.topology
+        sub_topology.create_connectivity(0, sub_topology.dim)
+        sub_vertex_map = sub_topology.index_map(0)
+        n_sub_vertices = sub_vertex_map.size_local + sub_vertex_map.num_ghosts
+        sub_vertices = np.arange(n_sub_vertices, dtype=np.int32)
+
+        local_parent = self.parent_vertex_map.sub_topology_to_topology(
+            sub_vertices, inverse=False
+        )
+        global_parent = self.parent_mesh.topology.index_map(0).local_to_global(
+            local_parent
+        )
+        return sub_vertices[np.isin(global_parent, parent_vertices)]
+
+    def define_multipliers(self, species: list["Species"]):
+        """Create the multiplier of each species and its test function.
+        :meth:`create_submesh` must have been called.
+
+        The multipliers are P1 on the interface facets, except in 1D where the
+        interface is a point and basix only supports P0. Each species gets its own
+        function space, so that each multiplier is a block of its own.
+
+        Args:
+            species: the species the interface condition applies to
+        """
+        degree = 0 if self.submesh.topology.dim == 0 else 1
+        self.multipliers, self.multiplier_test_functions = {}, {}
+        for spe in species:
+            element = basix.ufl.element(
+                basix.ElementFamily.P,
+                self.submesh.basix_cell(),
+                degree,
+                basix.LagrangeVariant.equispaced,
+            )
+            V = dolfinx.fem.functionspace(self.submesh, element)
+            lam = dolfinx.fem.Function(V)
+            lam.name = f"flux_{spe.name}_interface_{self.id}"
+            self.multipliers[spe] = lam
+            self.multiplier_test_functions[spe] = ufl.TestFunction(V)
+
+    def lagrange_multiplier_method(self, dS, species, temperature):
+        """Generate interface formulation using a Lagrange multiplier.
+
+        The flux of ``species`` through the interface is an unknown,
+        :math:`\\lambda` = ``self.multipliers[species]``, living on the interface
+        facets. It leaves the first subdomain and enters the second one, so particles
+        are conserved exactly:
+
+        .. math::
+
+            F_0 \\mathrel{+}= \\int_\\Gamma \\lambda \\, v_0 \\, dS, \\qquad
+            F_1 \\mathrel{-}= \\int_\\Gamma \\lambda \\, v_1 \\, dS.
+
+        The interface condition is the multiplier's own residual, stored in
+        ``self.multiplier_forms[species]``:
+
+        .. math::
+
+            F_\\lambda = \\int_\\Gamma \\mu \\, s \\, (p_0 - p_1) \\, dS,
+
+        with :math:`p_0 - p_1` = :meth:`equality` and :math:`s` =
+        :meth:`equality_scale`, which puts the constraint in concentration units.
+        Without that scale the constraint rows scale like 1/K and the condition number
+        of the Jacobian like K**2.
+
+        There is no parameter: the condition holds to the accuracy of the
+        discretisation (exactly at the nodes for a matching solubility law), and the
+        multiplier is itself the interface flux.
+
+        Args:
+            dS: Integration measure for the interface.
+            species: The species for which to compute the interface form.
+            temperature: A function returning temperature at given restrictions.
+
+        Returns:
+            Variational forms for subdomains 0 and 1.
+        """
+        v_0, v_1 = self.vs(species)
+        # the multiplier is single valued on the facets: either restriction gives it
+        lam = self.multipliers[species](self.restriction[0])
+        mu = self.multiplier_test_functions[species](self.restriction[0])
+
+        F_0 = lam * v_0 * dS(self.id)
+        F_1 = -lam * v_1 * dS(self.id)
+
+        # in concentration units, see the docstring
+        constraint = self.equality_scale(species, temperature) * self.equality(
+            species, temperature
+        )
+        F_lambda = mu * constraint * dS(self.id)
+        # The multiplier-multiplier block of the Jacobian is zero, but it must exist:
+        # it carries the block's function spaces, and the diagonal of any pinned
+        # multiplier dof (see HydrogenTransportProblemDiscontinuous)
+        zero = dolfinx.fem.Constant(self.parent_mesh, dolfinx.default_scalar_type(0))
+        F_lambda += zero * lam * mu * dS(self.id)
+        self.multiplier_forms[species] = F_lambda
 
         return F_0, F_1
 
