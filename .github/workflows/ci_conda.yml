@@ -4,7 +4,9 @@ on: [pull_request, push]
 jobs:
   run-tests:
     name: run-tests (fenics-dolfinx v${{ matrix.dolfinx }})
-    runs-on: ubuntu-latest
+    # pinned: ubuntu-latest now resolves to Ubuntu 26.04, whose apt mirrors stall
+    # the headless display setup (apt-get update times out)
+    runs-on: ubuntu-24.04
 
     # conda-forge's MPICH uses the UCX netmod, which probes RDMA devices during
     # MPI_Init. Some Azure runners expose a MANA verbs device (mana_0) that UCX

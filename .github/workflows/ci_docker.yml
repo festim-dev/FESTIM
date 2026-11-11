@@ -4,7 +4,8 @@ on: [pull_request, push]
 jobs:
   run-tests:
     name: run-tests (fenics-dolfinx ${{ matrix.container_version }})
-    runs-on: ubuntu-latest
+    # pinned: ubuntu-latest now resolves to Ubuntu 26.04, on which apt fails here
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -34,8 +35,10 @@ jobs:
 
       - name: Install additional dependencies
         run: |
-          apt-get update
-          apt-get install -y xvfb libgl1 libglx-mesa0 libxrender1 libxcursor1 libxinerama1 curl gnupg ca-certificates
+          # retry, and give up on a stalled mirror rather than hanging
+          APT_OPTS="-o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30"
+          apt-get update $APT_OPTS
+          apt-get install -y $APT_OPTS xvfb libgl1 libglx-mesa0 libxrender1 libxcursor1 libxinerama1 curl gnupg ca-certificates
 
       - name: Run tests
         run: |
