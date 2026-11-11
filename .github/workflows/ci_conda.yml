@@ -46,7 +46,6 @@ jobs:
         python3 -m pip install scikit-build-core
         python3 -m pip install .[test] --no-build-isolation
 
-    # TEMPORARY: run only test_plot.py until the plot tests pass, then restore test/
     - name: Run tests
       shell: bash -l {0}
       run: |
@@ -55,7 +54,7 @@ jobs:
         # $CONDA_PREFIX/share, so EGL never finds Mesa: VTK gets no OpenGL context
         # and segfaults on the first render. Point the loader at it explicitly.
         export __EGL_VENDOR_LIBRARY_DIRS="$CONDA_PREFIX/share/glvnd/egl_vendor.d"
-        pytest test/test_plot.py -v -p no:cacheprovider
+        pytest test/ --cov festim --cov-report xml --cov-report term
     
     - name: Upload to codecov
       uses: codecov/codecov-action@v7
