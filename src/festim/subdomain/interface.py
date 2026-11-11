@@ -1,5 +1,8 @@
+import warnings
 from enum import Enum
 from typing import TYPE_CHECKING
+
+from mpi4py import MPI
 
 import basix
 import dolfinx
@@ -279,8 +282,10 @@ class Interface(InterfaceBase):
             the Lagrange multiplier method.
         submesh: Lagrange multiplier method only: the submesh of the interface
             facets the multipliers live on.
-        cell_map: Lagrange multiplier method only: the entity map between
-            ``submesh`` and the parent mesh.
+        cell_map: Lagrange multiplier method only: the entity map between the
+            cells of ``submesh`` and the facets of the parent mesh.
+        parent_vertex_map: Lagrange multiplier method only: the entity map between
+            the vertices of ``submesh`` and those of the parent mesh.
         multipliers: Lagrange multiplier method only: the multiplier of each
             species, by species: the flux of that species through the interface,
             from the first subdomain into the second one, in particles/m2/s.
@@ -298,6 +303,7 @@ class Interface(InterfaceBase):
     method: InterfaceMethod
     submesh: dolfinx.mesh.Mesh | None
     cell_map: "dolfinx.mesh.EntityMap | None"
+    parent_vertex_map: "dolfinx.mesh.EntityMap | None"
     multipliers: dict
     multiplier_test_functions: dict
     multiplier_forms: dict
@@ -615,6 +621,113 @@ class Interface(InterfaceBase):
         self.submesh, self.cell_map, self.parent_vertex_map, _ = (
             dolfinx.mesh.create_submesh(self.parent_mesh, fdim, facets)
         )
+
+    def multiplier_bcs(
+        self, species: "Species", prescribed_facets: list[np.ndarray]
+    ) -> list[dolfinx.fem.DirichletBC]:
+        """Pin the multiplier of ``species`` where both sides are prescribed.
+
+        Where the interface meets the boundary at a point (an edge in 3D) on which the
+        concentration is fixed strongly on *both* sides, the multiplier there is
+        controlled by no free equation and the Jacobian is singular. It is set to zero
+        at those points, which costs some accuracy in the interface flux on the facets
+        touching them, and a warning is raised. Nothing is pinned when only one side,
+        or neither, is prescribed there.
+
+        Args:
+            species: the species of the multiplier
+            prescribed_facets: for each of the two subdomains, the facets of the parent
+                mesh on which the concentration of ``species`` is fixed strongly
+
+        Returns:
+            the Dirichlet conditions on the multiplier (empty, or one)
+        """
+        if self.submesh.topology.dim == 0:
+            # 1D: the interface is a single point inside the domain, it cannot meet
+            # the boundary
+            return []
+
+        prescribed_on_both_sides = self._vertices_prescribed_on_both_sides(
+            prescribed_facets
+        )
+        pinned_vertices = self._submesh_vertices_among(prescribed_on_both_sides)
+
+        V = self.multipliers[species].function_space
+        dofs = dolfinx.fem.locate_dofs_topological(V, 0, pinned_vertices)
+
+        # collective: every process must take the same decision
+        comm = self.parent_mesh.comm
+        if comm.allreduce(len(dofs), op=MPI.SUM) == 0:
+            return []
+
+        warnings.warn(
+            f"interface {self.id} meets a boundary where the concentration of "
+            f"{species.name} is fixed on both sides: its Lagrange multiplier (the "
+            "interface flux) is set to zero there, which is inaccurate on the facets "
+            "touching that boundary. Fixing the concentration on one side only avoids "
+            "this.",
+            stacklevel=2,
+        )
+        zero = dolfinx.default_scalar_type(0)
+        return [dolfinx.fem.dirichletbc(zero, dofs, V)]
+
+    def _vertices_prescribed_on_both_sides(
+        self, prescribed_facets: list[np.ndarray]
+    ) -> np.ndarray:
+        """The vertices of the parent mesh that belong to a prescribed facet on both
+        sides of the interface, as *global* indices.
+
+        Global, because the two boundary facets meeting at an end of the interface
+        need not be on the same process: each side's vertices are gathered from all
+        processes before the intersection is taken.
+
+        Args:
+            prescribed_facets: for each of the two subdomains, the prescribed facets
+                of the parent mesh (local indices)
+
+        Returns:
+            the global indices of the vertices prescribed on both sides
+        """
+        topology = self.parent_mesh.topology
+        topology.create_connectivity(topology.dim - 1, 0)
+        facet_to_vertices = topology.connectivity(topology.dim - 1, 0)
+        vertex_map = topology.index_map(0)
+        comm = self.parent_mesh.comm
+
+        vertices_of_each_side = []
+        for facets in prescribed_facets:
+            local_vertices = set()
+            for facet in facets:
+                local_vertices.update(facet_to_vertices.links(facet).tolist())
+            local_vertices = np.array(sorted(local_vertices), dtype=np.int32)
+            global_vertices = vertex_map.local_to_global(local_vertices)
+            all_processes = np.concatenate(comm.allgather(global_vertices))
+            vertices_of_each_side.append(all_processes)
+
+        return np.intersect1d(vertices_of_each_side[0], vertices_of_each_side[1])
+
+    def _submesh_vertices_among(self, parent_vertices: np.ndarray) -> np.ndarray:
+        """The vertices of the interface submesh that are among ``parent_vertices``.
+
+        Args:
+            parent_vertices: global indices of vertices of the parent mesh
+
+        Returns:
+            the matching vertices of the submesh (local indices)
+        """
+        sub_topology = self.submesh.topology
+        sub_topology.create_connectivity(0, sub_topology.dim)
+        sub_vertex_map = sub_topology.index_map(0)
+        n_sub_vertices = sub_vertex_map.size_local + sub_vertex_map.num_ghosts
+        sub_vertices = np.arange(n_sub_vertices, dtype=np.int32)
+
+        local_parent = self.parent_vertex_map.sub_topology_to_topology(
+            sub_vertices, inverse=False
+        )
+        global_parent = self.parent_mesh.topology.index_map(0).local_to_global(
+            local_parent
+        )
+        return sub_vertices[np.isin(global_parent, parent_vertices)]
 
     def define_multipliers(self, species: list["Species"]):
         """Create the multiplier of each species and its test function.
