@@ -2,6 +2,12 @@ name: Documentation test
 
 on: [push, pull_request]
 
+# a newer push to the same branch or PR cancels the run it replaces; runs on
+# main are never cancelled, so every merged commit gets a full CI result
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   docbuild:
     runs-on: ubuntu-latest
@@ -22,6 +28,11 @@ jobs:
         with:
           activate-environment: festim2-docs
           environment-file: docs/environment.yml
+          # conda-forge only, strict priority: mixing in Anaconda's defaults
+          # channel at flexible priority made the solve take ~4 minutes
+          miniforge-version: latest
+          channels: conda-forge
+          channel-priority: strict
 
       - name: Doc Tests
         shell: bash -l {0}
