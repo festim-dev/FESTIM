@@ -1406,6 +1406,138 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         else:
             raise TypeError("method_interface must be of type str or InterfaceMethod")
 
+    @property
+    def lagrange_multiplier_interfaces(self) -> list[_subdomain.Interface]:
+        """The interfaces enforced with a Lagrange multiplier."""
+        return [
+            interface
+            for interface in self.interfaces
+            if isinstance(interface, _subdomain.Interface)
+            and interface.method
+            == _subdomain.interface.InterfaceMethod.lagrange_multiplier
+        ]
+
+    @property
+    def interface_multiplier_blocks(self) -> list[tuple]:
+        """``(interface, species)`` for every Lagrange multiplier. Defines the ordering
+        of the multiplier blocks in the solver, after the gas pressures."""
+        return [
+            (interface, spe)
+            for interface in self.lagrange_multiplier_interfaces
+            for spe in interface.multipliers
+        ]
+
+    @property
+    def block_unknowns(self) -> list[fem.Function]:
+        """The unknowns of the blocked system, in block order: one per volume
+        subdomain, then one per gas species (its pressure), then one per Lagrange
+        multiplier (an interface flux)."""
+        return (
+            [subdomain.u for subdomain in self.volume_subdomains]
+            + [gas_species.solution for gas_species in self.gas_species]
+            + [
+                interface.multipliers[spe]
+                for interface, spe in self.interface_multiplier_blocks
+            ]
+        )
+
+    def check_lagrange_multiplier_interfaces(self):
+        """Reject what the Lagrange multiplier method does not support (yet).
+
+        Raises:
+            ValueError: if an interface using it shares its id with another interface.
+                The multiplier lives on the facets ``mt.find(id)``, which must then be
+                exactly the facets between its two subdomains.
+        """
+        for interface in self.lagrange_multiplier_interfaces:
+            others = [
+                other
+                for other in self.interfaces
+                if other is not interface and other.id == interface.id
+            ]
+            if others:
+                raise ValueError(
+                    f"interface {interface.id} uses the Lagrange multiplier method and "
+                    "shares its id with another interface, which is not supported: "
+                    "give it an id of its own"
+                )
+
+    def define_interface_multipliers(self):
+        """Create the Lagrange multipliers of the interfaces using that method, one
+        per species the interface condition applies to."""
+        for interface in self.lagrange_multiplier_interfaces:
+            interface.define_multipliers(self.interface_species(interface))
+
+    def create_multiplier_bcs(self) -> list[fem.DirichletBC]:
+        """Pin the multipliers where both sides of the interface are prescribed.
+
+        Where the interface meets the boundary at a point (an edge in 3D) on which the
+        concentration of the species is fixed (strongly) on *both* sides, the value of
+        the multiplier there is controlled by no free equation and the Jacobian is
+        singular. The multiplier is set to zero at those points, which costs some
+        accuracy in the interface flux on the facets touching them, and a warning is
+        raised. Nothing is pinned when only one side, or neither, is prescribed there.
+
+        Returns:
+            the Dirichlet conditions on the multipliers
+        """
+        mesh = self.mesh.mesh
+        tdim = mesh.topology.dim
+        mesh.topology.create_connectivity(tdim - 1, 0)
+        f_to_v = mesh.topology.connectivity(tdim - 1, 0)
+
+        forms = []
+        for interface, spe in self.interface_multiplier_blocks:
+            if interface.submesh.topology.dim == 0:
+                continue  # 1D: the interface is a single interior point
+            # parent vertices on a strong Dirichlet condition of spe, side by side
+            prescribed = []
+            for subdomain in interface.subdomains:
+                vertices = set()
+                for bc in self._unpacked_bcs:
+                    if (
+                        isinstance(bc, boundary_conditions.FixedConcentrationBC)
+                        and bc.species is spe
+                        and not getattr(bc, "enforce_weakly", False)
+                        and self.surface_to_volume.get(bc.subdomain) is subdomain
+                    ):
+                        for facet in self.facet_meshtags.find(bc.subdomain.id):
+                            vertices.update(f_to_v.links(facet).tolist())
+                prescribed.append(vertices)
+            both = np.fromiter(prescribed[0] & prescribed[1], dtype=np.int32)
+
+            # interface vertices whose parent vertex is prescribed on both sides. Every
+            # rank goes through this, even with nothing prescribed locally, since the
+            # decision below is collective.
+            sub_topology = interface.submesh.topology
+            sub_topology.create_connectivity(0, sub_topology.dim)
+            vmap = sub_topology.index_map(0)
+            all_sub_vertices = np.arange(
+                vmap.size_local + vmap.num_ghosts, dtype=np.int32
+            )
+            parent_vertices = interface.parent_vertex_map.sub_topology_to_topology(
+                all_sub_vertices, inverse=False
+            )
+            sub_vertices = all_sub_vertices[np.isin(parent_vertices, both)]
+            lam = interface.multipliers[spe]
+            dofs = fem.locate_dofs_topological(lam.function_space, 0, sub_vertices)
+            if mesh.comm.allreduce(len(dofs), op=MPI.SUM) == 0:
+                continue
+            warnings.warn(
+                f"interface {interface.id} meets a boundary where the concentration "
+                f"of {spe.name} is fixed on both sides: its Lagrange multiplier (the "
+                "interface flux) is set to zero there, which is inaccurate on the "
+                "facets touching that boundary. Fixing the concentration on one side "
+                "only avoids this.",
+                stacklevel=2,
+            )
+            forms.append(
+                fem.dirichletbc(
+                    dolfinx.default_scalar_type(0), dofs, lam.function_space
+                )
+            )
+        return forms
+
     def initialise(self):
         # if method_interface is given as an attribute of Problem class, then pass it to
         # each interface and raise a deprecation warning. ``hasattr`` cannot be used to
@@ -1494,6 +1626,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             interface.mesh = self.mesh.mesh
             interface.parent_mesh = self.mesh.mesh
 
+        self.check_lagrange_multiplier_interfaces()
+        for interface in self.lagrange_multiplier_interfaces:
+            interface.create_submesh()
+
         # every interior-facet integrand of the parent mesh is known by now, and they
         # all have to share one measure (see :meth:`build_interior_facet_measure`)
         self.build_interior_facet_measure()
@@ -1517,6 +1653,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             self.define_function_spaces(subdomain)
 
         self.define_enclosure_function_spaces()
+        self.define_interface_multipliers()
 
         # create global DG function spaces of degree 0 and 1
         element_DG0 = basix.ufl.element(
@@ -1877,6 +2014,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 bc._volume_subdomain = self.flux_bc_target(bc)[0]
 
         super().define_boundary_conditions()
+        self.bc_forms += self.create_multiplier_bcs()
 
     def create_dirichletbc_value_ufl(self, bc):
         # as in create_dirichletbc_form, a temperature given as a function lives on the
@@ -2901,21 +3039,29 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             subdomain_1.F += F_1
 
         # the unknowns of the blocked system: one block per volume subdomain, plus one
-        # block per gas species (the pressure of that species in its enclosure)
-        all_forms = [subdomain.F for subdomain in self.volume_subdomains] + [
-            gas_species.F for gas_species in self.gas_species
-        ]
-        all_unknowns = [subdomain.u for subdomain in self.volume_subdomains] + [
-            gas_species.solution for gas_species in self.gas_species
-        ]
+        # block per gas species (the pressure of that species in its enclosure), plus
+        # one block per Lagrange multiplier (an interface flux)
+        all_forms = (
+            [subdomain.F for subdomain in self.volume_subdomains]
+            + [gas_species.F for gas_species in self.gas_species]
+            + [
+                interface.multiplier_forms[spe]
+                for interface, spe in self.interface_multiplier_blocks
+            ]
+        )
+        all_unknowns = self.block_unknowns
 
         # a manifold subdomain contributes a second residual, integrated over its own
         # submesh; DOLFINx compiles one integration domain per form, so it is kept as a
         # separate group and summed into the residual and Jacobian at assembly time
-        submesh_forms = [
-            getattr(subdomain, "F_submesh", None)
-            for subdomain in self.volume_subdomains
-        ] + [None for _ in self.gas_species]
+        submesh_forms = (
+            [
+                getattr(subdomain, "F_submesh", None)
+                for subdomain in self.volume_subdomains
+            ]
+            + [None for _ in self.gas_species]
+            + [None for _ in self.interface_multiplier_blocks]
+        )
         groups = [all_forms]
         padded = set()
         if any(form is not None for form in submesh_forms):
@@ -2975,8 +3121,11 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     (ufl.TestFunction(V), ufl.TrialFunction(V))
                 )
 
-        # compile jacobian (J) and residual (F)
-        entity_maps = [sd.cell_map for sd in self.volume_subdomains]
+        # compile jacobian (J) and residual (F); the multipliers live on submeshes of
+        # their interfaces
+        entity_maps = [sd.cell_map for sd in self.volume_subdomains] + [
+            interface.cell_map for interface in self.lagrange_multiplier_interfaces
+        ]
         jit_options = {
             "cffi_extra_compile_args": ["-O3", "-march=native"],
             "cffi_libraries": ["m"],
@@ -2999,8 +3148,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         self.solver = NonlinearProblem(
             self.forms,
-            [subdomain.u for subdomain in self.volume_subdomains]
-            + [gas_species.solution for gas_species in self.gas_species],
+            self.block_unknowns,
             bcs=self.bc_forms,
             J=self.J,
             petsc_options=petsc_options,
@@ -3033,9 +3181,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         pattern.
         """
         snes = self.solver.solver
-        unknowns = [subdomain.u for subdomain in self.volume_subdomains] + [
-            gas_species.solution for gas_species in self.gas_species
-        ]
+        unknowns = self.block_unknowns
         # the sparsity pattern comes from the first group alone, so allow the manifold
         # blocks to add nonzeros the bulk blocks did not need
         self.solver.A.setOption(PETSc.Mat.Option.NEW_NONZERO_ALLOCATION_ERR, False)
