@@ -1,5 +1,6 @@
 """The Lagrange multiplier interface method in 2D.
 
+
 A unit square split at y = 1/2, c = 1 on top and c = 0 at the bottom, insulated
 sides. Both materials follow Sieverts' law, K = 3 (bottom) and 2 (top), D = 2 and
 1, so equilibrium makes the concentration jump from 3/8 to 1/4 across the

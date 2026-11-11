@@ -1482,18 +1482,23 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             the Dirichlet conditions on the multipliers
         """
         mesh = self.mesh.mesh
+        comm = mesh.comm
         tdim = mesh.topology.dim
         mesh.topology.create_connectivity(tdim - 1, 0)
         f_to_v = mesh.topology.connectivity(tdim - 1, 0)
+        vertex_map = mesh.topology.index_map(0)
 
         forms = []
         for interface, spe in self.interface_multiplier_blocks:
             if interface.submesh.topology.dim == 0:
                 continue  # 1D: the interface is a single interior point
-            # parent vertices on a strong Dirichlet condition of spe, side by side
+            # parent vertices on a strong Dirichlet condition of spe, side by side, as
+            # global indices: the two boundary facets meeting at an end of the
+            # interface need not be on the same process, so the intersection is taken
+            # over all of them
             prescribed = []
             for subdomain in interface.subdomains:
-                vertices = set()
+                local = set()
                 for bc in self._unpacked_bcs:
                     if (
                         isinstance(bc, boundary_conditions.FixedConcentrationBC)
@@ -1502,9 +1507,13 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         and self.surface_to_volume.get(bc.subdomain) is subdomain
                     ):
                         for facet in self.facet_meshtags.find(bc.subdomain.id):
-                            vertices.update(f_to_v.links(facet).tolist())
-                prescribed.append(vertices)
-            both = np.fromiter(prescribed[0] & prescribed[1], dtype=np.int32)
+                            local.update(f_to_v.links(facet).tolist())
+                local = vertex_map.local_to_global(np.fromiter(local, dtype=np.int32))
+                prescribed.append(np.unique(np.concatenate(comm.allgather(local))))
+            both_global = np.intersect1d(prescribed[0], prescribed[1])
+            n_local = vertex_map.size_local + vertex_map.num_ghosts
+            all_global = vertex_map.local_to_global(np.arange(n_local, dtype=np.int32))
+            both = np.flatnonzero(np.isin(all_global, both_global)).astype(np.int32)
 
             # interface vertices whose parent vertex is prescribed on both sides. Every
             # rank goes through this, even with nothing prescribed locally, since the
