@@ -46,16 +46,16 @@ jobs:
         python3 -m pip install scikit-build-core
         python3 -m pip install .[test] --no-build-isolation
 
-    # TEMPORARY while debugging the plot-test crash: run only test_plot.py,
-    # uncaptured (-s) so VTK/Mesa messages reach the log even if the process dies
+    # TEMPORARY: run only test_plot.py until the plot tests pass, then restore test/
     - name: Run tests
       shell: bash -l {0}
-      env:
-        EGL_LOG_LEVEL: debug
       run: |
-        conda list | grep -E "^(vtk|vtk-base|pyvista|mesalib|mesa-|libglvnd|libegl) "
-        echo "DISPLAY='${DISPLAY:-}'"; ls /dev/dri 2>&1 || true
-        pytest test/test_plot.py -v -s -p no:cacheprovider
+        # conda-forge's libEGL looks for vendor files under $CONDA_PREFIX/etc and
+        # $CONDA_PREFIX/usr/share, but mesalib installs its file to
+        # $CONDA_PREFIX/share, so EGL never finds Mesa: VTK gets no OpenGL context
+        # and segfaults on the first render. Point the loader at it explicitly.
+        export __EGL_VENDOR_LIBRARY_DIRS="$CONDA_PREFIX/share/glvnd/egl_vendor.d"
+        pytest test/test_plot.py -v -p no:cacheprovider
     
     - name: Upload to codecov
       uses: codecov/codecov-action@v7
