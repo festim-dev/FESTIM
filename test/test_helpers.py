@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 from mpi4py import MPI
 
 import dolfinx.mesh
@@ -568,3 +570,34 @@ def test_convergence_test_uses_relative_step_norm():
         norms=(100.0, 5e-3, 1.0),
     )
     assert reason == snes.ConvergedReason.CONVERGED_SNORM_RELATIVE
+
+
+def _facet_tags():
+    mesh = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, 4)
+    facets = np.arange(2, dtype=np.int32)
+    return mesh, dolfinx.mesh.meshtags(mesh, 0, facets, np.ones_like(facets))
+
+
+def test_meshtags_topology_is_python_topology():
+    """The topology of real mesh tags comes back as the Python wrapper."""
+    # BUILD
+    _, tags = _facet_tags()
+
+    # RUN
+    topology = F.helpers.meshtags_topology(tags)
+
+    # TEST
+    assert isinstance(topology, dolfinx.mesh.Topology)
+
+
+def test_meshtags_topology_wraps_cpp_topology():
+    """A C++ topology, as dolfinx 0.10 and 0.11 return, is wrapped, not copied."""
+    # BUILD
+    mesh, _ = _facet_tags()
+    tags = SimpleNamespace(topology=mesh.topology._cpp_object)
+
+    # RUN
+    topology = F.helpers.meshtags_topology(tags)
+
+    # TEST
+    assert topology._cpp_object is mesh.topology._cpp_object

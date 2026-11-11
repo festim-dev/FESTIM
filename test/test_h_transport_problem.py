@@ -1844,3 +1844,19 @@ def test_nb_dofs_dg_or_cg():
 
     # TEST
     assert nb_dofs_dg > nb_dofs_cg
+
+
+@pytest.mark.parametrize(
+    "dofs",
+    [
+        np.array([3, 1, 4, 5], dtype=np.int32),
+        [np.array([3, 1], dtype=np.int32), np.array([4, 5], dtype=np.int32)],
+    ],
+)
+def test_collapsed_dofs_is_one_flat_array(dofs):
+    """The collapse dof map is flat whether DOLFINx gives one array or a list."""
+    # RUN
+    flat = F.hydrogen_transport_problem._collapsed_dofs(dofs)
+
+    # TEST
+    np.testing.assert_array_equal(flat, [3, 1, 4, 5])

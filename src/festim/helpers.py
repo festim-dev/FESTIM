@@ -13,6 +13,25 @@ if TYPE_CHECKING:
     from festim.subdomain.volume_subdomain import VolumeSubdomain
 
 
+def meshtags_topology(tags: dolfinx.mesh.MeshTags) -> dolfinx.mesh.Topology:
+    """The topology ``tags`` is defined on, as the Python ``dolfinx.mesh.Topology``.
+
+    ``MeshTags.topology`` is the C++ topology on dolfinx 0.10 and 0.11, and the Python
+    wrapper from dolfinx PR #4350 on. Mirrors ``fenicsx_compat.meshtags_topology``,
+    which FESTIM cannot depend on while it supports Python < 3.12.
+
+    Args:
+        tags: the mesh tags
+
+    Returns:
+        the Python topology of ``tags``
+    """
+    topology = tags.topology
+    if isinstance(topology, dolfinx.cpp.mesh.Topology):
+        return dolfinx.mesh.Topology(topology)
+    return topology
+
+
 def spatial_coordinate(mesh):
     """Coordinates on an integration mesh, including a zero-dimensional submesh.
 
