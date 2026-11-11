@@ -28,6 +28,11 @@ jobs:
         with:
           activate-environment: festim2-docs
           environment-file: docs/environment.yml
+          # conda-forge only, strict priority: mixing in Anaconda's defaults
+          # channel at flexible priority made the solve take ~4 minutes
+          miniforge-version: latest
+          channels: conda-forge
+          channel-priority: strict
 
       - name: Doc Tests
         shell: bash -l {0}
