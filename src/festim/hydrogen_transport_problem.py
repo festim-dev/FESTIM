@@ -59,6 +59,10 @@ from festim.mixed_dimensional_assembly import (
     prune_empty_blocks,
 )
 
+from festim.material import (
+    PorousMaterial as _PorousMaterial,
+)
+
 from .mesh import CoordinateSystem, Mesh
 
 __all__ = [
@@ -964,7 +968,26 @@ class HydrogenTransportProblem(problem.ProblemBase):
         ``T``, or a drift velocity built from the temperature gradient, has one to read.
         """
 
+        warned_volumes = set()
+
         for drift_term in self.drift_terms:
+            vol = drift_term.subdomain
+
+            if (
+                isinstance(drift_term, AdvectionTerm)
+                and isinstance(vol.material, _PorousMaterial)
+                and vol.id not in warned_volumes
+            ):
+                warnings.warn(
+                    f"Advection in porous volume {vol.id} expects superficial "
+                    "(Darcy) velocity. If supplying an average pore velocity, "
+                    "multiply it by the porosity first. FESTIM uses the supplied "
+                    "velocity directly, without applying this conversion.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+                warned_volumes.add(vol.id)
+
             drift_term.convert_inputs(
                 function_space=self.function_space,
                 t=self.t,
@@ -1053,7 +1076,14 @@ class HydrogenTransportProblem(problem.ProblemBase):
                             )
 
                 if self.settings.transient:
-                    self.formulation += ((u - u_n) / self.dt) * v * self.dx(vol.id)
+                    # self.formulation += ((u - u_n) / self.dt) * v * self.dx(vol.id)
+                    # Porosity change: choose storage separately for each volume.
+                    storage = 1.0
+                    if isinstance(vol.material, _PorousMaterial):
+                        storage = vol.material.porosity
+                    self.formulation += (
+                        storage * ((u - u_n) / self.dt) * v * self.dx(vol.id)
+                    )
 
         for source in self._unpacked_sources:
             self.formulation -= (
@@ -1862,7 +1892,26 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         is the subdomain's own, as it is for reaction rates.
         """
 
+        warned_volumes = set()
+
         for drift_term in self.drift_terms:
+            vol = drift_term.subdomain
+
+            if (
+                isinstance(drift_term, AdvectionTerm)
+                and isinstance(vol.material, _PorousMaterial)
+                and vol.id not in warned_volumes
+            ):
+                warnings.warn(
+                    f"Advection in porous volume {vol.id} expects superficial "
+                    "(Darcy) velocity. If supplying an average pore velocity, "
+                    "multiply it by the porosity first. FESTIM uses the supplied "
+                    "velocity directly, without applying this conversion.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+                warned_volumes.add(vol.id)
+
             for spe in drift_term.species:
                 V = spe.subdomain_to_function_space[drift_term.subdomain]
                 drift_term.convert_inputs(
@@ -2439,7 +2488,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             v = spe.subdomain_to_test_function[subdomain]
 
             if self.settings.transient:
-                self_form += ((u - u_n) / dt) * v * dx
+                storage = 1.0
+                if isinstance(subdomain.material, _PorousMaterial):
+                    storage = subdomain.material.porosity
+                self_form += storage * ((u - u_n) / dt) * v * dx
 
             if spe.mobile and subdomain.submesh.topology.dim > 0:
                 D = self.diffusion_coefficient(subdomain, spe)
@@ -3649,7 +3701,12 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                     )
 
                 if self.settings.transient:
-                    self.formulation += ((c - c_n) / self.dt) * v * self.dx(vol.id)
+                    storage = 1.0
+                    if isinstance(vol.material, _PorousMaterial):
+                        storage = vol.material.porosity
+                    self.formulation += (
+                        storage * ((c - c_n) / self.dt) * v * self.dx(vol.id)
+                    )
 
         # add drift (advection, Soret, electromigration). The solved variable of a
         # mobile species is the chemical potential here, so the drift term is written
