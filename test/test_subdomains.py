@@ -282,3 +282,45 @@ def test_map_surface_to_volume_subdomains():
         "Expected surface 2 to be connected to volume 2, "
         f"got {surface_to_subdomain[surface_2].id}"
     )
+
+
+def test_left_and_right_surfaces():
+    """Checks that the left and right properties return the correct surfaces."""
+    my_mat = F.Material(D_0=1, E_D=1, name="mat")
+    bulk = F.VolumeSubdomain1D(id=1, borders=[0, 1e-3], material=my_mat)
+
+    assert bulk.left.x == 0
+    assert isinstance(bulk.left, F.SurfaceSubdomain1D)
+    assert bulk.right.x == 1e-3
+    assert isinstance(bulk.right, F.SurfaceSubdomain1D)
+
+    # ids are not allocated until the model is initialised
+    assert bulk.left.id is None
+    assert bulk.right.id is None
+
+
+def test_left_and_right_surfaces_get_auto_ids():
+    """Checks that auto-generated surfaces receive ids above user-declared ones."""
+    my_test_model = F.HydrogenTransportProblem()
+    my_test_model.mesh = F.Mesh1D(np.linspace(0, 1e-3, num=101))
+
+    steel = F.Material(D_0=1e-7, E_D=0.2)
+    bulk = F.VolumeSubdomain1D(1, borders=[0, 1e-3], material=steel)
+    left = bulk.left
+    right = bulk.right
+    my_test_model.subdomains = [bulk, left, right]
+
+    T = F.Species("T")
+    my_test_model.species = [T]
+    my_test_model.temperature = 600
+    my_test_model.boundary_conditions = [
+        F.FixedConcentrationBC(left, value=1e20, species=T),
+        F.FixedConcentrationBC(right, value=0, species=T),
+    ]
+    my_test_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
+
+    my_test_model.initialise()
+
+    # allocated above every declared id (volume id 1), without clashing
+    assert left.id == 2
+    assert right.id == 3

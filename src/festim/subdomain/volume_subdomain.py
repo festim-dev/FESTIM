@@ -2,6 +2,7 @@ from collections.abc import Callable
 
 import dolfinx
 import numpy as np
+from functools import cached_property
 from dolfinx import fem
 from dolfinx.mesh import EntityMap, Mesh, locate_entities
 from numpy import typing as npt
@@ -12,7 +13,7 @@ except ImportError:
     from scifem.mesh import transfer_meshtags_to_submesh
 
 from festim.material import Material
-from festim.subdomain.surface_subdomain import SurfaceSubdomain
+from festim.subdomain.surface_subdomain import SurfaceSubdomain, SurfaceSubdomain1D
 
 entity_map_type = EntityMap
 
@@ -217,6 +218,26 @@ class VolumeSubdomain1D(VolumeSubdomain):
             locator=lambda x: np.logical_and(x[0] >= borders[0], x[0] <= borders[1]),
         )
         self.borders = borders
+
+    @cached_property
+    def left(self):
+        """The left surface of the 1D volume subdomain.
+
+        Returns:
+            festim.SurfaceSubdomain1D: the left surface subdomain. Its id is
+            automatically allocated when the model is initialised
+        """
+        return SurfaceSubdomain1D(id=None, x=self.borders[0])
+
+    @cached_property
+    def right(self):
+        """The right surface of the 1D volume subdomain.
+
+        Returns:
+            festim.SurfaceSubdomain1D: the right surface subdomain. Its id is
+            automatically allocated when the model is initialised
+        """
+        return SurfaceSubdomain1D(id=None, x=self.borders[1])
 
 
 def find_volume_from_id(id: int, volumes: list):
