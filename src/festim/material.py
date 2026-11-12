@@ -373,23 +373,25 @@ class Material:
         else:
             raise ValueError("K_S_0 and E_K_S must be either floats or dicts")
 
+
 class PorousMaterial(Material):
     """Material with porosity- and tortuosity corrected diffusivity.
 
     The effective diffusion coefficient is
 
         D_eff = (porosity/tortuosity) * D
-    
+
     All other material properties are inherited unchanged.
 
     Args:
         porosity (float): Void-volume fraction, 0 < porosity <= 1.
         tortuosity (float): Tortuosity factor, tortuosity >= 1.
         *args, **kwargs: Arguments passed to Material.
-    
+
     """
+
     def __init__(self, *args, porosity, tortuosity, **kwargs):
-        super().__init__(*args,**kwargs)
+        super().__init__(*args, **kwargs)
 
         if not 0 < porosity <= 1:
             raise ValueError("porosity must be between 0 and 1")
@@ -408,8 +410,6 @@ class PorousMaterial(Material):
         # The installed Material method reads self.D_0 directly, bypassing
         # get_D_0(), so the solver also needs this correction here.
         D = super().get_diffusion_coefficient(
-            mesh=mesh,
-            temperature=temperature,
-            species=species
+            mesh=mesh, temperature=temperature, species=species
         )
         return D * self.porosity / self.tortuosity
