@@ -23,6 +23,33 @@ def test_stepsize_value_wrong_type():
         my_settings.stepsize = "coucou"
 
 
+def test_export_time_tolerances_default():
+    """The export time tolerances default to those of is_it_time_to_export."""
+    my_settings = F.Settings(atol=1, rtol=0.1)
+
+    assert my_settings.export_time_atol == 0
+    assert my_settings.export_time_rtol == 1e-5
+
+
+def test_export_time_tolerances_are_stored():
+    """Custom export time tolerances are kept as given."""
+    my_settings = F.Settings(
+        atol=1, rtol=0.1, export_time_atol=1e-6, export_time_rtol=0
+    )
+
+    assert my_settings.export_time_atol == 1e-6
+    assert my_settings.export_time_rtol == 0
+
+
+@pytest.mark.parametrize("attribute", ["export_time_atol", "export_time_rtol"])
+def test_export_time_tolerances_negative(attribute):
+    """A negative tolerance would silently disable the exports, so it is refused."""
+    my_settings = F.Settings(atol=1, rtol=0.1)
+
+    with pytest.raises(ValueError, match="greater than or equal to zero"):
+        setattr(my_settings, attribute, -1.0)
+
+
 # @pytest.mark.parametrize(
 #     "rtol",
 #     [1e-10, lambda t: 1e-8 if t < 10 else 1e-10],

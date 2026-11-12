@@ -1,10 +1,18 @@
 name: Docker CI
 on: [pull_request, push]
 
+# a newer push to the same branch or PR cancels the run it replaces; runs on
+# main are never cancelled, so every merged commit gets a full CI result
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   run-tests:
     name: run-tests (fenics-dolfinx ${{ matrix.container_version }})
-    runs-on: ubuntu-latest
+    # pinned to a known host; note apt below runs in the container, whose own
+    # Ubuntu release comes from the dolfinx image, not from this runner
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -34,8 +42,18 @@ jobs:
 
       - name: Install additional dependencies
         run: |
-          apt-get update
-          apt-get install -y xvfb libgl1 libglx-mesa0 libxrender1 libxcursor1 libxinerama1 curl gnupg ca-certificates
+          # the container (not the runner) decides the distro: the nightly image is
+          # Ubuntu 26.04, where apt's unprivileged _apt download sandbox fails to
+          # resolve the mirrors even though DNS works for root (pip reached GitHub
+          # above). Show what root resolves, so a real outage is easy to tell apart.
+          cat /etc/os-release | grep PRETTY_NAME
+          getent hosts archive.ubuntu.com || echo "root cannot resolve archive.ubuntu.com"
+          # - download as root: the container is throwaway and we already run as root
+          # - fail at update if any index can't be fetched, not later at install
+          # - retry, and give up on a stalled mirror rather than hanging
+          APT_OPTS="-o APT::Sandbox::User=root -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30"
+          apt-get update $APT_OPTS -o APT::Update::Error-Mode=any
+          apt-get install -y $APT_OPTS xvfb libgl1 libglx-mesa0 libxrender1 libxcursor1 libxinerama1 curl gnupg ca-certificates
 
       - name: Run tests
         run: |

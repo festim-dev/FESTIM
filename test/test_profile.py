@@ -232,3 +232,44 @@ def test_profile_discontinuous_single_species():
     for export in my_model.exports:
         assert export.x is not None
         assert len(export.data) > 0
+
+
+def test_profile_export_time_at_large_time():
+    """Regression test for issue #1074.
+
+    With the default relative tolerance of 1e-5, an export requested at t = 0.9e8
+    fires as soon as the simulation is within 900 s of it. The requested time is
+    then consumed and the export never fires at the right time. An absolute
+    tolerance in Settings makes the export land on the requested time.
+    """
+    my_model = F.HydrogenTransportProblem()
+    my_model.mesh = F.Mesh1D(np.linspace(0, 1, 10))
+
+    material = F.Material(D_0=1.0, E_D=0.0)
+    vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=material)
+    my_model.subdomains = [vol]
+
+    H = F.Species("H")
+    my_model.species = [H]
+
+    my_model.temperature = 300
+
+    export_time = 0.9e8
+    my_model.settings = F.Settings(
+        atol=1e-12,
+        rtol=1e-12,
+        final_time=export_time + 20,
+        stepsize=F.Stepsize(1),
+        export_time_atol=1e-6,
+        export_time_rtol=0,
+    )
+
+    my_model.exports = [F.Profile1DExport(H, subdomain=vol, times=[export_time])]
+
+    my_model.initialise()
+    my_model.t.value = export_time - 10
+    my_model.show_progress_bar = False
+    my_model.run()
+
+    assert my_model.exports[0].t == [export_time]
+    assert len(my_model.exports[0].data) == 1
