@@ -48,8 +48,8 @@ class CustomQuantity(DerivedQuantity):
         )
 
         surface_quantity = F.CustomQuantity(
-            expr=lambda **kwargs: -kwargs["D_A"] * ufl.dot(
-                ufl.grad(kwargs["A"]), kwargs["n"]
+            expr=lambda **kwargs: -ufl.dot(
+                kwargs["D_A"] * ufl.grad(kwargs["A"]), kwargs["n"]
             ),
             subdomain=surface,
             title="Surface flux",

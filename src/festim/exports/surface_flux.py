@@ -15,6 +15,10 @@ class SurfaceFlux(SurfaceQuantity):
 
     The total flux ``-D grad(c) . n + c v . n`` is computed, so a drift term acting on
     the field -- advection, Soret, electromigration -- contributes.
+    For a tensor D, the diffusive contribution uses the matrix-vector product
+    ``-dot(D * grad(c), n)``. The result is integrated over the surface and is
+    positive when leaving the domain. This is the physical gradient-based flux;
+    weak Dirichlet penalty corrections are not included.
 
     Args:
         field: species for which the surface flux is computed
@@ -80,7 +84,9 @@ class SurfaceFlux(SurfaceQuantity):
 
         weight = self.coordinate_system.integration_weight(mesh)
 
-        integrand = -self.D * ufl.dot(ufl.grad(u), n)
+        # written as a matrix product so an anisotropic D works: for a scalar
+        # D this is the same expression as -D * dot(grad(u), n)
+        integrand = -ufl.dot(self.D * ufl.grad(u), n)
         if subdomain_id is None:
             subdomain_id = self.surface.id
 
