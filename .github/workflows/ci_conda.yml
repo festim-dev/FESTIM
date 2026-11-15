@@ -1,19 +1,28 @@
 name: Conda CI
 on: [pull_request, push]
 
+# a newer push to the same branch or PR cancels the run it replaces; runs on
+# main are never cancelled, so every merged commit gets a full CI result
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   run-tests:
     name: run-tests (fenics-dolfinx v${{ matrix.dolfinx }})
-    # pinned: ubuntu-latest now resolves to Ubuntu 26.04, whose apt mirrors stall
-    # the headless display setup (apt-get update times out)
     runs-on: ubuntu-24.04
 
     # conda-forge's MPICH uses the UCX netmod, which probes RDMA devices during
     # MPI_Init. Some Azure runners expose a MANA verbs device (mana_0) that UCX
     # fails to open, aborting the process with SIGTERM (exit 143). Restricting
     # UCX to TCP/shared-memory/self skips that probe.
+    #
+    # Plot tests render with no X server: with no display, VTK falls back to EGL
+    # on conda-forge's software Mesa (mesalib, llvmpipe). This replaces Xvfb from
+    # apt, which made the job wait on Ubuntu's mirrors before any test ran.
     env:
       UCX_TLS: tcp,self,sm
+      PYVISTA_OFF_SCREEN: "true"
 
     strategy:
       fail-fast: false
@@ -23,8 +32,6 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v7
-
-    - uses: pyvista/setup-headless-display-action@v5
 
     - name: Set up Conda
       uses: conda-incubator/setup-miniconda@v4
@@ -37,7 +44,7 @@ jobs:
     - name: Create Conda environment
       shell: bash -l {0}
       run: |
-        conda install -c conda-forge python pip fenics-dolfinx=${{ matrix.dolfinx }} scifem io4dolfinx "h5py=*=mpi_*" pyvista nanobind
+        conda install -c conda-forge python pip fenics-dolfinx=${{ matrix.dolfinx }} scifem io4dolfinx "h5py=*=mpi_*" pyvista mesalib nanobind
 
     - name: Install local package and dependencies
       shell: bash -l {0}
@@ -48,6 +55,11 @@ jobs:
     - name: Run tests
       shell: bash -l {0}
       run: |
+        # conda-forge's libEGL looks for vendor files under $CONDA_PREFIX/etc and
+        # $CONDA_PREFIX/usr/share, but mesalib installs its file to
+        # $CONDA_PREFIX/share, so EGL never finds Mesa: VTK gets no OpenGL context
+        # and segfaults on the first render. Point the loader at it explicitly.
+        export __EGL_VENDOR_LIBRARY_DIRS="$CONDA_PREFIX/share/glvnd/egl_vendor.d"
         pytest test/ --cov festim --cov-report xml --cov-report term
     
     - name: Upload to codecov
