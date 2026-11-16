@@ -82,7 +82,7 @@ from .initial_condition import (
     InitialTemperature,
     read_function_from_file,
 )
-from .material import Material, SolubilityLaw
+from .material import Material, SolubilityLaw, PorousMaterial
 from .mesh.mesh import Mesh
 from .mesh.mesh_1d import Mesh1D
 from .mesh.mesh_from_xdmf import MeshFromXDMF
