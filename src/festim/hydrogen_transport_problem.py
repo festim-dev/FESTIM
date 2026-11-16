@@ -59,9 +59,7 @@ from festim.mixed_dimensional_assembly import (
     prune_empty_blocks,
 )
 
-from festim.material import (
-    PorousMaterial as _PorousMaterial,
-)
+from festim.material import PorousMaterial
 
 from .mesh import CoordinateSystem, Mesh
 
@@ -975,7 +973,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
             if (
                 isinstance(drift_term, AdvectionTerm)
-                and isinstance(vol.material, _PorousMaterial)
+                and isinstance(vol.material, PorousMaterial)
                 and vol.id not in warned_volumes
             ):
                 warnings.warn(
@@ -1076,14 +1074,20 @@ class HydrogenTransportProblem(problem.ProblemBase):
                             )
 
                 if self.settings.transient:
-                    # self.formulation += ((u - u_n) / self.dt) * v * self.dx(vol.id)
-                    # Porosity change: choose storage separately for each volume.
-                    storage = 1.0
-                    if isinstance(vol.material, _PorousMaterial):
-                        storage = vol.material.porosity
-                    self.formulation += (
-                        storage * ((u - u_n) / self.dt) * v * self.dx(vol.id)
-                    )
+                    # In porous materials, the transported species is assumed to occupy
+                    # only the void space. Since the void space represents only a
+                    # fraction epsilon of the total volume, the transient accumulation
+                    # term becomes epsilon * dc/dt. With the porosity epsilon and the
+                    # concentration c
+                    if isinstance(vol.material, PorousMaterial):
+                        self.formulation += (
+                            vol.material.porosity
+                            * ((u - u_n) / self.dt)
+                            * v
+                            * self.dx(vol.id)
+                        )
+                    else:
+                        self.formulation += ((u - u_n) / self.dt) * v * self.dx(vol.id)
 
         for source in self._unpacked_sources:
             self.formulation -= (
@@ -1899,7 +1903,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
             if (
                 isinstance(drift_term, AdvectionTerm)
-                and isinstance(vol.material, _PorousMaterial)
+                and isinstance(vol.material, PorousMaterial)
                 and vol.id not in warned_volumes
             ):
                 warnings.warn(
@@ -2488,10 +2492,15 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             v = spe.subdomain_to_test_function[subdomain]
 
             if self.settings.transient:
-                storage = 1.0
-                if isinstance(subdomain.material, _PorousMaterial):
-                    storage = subdomain.material.porosity
-                self_form += storage * ((u - u_n) / dt) * v * dx
+                # In porous materials, the transported species is assumed to occupy
+                # only the void space. Since the void space represents only a
+                # fraction epsilon of the total volume, the transient accumulation
+                # term becomes epsilon * dc/dt. With the porosity epsilon and the
+                # concentration c
+                if isinstance(subdomain.material, PorousMaterial):
+                    self_form += subdomain.material.porosity * ((u - u_n) / dt) * v * dx
+                else:
+                    self_form += ((u - u_n) / dt) * v * dx
 
             if spe.mobile and subdomain.submesh.topology.dim > 0:
                 D = self.diffusion_coefficient(subdomain, spe)
@@ -3701,12 +3710,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                     )
 
                 if self.settings.transient:
-                    storage = 1.0
-                    if isinstance(vol.material, _PorousMaterial):
-                        storage = vol.material.porosity
-                    self.formulation += (
-                        storage * ((c - c_n) / self.dt) * v * self.dx(vol.id)
-                    )
+                    self.formulation += ((c - c_n) / self.dt) * v * self.dx(vol.id)
 
         # add drift (advection, Soret, electromigration). The solved variable of a
         # mobile species is the chemical potential here, so the drift term is written

@@ -375,40 +375,111 @@ class Material:
 
 
 class PorousMaterial(Material):
-    """Material with porosity- and tortuosity corrected diffusivity.
+    """Material with porosity- and tortuosity-corrected diffusivity.
+
+    The transported species is assumed to occupy only the void space
+    of the porous material. Porosity reduces the volume available for
+    diffusion, while tortuosity accounts for the increased resistance
+    due to longer and more complex diffusion paths.
 
     The effective diffusion coefficient is
 
-        D_eff = (porosity/tortuosity) * D
+        D_eff = (porosity / tortuosity) * D
+
+    where D is the diffusivity of the species in the pore fluid,
+    porosity is the void-volume fraction, and tortuosity is the
+    dimensionless factor accounting for the diffusion path geometry.
 
     All other material properties are inherited unchanged.
+
+    For transient simulations, the accumulation term is also scaled
+    by porosity to account for the fraction of the total volume
+    occupied by the transported species.
+
+    If advection is included, the supplied velocity must be the
+    superficial (Darcy) velocity, not the average pore velocity.
+    The superficial velocity is the average pore velocity multiplied
+    by porosity. FESTIM does not apply this conversion automatically.
 
     Args:
         porosity (float): Void-volume fraction, 0 < porosity <= 1.
         tortuosity (float): Tortuosity factor, tortuosity >= 1.
-        *args, **kwargs: Arguments passed to Material.
+        D_0: Pre-exponential factor of the diffusion coefficient (m2/s).
+        E_D: Activation energy of the diffusion coefficient (eV).
+        K_S_0: Pre-exponential factor of the solubility coefficient.
+        E_K_S: Activation energy of the solubility coefficient (eV).
+        name: Name of the material.
+        thermal_conductivity: Thermal conductivity (W/m/K).
+        density: Density of the material (kg/m3).
+        heat_capacity: Specific heat capacity (J/kg/K).
+        solubility_law: Solubility law (SIEVERT, HENRY or NONE).
+        D: Spatially varying diffusion coefficient (m2/s).
 
+    Attributes:
+        porosity (float): Void-volume fraction.
+        tortuosity (float): Tortuosity factor.
+
+    Examples:
+        .. testsetup:: PorousMaterial
+
+            from festim import PorousMaterial
+
+        .. testcode:: PorousMaterial
+
+            # Single species
+            porous_mat = PorousMaterial(
+                D_0=1.9e-7,
+                E_D=0.2,
+                name="my_mat",
+                porosity=0.36,
+                tortuosity=2.78,
+            )
+
+            # Multiple species
+            porous_mat = PorousMaterial(
+                D_0={"Species_1": 1.9e-7, "Species_2": 2.0e-7},
+                E_D={"Species_1": 0.2, "Species_2": 0.3},
+                name="my_mat",
+                porosity=0.36,
+                tortuosity=2.78,
+            )
     """
 
     def __init__(self, *args, porosity, tortuosity, **kwargs):
         super().__init__(*args, **kwargs)
-
-        if not 0 < porosity <= 1:
-            raise ValueError("porosity must be between 0 and 1")
-
-        if tortuosity < 1:
-            raise ValueError("tortuosity must be greater than or equal to 1")
-
         self.porosity = porosity
         self.tortuosity = tortuosity
 
+    @property
+    def porosity(self):
+        return self._porosity
+
+    @porosity.setter
+    def porosity(self, value):
+        if not isinstance(value, int | float):
+            raise TypeError("porosity must be an int or float")
+        if not 0 < value <= 1:
+            raise ValueError("porosity must satisfy 0 < porosity <= 1")
+        self._porosity = value
+
+    @property
+    def tortuosity(self):
+        return self._tortuosity
+
+    @tortuosity.setter
+    def tortuosity(self, value):
+        if not isinstance(value, int | float):
+            raise TypeError("tortuosity must be an int or float")
+        if not value >= 1:
+            raise ValueError("tortuosity must be greater than or equal to 1")
+        self._tortuosity = value
+
     def get_D_0(self, species=None):
-        """Supply the effective prefactor to FESTIM's surface-flux exports."""
+        """Return the effective diffusion coefficient corrected for porosity and tortuosity."""
         return super().get_D_0(species=species) * self.porosity / self.tortuosity
 
     def get_diffusion_coefficient(self, mesh=None, temperature=None, species=None):
-        # The installed Material method reads self.D_0 directly, bypassing
-        # get_D_0(), so the solver also needs this correction here.
+        """Return the effective diffusion coefficient corrected for porosity and tortuosity."""
         D = super().get_diffusion_coefficient(
             mesh=mesh, temperature=temperature, species=species
         )

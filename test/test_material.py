@@ -19,6 +19,20 @@ def test_define_diffusion_coefficient():
     assert np.isclose(float(D), D_analytical)
 
 
+def test_define_porous_diffusion_coefficient():
+    """Test that the diffusion coefficient is correctly defined for a porous media."""
+    T, D_0, E_D, porosity, tortuosity = 500, 1.2, 0.5, 0.36, 2.78
+    dum_spe = F.Species("dummy")
+    my_por_mat = F.PorousMaterial(
+        D_0=D_0, E_D=E_D, porosity=porosity, tortuosity=tortuosity
+    )
+    D = my_por_mat.get_diffusion_coefficient(test_mesh.mesh, T, species=dum_spe)
+
+    D_analytical = porosity / tortuosity * D_0 * np.exp(-E_D / F.k_B / T)
+
+    assert np.isclose(float(D), D_analytical)
+
+
 def test_multispecies_dict_strings():
     """Test that the diffusion coefficient is correctly defined when keys are
     strings."""
@@ -58,6 +72,35 @@ def test_multispecies_dict_objects():
 
     D_A_analytical = D_0_A * np.exp(-E_D_A / F.k_B / T)
     D_B_analytical = D_0_B * np.exp(-E_D_B / F.k_B / T)
+
+    D_analytical = [D_A_analytical, D_B_analytical]
+
+    assert np.isclose(D, D_analytical).all()
+
+
+def test_multispecies_porous_dict_objects_and_strings():
+    """Test that the diffusion coefficient is correctly defined for a porous media when
+    keys are a mix of festim.Species objects and strings."""
+    T = 500
+    D_0_A, D_0_B = 1, 2
+    E_D_A, E_D_B = 0.1, 0.2
+    porosity, tortuosity = 0.36, 2.78
+
+    A = F.Species("A")
+    B = F.Species("B")
+
+    my_por_mat = F.PorousMaterial(
+        D_0={A: D_0_A, "B": D_0_B},
+        E_D={A: E_D_A, "B": E_D_B},
+        porosity=porosity,
+        tortuosity=tortuosity,
+    )
+    D_A = my_por_mat.get_diffusion_coefficient(test_mesh.mesh, T, species=A)
+    D_B = my_por_mat.get_diffusion_coefficient(test_mesh.mesh, T, species=B)
+    D = [float(D_A), float(D_B)]
+
+    D_A_analytical = porosity / tortuosity * D_0_A * np.exp(-E_D_A / F.k_B / T)
+    D_B_analytical = porosity / tortuosity * D_0_B * np.exp(-E_D_B / F.k_B / T)
 
     D_analytical = [D_A_analytical, D_B_analytical]
 
@@ -210,6 +253,64 @@ def test_raises_TypeError_when_D_is_not_correct_type(input_value):
 
     with pytest.raises(TypeError, match=r"D must be of type fem.Function"):
         F.Material(D=input_value)
+
+
+@pytest.mark.parametrize(
+    "porosity",
+    [
+        0,
+        -1,
+        1.1,
+    ],
+)
+def test_porosity_out_of_range(porosity):
+    with pytest.raises(ValueError, match="porosity must satisfy 0 < porosity <= 1"):
+        F.PorousMaterial(D_0=1, E_D=0, porosity=porosity, tortuosity=2)
+
+
+@pytest.mark.parametrize(
+    "tortuosity",
+    [
+        0,
+        -1,
+        0.5,
+    ],
+)
+def test_tortuosity_out_of_range(tortuosity):
+    with pytest.raises(
+        ValueError, match="tortuosity must be greater than or equal to 1"
+    ):
+        F.PorousMaterial(D_0=1, E_D=0, porosity=0.4, tortuosity=tortuosity)
+
+
+@pytest.mark.parametrize(
+    "input_por_value",
+    [
+        {"A": 0.3, "B": 0.5},
+        "coucou",
+        lambda T: 1.0 + T,
+    ],
+)
+def test_raise_TypeError_when_porosity_is_not_correct_type(input_por_value):
+    """Test that nonnumeric porosity raises a TypeError with a clear message."""
+
+    with pytest.raises(TypeError, match=r"porosity must be an int or float"):
+        F.PorousMaterial(D_0=1, E_D=0, porosity=input_por_value, tortuosity=2)
+
+
+@pytest.mark.parametrize(
+    "input_tor_value",
+    [
+        {"A": 3, "B": 2},
+        "coucou",
+        lambda T: 1.0 + T,
+    ],
+)
+def test_raise_TypeError_when_tortuosity_is_not_correct_type(input_tor_value):
+    """Test that nonnumeric tortuosity raises a TypeError with a clear message."""
+
+    with pytest.raises(TypeError, match=r"tortuosity must be an int or float"):
+        F.PorousMaterial(D_0=1, E_D=0, porosity=0.4, tortuosity=input_tor_value)
 
 
 def test_get_diffusion_coefficient_returns_function_when_given_to_D():
