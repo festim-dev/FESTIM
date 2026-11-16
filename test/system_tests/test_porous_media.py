@@ -317,7 +317,7 @@ def test_porous_transient_mms_with_advection_discontinuous(porosity, tortuosity)
     assert rate > 1.8, (errors, rate)
 
 
-def test_porous_advection_warns_about_superficial_velocity_discontinous():
+def test_porous_advection_warns_about_superficial_velocity_discontinuous():
     """Warn once per porous volume when advection is specified."""
 
     mesh = F.Mesh1D(np.linspace(0, 1, 6))
