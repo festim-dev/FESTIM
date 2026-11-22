@@ -1,0 +1,42 @@
+name: Experimental pip CI
+
+on: [pull_request, push]
+
+jobs:
+  run-test:
+    name: run-test (experimental wheels)
+    runs-on: ubuntu-latest
+    env:
+      # Avoid probing unusable Azure MANA verbs interfaces during MPI_Init.
+      UCX_TLS: self,tcp
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - uses: pyvista/setup-headless-display-action@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install experimental wheel stack
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install mpich
+          python -m pip install \
+            --extra-index-url https://shimwell.github.io/wheels \
+            "fenics-dolfinx[petsc4py]"
+          python -m pip install --no-deps \
+            --index-url https://shimwell.github.io/wheels scifem adios2
+          python -m pip install pynacl
+
+      - name: Install FESTIM
+        run: python -m pip install ".[test]"
+
+      - name: Check installed dependencies
+        run: python -m pip check
+
+      - name: Run tests
+        run: python -m pytest test/
